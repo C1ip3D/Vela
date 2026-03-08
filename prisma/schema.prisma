@@ -1,0 +1,259 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole { STUDENT COUNSELOR ADMIN }
+enum CourseType { STANDARD ADVANCED HONORS AP DUAL_ENROLLMENT }
+enum AlertSeverity { INFO WARNING CRITICAL }
+enum AdvisorLogType { GPA_DROP_ALERT MISSING_ASSIGNMENT_ALERT POSITIVE_TREND COURSE_RECOMMENDATION MILESTONE_REACHED }
+enum AlertStatus { PENDING ACKNOWLEDGED IN_PROGRESS RESOLVED DISMISSED }
+
+model User {
+  id             String    @id @default(cuid())
+  canvasUserId   String    @unique
+  email          String    @unique
+  displayName    String
+  avatarUrl      String?
+  role           UserRole  @default(STUDENT)
+  canvasToken    String?
+  canvasRefresh  String?
+  tokenExpiresAt DateTime?
+  telegramChatId String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  enrollments       Enrollment[]
+  gradeHistory      GradeHistory[]
+  gpaSnapshots      GpaSnapshot[]
+  advisorLogs       AdvisorLog[]
+  simulations       Simulation[]
+  recommendations   CourseRecommendation[]
+  alertsAsStudent   CounselorAlert[] @relation("AlertTarget")
+  alertsAsCounselor CounselorAlert[] @relation("AlertCounselor")
+}
+
+model Course {
+  id             String     @id @default(cuid())
+  canvasCourseId String     @unique
+  name           String
+  courseCode     String
+  term           String
+  courseType     CourseType @default(STANDARD)
+  creditHours    Float      @default(1.0)
+  apBoost        Float      @default(0.0)
+  isActive       Boolean    @default(true)
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+
+  enrollments      Enrollment[]
+  assignments      Assignment[]
+  weightCategories WeightCategory[]
+  gradingPeriods   GradingPeriod[]
+}
+
+model WeightCategory {
+  id               String  @id @default(cuid())
+  courseId         String
+  canvasCategoryId String?
+  name             String
+  weight           Float
+  dropLowest       Int     @default(0)
+
+  course          Course                  @relation(fields: [courseId], references: [id])
+  assignments     Assignment[]
+  simPlaceholders SimulationPlaceholder[]
+  @@index([courseId])
+}
+
+model GradingPeriod {
+  id             String   @id @default(cuid())
+  courseId       String
+  canvasPeriodId String
+  title          String
+  startDate      DateTime
+  endDate        DateTime
+
+  course      Course       @relation(fields: [courseId], references: [id])
+  assignments Assignment[]
+  @@index([courseId])
+}
+
+model Enrollment {
+  id             String   @id @default(cuid())
+  userId         String
+  courseId       String
+  canvasEnrollId String   @unique
+  currentGrade   Float?
+  letterGrade    String?
+  enrolledAt     DateTime
+  isActive       Boolean  @default(true)
+
+  user   User   @relation(fields: [userId], references: [id])
+  course Course @relation(fields: [courseId], references: [id])
+
+  @@unique([userId, courseId])
+  @@index([userId])
+}
+
+model Assignment {
+  id               String    @id @default(cuid())
+  canvasAssignId   String    @unique
+  courseId         String
+  gradingPeriodId  String?
+  weightCategoryId String?
+  title            String
+  pointsPossible   Float
+  dueDate          DateTime?
+  isPublished      Boolean   @default(true)
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  course         Course          @relation(fields: [courseId], references: [id])
+  gradingPeriod  GradingPeriod?  @relation(fields: [gradingPeriodId], references: [id])
+  weightCategory WeightCategory? @relation(fields: [weightCategoryId], references: [id])
+  submissions    Submission[]
+  overrides      SimulationOverride[]
+  @@index([courseId, dueDate])
+}
+
+model Submission {
+  id           String    @id @default(cuid())
+  canvasSubId  String    @unique
+  assignmentId String
+  userId       String
+  score        Float?
+  late         Boolean   @default(false)
+  missing      Boolean   @default(false)
+  excused      Boolean   @default(false)
+  gradedAt     DateTime?
+  submittedAt  DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  assignment Assignment @relation(fields: [assignmentId], references: [id])
+  @@index([assignmentId, userId])
+  @@index([userId, missing])
+}
+
+model GradeHistory {
+  id              String   @id @default(cuid())
+  userId          String
+  courseId        String
+  recordedAt      DateTime @default(now())
+  percentageGrade Float
+  gpaPoints       Float
+  letterGrade     String
+  missingCount    Int      @default(0)
+
+  user User @relation(fields: [userId], references: [id])
+  @@index([userId, recordedAt])
+}
+
+model GpaSnapshot {
+  id            String   @id @default(cuid())
+  userId        String
+  cumulativeGpa Float
+  termGpa       Float
+  weightedGpa   Float
+  unweightedGpa Float
+  recordedAt    DateTime @default(now())
+  term          String
+
+  user User @relation(fields: [userId], references: [id])
+  @@index([userId, recordedAt])
+}
+
+model Simulation {
+  id             String   @id @default(cuid())
+  userId         String
+  courseId       String
+  name           String   @default("My Scenario")
+  isActive       Boolean  @default(false)
+  baseGrade      Float
+  projectedGrade Float    @default(0)
+  projectedGpa   Float    @default(0)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  user         User                    @relation(fields: [userId], references: [id])
+  overrides    SimulationOverride[]
+  placeholders SimulationPlaceholder[]
+  @@index([userId, courseId])
+}
+
+model SimulationOverride {
+  id            String @id @default(cuid())
+  simulationId  String
+  assignmentId  String
+  overrideScore Float
+  originalScore Float?
+
+  simulation Simulation @relation(fields: [simulationId], references: [id], onDelete: Cascade)
+  assignment Assignment @relation(fields: [assignmentId], references: [id])
+}
+
+model SimulationPlaceholder {
+  id               String @id @default(cuid())
+  simulationId     String
+  title            String
+  weightCategoryId String
+  pointsPossible   Float
+  projectedScore   Float
+
+  simulation     Simulation     @relation(fields: [simulationId], references: [id], onDelete: Cascade)
+  weightCategory WeightCategory @relation(fields: [weightCategoryId], references: [id])
+}
+
+model AdvisorLog {
+  id          String         @id @default(cuid())
+  userId      String
+  logType     AdvisorLogType
+  severity    AlertSeverity  @default(INFO)
+  title       String
+  body        Json
+  triggerData Json
+  isRead      Boolean        @default(false)
+  createdAt   DateTime       @default(now())
+
+  user   User             @relation(fields: [userId], references: [id])
+  alerts CounselorAlert[]
+  @@index([userId, createdAt])
+}
+
+model CounselorAlert {
+  id           String      @id @default(cuid())
+  targetUserId String
+  counselorId  String
+  advisorLogId String
+  status       AlertStatus @default(PENDING)
+  telegramSent Boolean     @default(false)
+  emailSent    Boolean     @default(false)
+  resolvedAt   DateTime?
+  notes        String?
+  createdAt    DateTime    @default(now())
+
+  targetUser User       @relation("AlertTarget",   fields: [targetUserId], references: [id])
+  counselor  User       @relation("AlertCounselor", fields: [counselorId],  references: [id])
+  advisorLog AdvisorLog @relation(fields: [advisorLogId], references: [id])
+  @@index([counselorId, status])
+}
+
+model CourseRecommendation {
+  id               String   @id @default(cuid())
+  userId           String
+  catalogCourseId  String
+  courseName       String
+  track            String
+  reason           String
+  prerequisitesMet Boolean
+  confidenceScore  Float
+  createdAt        DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+  @@index([userId])
+}

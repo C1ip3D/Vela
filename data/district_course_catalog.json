@@ -1,0 +1,756 @@
+{
+  "district": {
+    "name": "Dublin Unified School District",
+    "state": "CA",
+    "academicYear": "2023-2024",
+    "graduationCredits": 230,
+    "schools": ["Dublin High School", "Emerald High School", "Valley High School"],
+    "graduationRequirements": {
+      "English": 40,
+      "Math": 20,
+      "LifeBiologicalScience": 10,
+      "PhysicalScience": 10,
+      "WorldHistory": 10,
+      "USHistory": 10,
+      "Civics": 5,
+      "Economics": 5,
+      "VisualPerformingAppliedArt": 10,
+      "WorldLanguage": 20,
+      "PhysicalEducation": 20,
+      "Health": 5,
+      "Electives": 65
+    }
+  },
+  "courses": [
+    {
+      "id": "ENG1", "name": "English 1", "department": "English",
+      "agCategory": "B", "courseType": "STANDARD", "gradeLevel": [9],
+      "credits": 10, "prerequisites": [], "tracks": ["GENERAL", "COLLEGE_PREP"],
+      "ucApproved": true, "nextCourses": ["ENG2", "ENG2ADV"],
+      "description": "Literary survey: plays, short stories, poems, novels, non-fiction. Multi-paragraph essays, textual support, vocabulary."
+    },
+    {
+      "id": "ENG1ADV", "name": "English 1 Advanced", "department": "English",
+      "agCategory": "B", "courseType": "ADVANCED", "gradeLevel": [9],
+      "credits": 10, "prerequisites": [], "tracks": ["HUMANITIES", "COLLEGE_PREP"],
+      "ucApproved": true, "nextCourses": ["ENG2ADV", "ENG2"],
+      "description": "Advanced literary analysis, literary critical theory lenses, Socratic seminars, independent research. Not weighted."
+    },
+    {
+      "id": "ENG2", "name": "English 2", "department": "English",
+      "agCategory": "B", "courseType": "STANDARD", "gradeLevel": [10],
+      "credits": 10, "prerequisites": ["ENG1"], "tracks": ["GENERAL", "COLLEGE_PREP"],
+      "ucApproved": true, "nextCourses": ["ENG3", "ENG3ADV"],
+      "description": "Ambitious reading schedule, in-depth analysis, argumentative writing."
+    },
+    {
+      "id": "ENG2ADV", "name": "English 2 Advanced", "department": "English",
+      "agCategory": "B", "courseType": "ADVANCED", "gradeLevel": [10],
+      "credits": 10, "prerequisites": ["ENG1ADV", "ENG1"], "tracks": ["HUMANITIES", "COLLEGE_PREP"],
+      "ucApproved": true, "nextCourses": ["ENG3ADV", "ENG3"],
+      "description": "Lord of the Flies, Kaffir Boy, Siddhartha, Brave New World. Socratic seminars, Joseph Campbell Hero's Journey. Not weighted."
+    },
+    {
+      "id": "ENG3", "name": "English 3", "department": "English",
+      "agCategory": "B", "courseType": "STANDARD", "gradeLevel": [11],
+      "credits": 10, "prerequisites": ["ENG2"], "tracks": ["GENERAL", "COLLEGE_PREP"],
+      "ucApproved": true, "nextCourses": ["ENG4ERWC", "ENG4FILM", "ENG4RACE", "ENGAP12"],
+      "description": "American literary movements: Puritans, Rationalists, Romantics, Realists, Modernists. The Great Gatsby. SBAC prep."
+    },
+    {
+      "id": "ENG3ADV", "name": "English 3 Advanced", "department": "English",
+      "agCategory": "B", "courseType": "ADVANCED", "gradeLevel": [11],
+      "credits": 10, "prerequisites": ["ENG2ADV"], "tracks": ["HUMANITIES", "COLLEGE_PREP"],
+      "ucApproved": true, "nextCourses": ["ENGAP12", "ENG4ERWC"]
+    },
+    {
+      "id": "ENG4ERWC", "name": "Expository Reading and Writing (ERWC)", "department": "English",
+      "agCategory": "B", "courseType": "STANDARD", "gradeLevel": [12],
+      "credits": 10, "prerequisites": ["ENG3"], "tracks": ["GENERAL", "COLLEGE_PREP"],
+      "ucApproved": true, "nextCourses": [],
+      "description": "CSU 12th Grade ERWC. Rhetoric, composition, expository/analytical/argumentative writing on controversial topics."
+    },
+    {
+      "id": "ENG4FILM", "name": "Film As Literature", "department": "English",
+      "agCategory": "B", "courseType": "STANDARD", "gradeLevel": [12],
+      "credits": 5, "prerequisites": ["ENG3"], "tracks": ["ARTS", "GENERAL"],
+      "ucApproved": true, "nextCourses": [],
+      "description": "Critically analyze film as literature: mise-en-scene, cinematography, editing, sound design. Writing intensive."
+    },
+    {
+      "id": "ENG4RACE", "name": "Deconstructing Race", "department": "English",
+      "agCategory": "B", "courseType": "STANDARD", "gradeLevel": [12],
+      "credits": 5, "prerequisites": ["ENG3"], "tracks": ["HUMANITIES"],
+      "ucApproved": true, "nextCourses": [],
+      "description": "Structural racism in American society. Surveys African American, Latinx, Asian American, Arab American, Indigenous peoples' experiences."
+    },
+    {
+      "id": "ENG4DYSTOPIA", "name": "Exploring Society Through Dystopian Literature", "department": "English",
+      "agCategory": "B", "courseType": "STANDARD", "gradeLevel": [12],
+      "credits": 5, "prerequisites": ["ENG3"], "tracks": ["HUMANITIES", "GENERAL"],
+      "ucApproved": true, "nextCourses": []
+    },
+    {
+      "id": "ENG4PODCAST", "name": "Podcasting and Storytelling", "department": "English",
+      "agCategory": "B", "courseType": "STANDARD", "gradeLevel": [12],
+      "credits": 5, "prerequisites": ["ENG3"], "tracks": ["ARTS", "HUMANITIES"],
+      "ucApproved": true, "nextCourses": [],
+      "description": "Explore podcasting and narrative storytelling. Capstone: produce and publish original podcast."
+    },
+    {
+      "id": "ENG4GLOBAL", "name": "People, Places, Problems: A Global Perspective", "department": "English",
+      "agCategory": "B", "courseType": "STANDARD", "gradeLevel": [12],
+      "credits": 5, "prerequisites": ["ENG3"], "tracks": ["HUMANITIES"],
+      "ucApproved": true, "nextCourses": []
+    },
+    {
+      "id": "ENGAP12", "name": "AP English Literature and Composition", "department": "English",
+      "agCategory": "B", "courseType": "AP", "gradeLevel": [12],
+      "credits": 10, "prerequisites": ["ENG3ADV", "ENG3"], "recommendedGrade": "B",
+      "tracks": ["HUMANITIES", "COLLEGE_PREP"],
+      "ucApproved": true, "nextCourses": [],
+      "description": "College-level course for students with exceptional interest and ability in English. Independent reading, analysis, in-class essays, AP exam."
+    },
+    {
+      "id": "ALGEBRA1B", "name": "Algebra 1B", "department": "Mathematics",
+      "agCategory": "C", "courseType": "STANDARD", "gradeLevel": [10],
+      "credits": 10, "prerequisites": ["ALGEBRA1A"],
+      "tracks": ["GENERAL"],
+      "ucApproved": true, "nextCourses": ["GEOMETRY"],
+      "description": "Continuation of Algebra 1A: exponential functions, polynomial equations, quadratic functions, radical functions, data analysis."
+    },
+    {
+      "id": "ALGEBRA1", "name": "Algebra I", "department": "Mathematics",
+      "agCategory": "C", "courseType": "STANDARD", "gradeLevel": [9, 10, 11],
+      "credits": 10, "prerequisites": [],
+      "tracks": ["GENERAL", "COLLEGE_PREP"],
+      "ucApproved": true, "nextCourses": ["GEOMETRY"],
+      "description": "Linear equations, systems, exponential expressions, polynomials, radicals, quadratic equations. CA graduation requirement."
+    },
+    {
+      "id": "GEOMETRY", "name": "Geometry", "department": "Mathematics",
+      "agCategory": "C", "courseType": "STANDARD", "gradeLevel": [9, 10, 11, 12],
+      "credits": 10, "prerequisites": ["ALGEBRA1"],
+      "tracks": ["GENERAL", "COLLEGE_PREP"],
+      "ucApproved": true, "nextCourses": ["ALGEBRA2", "ADVALGEBRA2"],
+      "description": "Theorems, proofs, 2D/3D shapes, similarity, geometric probability, transformations."
+    },
+    {
+      "id": "ALGEBRA2", "name": "Algebra II", "department": "Mathematics",
+      "agCategory": "C", "courseType": "STANDARD", "gradeLevel": [10, 11, 12],
+      "credits": 10, "prerequisites": ["ALGEBRA1", "GEOMETRY"],
+      "tracks": ["GENERAL", "COLLEGE_PREP"],
+      "ucApproved": true, "nextCourses": ["PRECALC", "TRIGOTHER", "STATS", "FINANCIALAPP"],
+      "description": "Equations, graphing parent functions, probability, trig functions, logarithmic/exponential functions."
+    },
+    {
+      "id": "ADVALGEBRA2", "name": "Advanced Algebra II", "department": "Mathematics",
+      "agCategory": "C", "courseType": "ADVANCED", "gradeLevel": [9, 10, 11, 12],
+      "credits": 10, "prerequisites": ["ALGEBRA1", "GEOMETRY"],
+      "tracks": ["STEM", "COLLEGE_PREP"],
+      "ucApproved": true, "nextCourses": ["PRECALC", "APCALCAB"],
+      "description": "Accelerated: complex numbers, polynomials, inverses, conics, nonlinear systems, sequences/series, statistics. ~1hr/day homework. NOT weighted."
+    },
+    {
+      "id": "FINANCIALAPP", "name": "Financial Applications", "department": "Mathematics",
+      "agCategory": "C", "courseType": "STANDARD", "gradeLevel": [10, 11, 12],
+      "credits": 10, "prerequisites": ["ALGEBRA1"],
+      "tracks": ["GENERAL", "BUSINESS"],
+      "ucApproved": true, "nextCourses": [],
+      "description": "Budgeting, saving, investing, retirement, credit, taxes, insurance. Personal finance for juniors/seniors."
+    },
+    {
+      "id": "TRIGOTHER", "name": "Trigonometry and Other Functions", "department": "Mathematics",
+      "agCategory": "C", "courseType": "STANDARD", "gradeLevel": [10, 11, 12],
+      "credits": 10, "prerequisites": ["ALGEBRA2|ADVALGEBRA2"],
+      "tracks": ["GENERAL", "COLLEGE_PREP"],
+      "ucApproved": true, "nextCourses": ["PRECALC", "CALCULUS"],
+      "description": "Trig ratios, functions, graphs; right/acute triangle applications; exponential/log functions; conic sections."
+    },
+    {
+      "id": "PRECALC", "name": "Precalculus", "department": "Mathematics",
+      "agCategory": "C", "courseType": "STANDARD", "gradeLevel": [9, 10, 11, 12],
+      "credits": 10, "prerequisites": ["ALGEBRA2|ADVALGEBRA2"],
+      "tracks": ["STEM", "COLLEGE_PREP"],
+      "ucApproved": true, "nextCourses": ["CALCULUS", "APCALCAB", "APCALCBC"],
+      "description": "Trig, advanced functions, conics, probability, statistics, discrete math. Flipped classroom model."
+    },
+    {
+      "id": "STATS", "name": "Statistics", "department": "Mathematics",
+      "agCategory": "C", "courseType": "STANDARD", "gradeLevel": [10, 11, 12],
+      "credits": 10, "prerequisites": ["ALGEBRA1"],
+      "tracks": ["GENERAL", "BUSINESS"],
+      "ucApproved": true, "nextCourses": ["APSTATS"]
+    },
+    {
+      "id": "CALCULUS", "name": "Calculus", "department": "Mathematics",
+      "agCategory": "C", "courseType": "STANDARD", "gradeLevel": [12],
+      "credits": 10, "prerequisites": ["PRECALC"],
+      "tracks": ["STEM", "COLLEGE_PREP"],
+      "ucApproved": true, "nextCourses": [],
+      "description": "Non-AP calculus covering same AB topics at slower pace: derivatives, related rates, optimization, integration."
+    },
+    {
+      "id": "APCALCAB", "name": "AP Calculus AB", "department": "Mathematics",
+      "agCategory": "C", "courseType": "AP", "gradeLevel": [10, 11, 12],
+      "credits": 10, "prerequisites": ["PRECALC|APPRECALC"], "recommendedGrade": "B",
+      "tracks": ["STEM", "COLLEGE_PREP"],
+      "ucApproved": true, "nextCourses": ["APCALCBC"],
+      "description": "Limits, continuity, derivatives, integrals, Fundamental Theorem. AP exam prepares for college credit. ~1hr nightly."
+    },
+    {
+      "id": "APCALCBC", "name": "AP Calculus BC", "department": "Mathematics",
+      "agCategory": "C", "courseType": "AP", "gradeLevel": [12],
+      "credits": 10, "prerequisites": ["APCALCAB"], "recommendedGrade": "B",
+      "tracks": ["STEM"],
+      "ucApproved": true, "nextCourses": [],
+      "description": "Continuation of AB + parametric, polar, vector, power/Taylor/Maclaurin series. Prepares for 3rd-level college calculus."
+    },
+    {
+      "id": "APSTATS", "name": "AP Statistics", "department": "Mathematics",
+      "agCategory": "C", "courseType": "AP", "gradeLevel": [11, 12],
+      "credits": 10, "prerequisites": ["ALGEBRA2|ADVALGEBRA2"],
+      "tracks": ["STEM", "BUSINESS", "COLLEGE_PREP"],
+      "ucApproved": true, "nextCourses": [],
+      "description": "Can be taken concurrently with Precalculus or AP Calculus AB/BC."
+    },
+    {
+      "id": "APPRECALC", "name": "AP Precalculus", "department": "Mathematics",
+      "agCategory": "C", "courseType": "AP", "gradeLevel": [10, 11],
+      "credits": 10, "prerequisites": ["ALGEBRA2|ADVALGEBRA2"],
+      "tracks": ["STEM", "COLLEGE_PREP"],
+      "ucApproved": true, "nextCourses": ["APCALCAB", "APCALCBC"],
+      "description": "AP-level precalculus covering polynomial, rational, exponential, logarithmic, trigonometric functions, and introductory analysis. Prepares for AP Calculus AB/BC."
+    },
+    {
+      "id": "PLTW_IED", "name": "PLTW Introduction to Engineering Design (IED)", "department": "Engineering",
+      "agCategory": "D", "courseType": "STANDARD", "gradeLevel": [9, 10, 11, 12],
+      "credits": 10, "prerequisites": [],
+      "tracks": ["STEM"],
+      "ucApproved": true, "nextCourses": ["PLTW_POE", "PLTW_CIM"],
+      "description": "3D solid modeling, design process, research, teamwork. Recommended first-year course for Engineering & CS Pathway. UC D-area lab science credit."
+    },
+    {
+      "id": "PLTW_ES", "name": "PLTW Environmental Sustainability (ES)", "department": "Engineering",
+      "agCategory": "G", "courseType": "STANDARD", "gradeLevel": [9, 10, 11, 12],
+      "credits": 10, "prerequisites": [],
+      "tracks": ["STEM", "GENERAL"],
+      "ucApproved": true, "nextCourses": ["PLTW_POE"],
+      "description": "Water, food, energy challenges. Engineering design process, Raspberry Pi, microcontrollers, environmental sensors."
+    },
+    {
+      "id": "PLTW_POE", "name": "PLTW Principles of Engineering Honors (POE)", "department": "Engineering",
+      "agCategory": "D", "courseType": "HONORS", "gradeLevel": [10, 11, 12],
+      "credits": 10, "prerequisites": ["PLTW_IED", "PLTW_CSE", "PLTW_ES"],
+      "recommendedGrade": "B",
+      "tracks": ["STEM"],
+      "ucApproved": true, "nextCourses": ["PLTW_DE", "PLTW_CIM", "ROP_CEA"],
+      "description": "Survey of engineering concepts. Required for Engineering Academy. B or better earns 2 LPC college units. Weighted. Concurrent Algebra 2 or above recommended."
+    },
+    {
+      "id": "PLTW_DE", "name": "PLTW Digital Electronics Honors (DE)", "department": "Engineering",
+      "agCategory": "G", "courseType": "HONORS", "gradeLevel": [11, 12],
+      "credits": 10, "prerequisites": ["PLTW_POE"],
+      "tracks": ["STEM"],
+      "ucApproved": true, "nextCourses": [],
+      "description": "Combinational/sequential logic design, electronic circuits. C or better earns 3 DVC college units. Weighted."
+    },
+    {
+      "id": "PLTW_CIM", "name": "ROP PLTW Computer Integrated Manufacturing (CIM)", "department": "Engineering",
+      "agCategory": "G", "courseType": "STANDARD", "gradeLevel": [10, 11, 12],
+      "credits": 10, "prerequisites": ["PLTW_IED"],
+      "tracks": ["STEM"],
+      "ucApproved": true, "nextCourses": []
+    },
+    {
+      "id": "ROP_CEA", "name": "ROP Honors Civil Engineering and Architecture (CEA)", "department": "Engineering",
+      "agCategory": "G", "courseType": "HONORS", "gradeLevel": [11, 12],
+      "credits": 10, "prerequisites": ["PLTW_POE", "PLTW_IED"],
+      "tracks": ["STEM"],
+      "ucApproved": true, "nextCourses": [],
+      "description": "Civil engineering, architecture, 3D design software. Livermore High School site. Transportation required."
+    },
+    {
+      "id": "PLTW_CSE", "name": "PLTW Computer Science Essentials (CSE)", "department": "Engineering",
+      "agCategory": "D", "courseType": "STANDARD", "gradeLevel": [9, 10, 11, 12],
+      "credits": 10, "prerequisites": [],
+      "tracks": ["STEM", "BUSINESS"],
+      "ucApproved": true, "nextCourses": ["PLTW_CSP", "PLTW_POE"],
+      "description": "Intro programming: CS topics, web design (HTML/CSS), Python, MIT AppInventor Android apps. UC D-area lab science credit."
+    },
+    {
+      "id": "PLTW_CSP", "name": "PLTW AP Computer Science Principles (CSP)", "department": "Engineering",
+      "agCategory": "D", "courseType": "AP", "gradeLevel": [10, 11, 12],
+      "credits": 10, "prerequisites": ["PLTW_CSE"], "recommendedGrade": "B",
+      "tracks": ["STEM"],
+      "ucApproved": true, "nextCourses": ["PLTW_CSA"],
+      "description": "Rigorous AP course: internet, data analytics, software engineering using Python 3. AP CSP exam. Summer homework required."
+    },
+    {
+      "id": "PLTW_CSA", "name": "PLTW AP Computer Science Applications (CSA)", "department": "Engineering",
+      "agCategory": "D", "courseType": "AP", "gradeLevel": [10, 11, 12],
+      "credits": 10, "prerequisites": ["PLTW_CSP"], "recommendedGrade": "B",
+      "tracks": ["STEM"],
+      "ucApproved": true, "nextCourses": [],
+      "description": "Java OOP, AP CS A exam equivalent. Art/media/engineering applications. First-semester college CS equivalent."
+    },
+    {
+      "id": "CYBERSEC", "name": "Cybersecurity", "department": "Engineering",
+      "agCategory": "D", "courseType": "STANDARD", "gradeLevel": [10, 11, 12],
+      "credits": 10, "prerequisites": ["PLTW_CSE", "PLTW_CSP", "PLTW_POE"],
+      "tracks": ["STEM"],
+      "ucApproved": true, "nextCourses": [],
+      "description": "Digital/information security, National Cybersecurity Workforce Framework, ethical behavior, socially responsible choices."
+    },
+    {
+      "id": "WORLDHIST", "name": "World History", "department": "History Social Science",
+      "agCategory": "A", "courseType": "STANDARD", "gradeLevel": [10],
+      "credits": 10, "prerequisites": [],
+      "tracks": ["GENERAL", "COLLEGE_PREP"],
+      "ucApproved": true, "nextCourses": ["USHIST", "APUSHIST"]
+    },
+    {
+      "id": "USHIST", "name": "United States History", "department": "History Social Science",
+      "agCategory": "A", "courseType": "STANDARD", "gradeLevel": [11],
+      "credits": 10, "prerequisites": ["WORLDHIST"],
+      "tracks": ["GENERAL", "COLLEGE_PREP"],
+      "ucApproved": true, "nextCourses": ["CIVICS", "APCIVICS"]
+    },
+    {
+      "id": "APUSHIST", "name": "AP United States History", "department": "History Social Science",
+      "agCategory": "A", "courseType": "AP", "gradeLevel": [11],
+      "credits": 10, "prerequisites": ["WORLDHIST"],
+      "tracks": ["HUMANITIES", "COLLEGE_PREP"],
+      "ucApproved": true, "nextCourses": ["APCIVICS", "CIVICS"]
+    },
+    {
+      "id": "CIVICS", "name": "Civics", "department": "History Social Science",
+      "agCategory": "A", "courseType": "STANDARD", "gradeLevel": [12],
+      "credits": 5, "prerequisites": ["USHIST"],
+      "tracks": ["GENERAL", "COLLEGE_PREP"],
+      "ucApproved": true, "nextCourses": [],
+      "description": "American political system, democracy participation, California government. Required for graduation."
+    },
+    {
+      "id": "APCIVICS", "name": "AP United States Government and Politics", "department": "History Social Science",
+      "agCategory": "A", "courseType": "AP", "gradeLevel": [12],
+      "credits": 5, "prerequisites": ["USHIST", "APUSHIST"],
+      "tracks": ["HUMANITIES", "COLLEGE_PREP"],
+      "ucApproved": true, "nextCourses": [],
+      "description": "US national government, civil rights, public policy. AP exam. ~60min nightly homework."
+    },
+    {
+      "id": "ECONOMICS", "name": "Economics", "department": "History Social Science",
+      "agCategory": "A", "courseType": "STANDARD", "gradeLevel": [12],
+      "credits": 5, "prerequisites": ["USHIST"],
+      "tracks": ["GENERAL", "BUSINESS"],
+      "ucApproved": true, "nextCourses": []
+    },
+    {
+      "id": "APMACRO", "name": "AP Macroeconomics", "department": "History Social Science",
+      "agCategory": "G", "courseType": "AP", "gradeLevel": [12],
+      "credits": 5, "prerequisites": [],
+      "tracks": ["BUSINESS", "HUMANITIES"],
+      "ucApproved": true, "nextCourses": []
+    },
+    {
+      "id": "APMICRO", "name": "AP Microeconomics", "department": "History Social Science",
+      "agCategory": "G", "courseType": "AP", "gradeLevel": [12],
+      "credits": 5, "prerequisites": [],
+      "tracks": ["BUSINESS", "HUMANITIES"],
+      "ucApproved": true, "nextCourses": [],
+      "description": "Consumer behavior, product markets, factor markets, government role in economic equity/efficiency."
+    },
+    {
+      "id": "APHUMANGEOG", "name": "AP Human Geography", "department": "History Social Science",
+      "agCategory": "G", "courseType": "AP", "gradeLevel": [9, 10, 11, 12],
+      "credits": 10, "prerequisites": [],
+      "tracks": ["HUMANITIES", "COLLEGE_PREP"],
+      "ucApproved": true, "nextCourses": [],
+      "description": "Economic, cultural, political, urban geography. Weighted for all grade levels."
+    },
+    {
+      "id": "APPSYCH", "name": "AP Psychology", "department": "History Social Science",
+      "agCategory": "G", "courseType": "AP", "gradeLevel": [11, 12],
+      "credits": 10, "prerequisites": [],
+      "tracks": ["HUMANITIES", "GENERAL"],
+      "ucApproved": true, "nextCourses": []
+    },
+    {
+      "id": "PSYCH", "name": "Psychology", "department": "History Social Science",
+      "agCategory": "G", "courseType": "STANDARD", "gradeLevel": [10, 11, 12],
+      "credits": 5, "prerequisites": [],
+      "tracks": ["GENERAL"],
+      "ucApproved": true, "nextCourses": ["APPSYCH"]
+    },
+    {
+      "id": "LAW", "name": "Law and Society", "department": "History Social Science",
+      "agCategory": "G", "courseType": "STANDARD", "gradeLevel": [11, 12],
+      "credits": 5, "prerequisites": [],
+      "tracks": ["HUMANITIES", "GENERAL"],
+      "ucApproved": true, "nextCourses": []
+    },
+    {
+      "id": "AMERICA60S", "name": "America in the 1960s", "department": "History Social Science",
+      "agCategory": "G", "courseType": "STANDARD", "gradeLevel": [10, 11, 12],
+      "credits": 5, "prerequisites": [],
+      "tracks": ["GENERAL", "HUMANITIES"],
+      "ucApproved": true, "nextCourses": []
+    },
+    {
+      "id": "CIVILWAR", "name": "The Civil War in America", "department": "History Social Science",
+      "agCategory": "G", "courseType": "STANDARD", "gradeLevel": [11, 12],
+      "credits": 5, "prerequisites": [],
+      "tracks": ["GENERAL", "HUMANITIES"],
+      "ucApproved": true, "nextCourses": []
+    },
+    {
+      "id": "WWII", "name": "World War II", "department": "History Social Science",
+      "agCategory": "G", "courseType": "STANDARD", "gradeLevel": [10, 11, 12],
+      "credits": 5, "prerequisites": [],
+      "tracks": ["GENERAL", "HUMANITIES"],
+      "ucApproved": true, "nextCourses": []
+    },
+    {
+      "id": "WILDWEST", "name": "The Wild West", "department": "History Social Science",
+      "agCategory": "G", "courseType": "STANDARD", "gradeLevel": [10, 11, 12],
+      "credits": 5, "prerequisites": [],
+      "tracks": ["GENERAL"],
+      "ucApproved": true, "nextCourses": []
+    },
+    {
+      "id": "BIOLOGY", "name": "Biology", "department": "Science",
+      "agCategory": "D", "courseType": "STANDARD", "gradeLevel": [9, 10],
+      "credits": 10, "prerequisites": [],
+      "tracks": ["GENERAL", "COLLEGE_PREP"],
+      "ucApproved": true, "nextCourses": ["PHYSUNIVERSE", "EARTHSPACE", "CHEMISTRY", "HONCHEMISTRY", "FORENSICS", "ANATOMYPHYS", "MARINESCI", "APBIO"]
+    },
+    {
+      "id": "CHEMISTRY", "name": "Chemistry", "department": "Science",
+      "agCategory": "D", "courseType": "STANDARD", "gradeLevel": [10, 11],
+      "credits": 10, "prerequisites": ["BIOLOGY", "ALGEBRA1"],
+      "tracks": ["GENERAL", "COLLEGE_PREP"],
+      "ucApproved": true, "nextCourses": ["PHYSICS", "HONPHYSICS", "HONCHEMISTRY", "APCHEM", "APENVS", "APBIO"]
+    },
+    {
+      "id": "PHYSICS", "name": "Physics", "department": "Science",
+      "agCategory": "D", "courseType": "STANDARD", "gradeLevel": [11, 12],
+      "credits": 10, "prerequisites": ["CHEMISTRY", "ALGEBRA2"],
+      "tracks": ["STEM", "COLLEGE_PREP"],
+      "ucApproved": true, "nextCourses": ["APPHYS1"]
+    },
+    {
+      "id": "APBIO", "name": "AP Biology", "department": "Science",
+      "agCategory": "D", "courseType": "AP", "gradeLevel": [11, 12],
+      "credits": 10, "prerequisites": ["BIOLOGY", "CHEMISTRY"],
+      "tracks": ["STEM", "COLLEGE_PREP"],
+      "ucApproved": true, "nextCourses": []
+    },
+    {
+      "id": "APCHEM", "name": "AP Chemistry", "department": "Science",
+      "agCategory": "D", "courseType": "AP", "gradeLevel": [11, 12],
+      "credits": 10, "prerequisites": ["CHEMISTRY"], "recommendedGrade": "B",
+      "tracks": ["STEM"],
+      "ucApproved": true, "nextCourses": []
+    },
+    {
+      "id": "APENVS", "name": "AP Environmental Science", "department": "Science",
+      "agCategory": "D", "courseType": "AP", "gradeLevel": [11, 12],
+      "credits": 10, "prerequisites": ["BIOLOGY", "CHEMISTRY"],
+      "tracks": ["STEM", "GENERAL"],
+      "ucApproved": true, "nextCourses": []
+    },
+    {
+      "id": "APPHYS1", "name": "AP Physics 1", "department": "Science",
+      "agCategory": "D", "courseType": "AP", "gradeLevel": [11, 12],
+      "credits": 10, "prerequisites": ["CHEMISTRY", "ALGEBRA2"],
+      "tracks": ["STEM"],
+      "ucApproved": true, "nextCourses": ["APPHYSC"]
+    },
+    {
+      "id": "APPHYSC", "name": "AP Physics C: Mechanics", "department": "Science",
+      "agCategory": "D", "courseType": "AP", "gradeLevel": [12],
+      "credits": 10, "prerequisites": ["APPHYS1", "APCALCAB"],
+      "tracks": ["STEM"],
+      "ucApproved": true, "nextCourses": []
+    },
+    {
+      "id": "PHYSUNIVERSE", "name": "Physics in the Universe", "department": "Science",
+      "agCategory": "D", "courseType": "STANDARD", "gradeLevel": [9, 10, 11, 12],
+      "credits": 10, "prerequisites": ["BIOLOGY"], "recommendedGrade": "C",
+      "tracks": ["GENERAL", "COLLEGE_PREP"],
+      "ucApproved": true, "nextCourses": ["EARTHSPACE", "CHEMISTRY", "HONCHEMISTRY", "FORENSICS", "ANATOMYPHYS", "MARINESCI"],
+      "description": "Required 10th-year science. Covers mechanics, waves, electricity, and magnetism. Enrollment in Algebra I/Advanced Algebra or higher recommended. Summer availability."
+    },
+    {
+      "id": "EARTHSPACE", "name": "Earth and Space Science", "department": "Science",
+      "agCategory": "D", "courseType": "STANDARD", "gradeLevel": [10, 11, 12],
+      "credits": 10, "prerequisites": ["BIOLOGY"],
+      "tracks": ["GENERAL", "COLLEGE_PREP"],
+      "ucApproved": true, "nextCourses": ["CHEMISTRY", "HONCHEMISTRY", "HONPHYSICS", "FORENSICS", "MARINESCI", "BIOTECHNOLOGY", "BIOMEDINNOV", "ANATOMYPHYS", "HONANATOMY", "APBIO", "APCHEM", "APENVS"],
+      "description": "Required 10th-year science alternative. Earth systems, geology, meteorology, oceanography, astronomy."
+    },
+    {
+      "id": "HONCHEMISTRY", "name": "Honors Chemistry", "department": "Science",
+      "agCategory": "D", "courseType": "HONORS", "gradeLevel": [11, 12],
+      "credits": 10, "prerequisites": ["BIOLOGY"], "recommendedGrade": "B",
+      "tracks": ["STEM", "COLLEGE_PREP"],
+      "ucApproved": true, "nextCourses": ["APCHEM", "BIOMEDINNOV", "APBIO", "APENVS"],
+      "description": "Honors-level chemistry. Enrollment in Algebra II or higher and successful Chemistry Readiness Test score recommended. Weighted GPA."
+    },
+    {
+      "id": "FORENSICS", "name": "Forensics", "department": "Science",
+      "agCategory": "D", "courseType": "STANDARD", "gradeLevel": [11, 12],
+      "credits": 10, "prerequisites": ["BIOLOGY"],
+      "tracks": ["GENERAL", "COLLEGE_PREP"],
+      "ucApproved": true, "nextCourses": [],
+      "description": "Application of science to criminal investigation: chemistry, biology, physics of evidence analysis."
+    },
+    {
+      "id": "ANATOMYPHYS", "name": "Anatomy and Physiology", "department": "Science",
+      "agCategory": "D", "courseType": "STANDARD", "gradeLevel": [11, 12],
+      "credits": 10, "prerequisites": ["BIOLOGY"],
+      "tracks": ["STEM", "COLLEGE_PREP"],
+      "ucApproved": true, "nextCourses": ["HONANATOMY"],
+      "description": "Human body systems: structure and function at cellular and organ levels. Pre-health pathway course."
+    },
+    {
+      "id": "MARINESCI", "name": "Marine Science", "department": "Science",
+      "agCategory": "D", "courseType": "STANDARD", "gradeLevel": [11, 12],
+      "credits": 10, "prerequisites": ["BIOLOGY"],
+      "tracks": ["STEM", "GENERAL"],
+      "ucApproved": true, "nextCourses": [],
+      "description": "Oceanography, marine ecosystems, marine biology, and environmental conservation."
+    },
+    {
+      "id": "HONPHYSICS", "name": "Honors Physics", "department": "Science",
+      "agCategory": "D", "courseType": "HONORS", "gradeLevel": [11, 12],
+      "credits": 10, "prerequisites": ["CHEMISTRY"], "recommendedGrade": "B",
+      "tracks": ["STEM"],
+      "ucApproved": true, "nextCourses": ["APPHYSC"],
+      "description": "Honors-level physics. Enrollment in Precalculus or higher recommended. Weighted GPA."
+    },
+    {
+      "id": "HONANATOMY", "name": "Honors Anatomy", "department": "Science",
+      "agCategory": "D", "courseType": "HONORS", "gradeLevel": [12],
+      "credits": 10, "prerequisites": ["ANATOMYPHYS"],
+      "tracks": ["STEM", "COLLEGE_PREP"],
+      "ucApproved": true, "nextCourses": [],
+      "description": "Advanced study of human anatomy and physiology. Weighted GPA. Recommended for pre-health, nursing, or medicine pathways."
+    },
+    {
+      "id": "BIOTECHNOLOGY", "name": "Biotechnology", "department": "Science",
+      "agCategory": "D", "courseType": "STANDARD", "gradeLevel": [12],
+      "credits": 10, "prerequisites": ["BIOLOGY"],
+      "tracks": ["STEM"],
+      "ucApproved": true, "nextCourses": [],
+      "description": "DNA technology, genetic engineering, PCR, gene expression, bioinformatics, and bioethics."
+    },
+    {
+      "id": "BIOMEDINNOV", "name": "Biomedical Innovations Honors", "department": "Science",
+      "agCategory": "D", "courseType": "HONORS", "gradeLevel": [12],
+      "credits": 10, "prerequisites": ["HONCHEMISTRY"],
+      "tracks": ["STEM"],
+      "ucApproved": true, "nextCourses": [],
+      "description": "Capstone biomedical course. Completion of Honors Chemistry or other weighted science recommended. Weighted GPA."
+    },
+    {
+      "id": "DRAMA1", "name": "Drama 1", "department": "Performing Arts",
+      "agCategory": "F", "courseType": "STANDARD", "gradeLevel": [9, 10, 11, 12],
+      "credits": 10, "prerequisites": [],
+      "tracks": ["ARTS", "GENERAL"],
+      "ucApproved": true, "nextCourses": ["DRAMA2"]
+    },
+    {
+      "id": "DRAMA2", "name": "Drama 2", "department": "Performing Arts",
+      "agCategory": "F", "courseType": "STANDARD", "gradeLevel": [9, 10, 11, 12],
+      "credits": 10, "prerequisites": ["DRAMA1"],
+      "tracks": ["ARTS"],
+      "ucApproved": true, "nextCourses": ["DRAMA3H"]
+    },
+    {
+      "id": "DRAMA3H", "name": "Honors Drama 3", "department": "Performing Arts",
+      "agCategory": "F", "courseType": "HONORS", "gradeLevel": [10, 11, 12],
+      "credits": 10, "prerequisites": ["DRAMA2"],
+      "tracks": ["ARTS"],
+      "ucApproved": true, "nextCourses": []
+    },
+    {
+      "id": "IMPROV", "name": "Improvisation", "department": "Performing Arts",
+      "agCategory": "F", "courseType": "STANDARD", "gradeLevel": [9, 10, 11, 12],
+      "credits": 10, "prerequisites": [],
+      "tracks": ["ARTS", "GENERAL"],
+      "ucApproved": true, "nextCourses": []
+    },
+    {
+      "id": "MUSICALTHEATRE", "name": "Introduction to Musical Theatre", "department": "Performing Arts",
+      "agCategory": "F", "courseType": "STANDARD", "gradeLevel": [9, 10, 11, 12],
+      "credits": 10, "prerequisites": [],
+      "tracks": ["ARTS"],
+      "ucApproved": true, "nextCourses": []
+    },
+    {
+      "id": "CHOIR", "name": "Concert Choir", "department": "Performing Arts",
+      "agCategory": "F", "courseType": "STANDARD", "gradeLevel": [9, 10, 11, 12],
+      "credits": 10, "prerequisites": [],
+      "tracks": ["ARTS", "GENERAL"],
+      "ucApproved": true, "nextCourses": ["ADVCHOIR"]
+    },
+    {
+      "id": "ADVCHOIR", "name": "Advanced Concert Choir", "department": "Performing Arts",
+      "agCategory": "F", "courseType": "STANDARD", "gradeLevel": [9, 10, 11, 12],
+      "credits": 10, "prerequisites": ["CHOIR"],
+      "tracks": ["ARTS"],
+      "ucApproved": true, "nextCourses": ["CHAMVOCAL"]
+    },
+    {
+      "id": "CHAMVOCAL", "name": "Chamber Vocal Ensemble", "department": "Performing Arts",
+      "agCategory": "F", "courseType": "STANDARD", "gradeLevel": [10, 11, 12],
+      "credits": 10, "prerequisites": ["ADVCHOIR"],
+      "tracks": ["ARTS"],
+      "ucApproved": true, "nextCourses": []
+    },
+    {
+      "id": "SHOWCHOIR", "name": "Show Choir", "department": "Performing Arts",
+      "agCategory": "F", "courseType": "STANDARD", "gradeLevel": [9, 10, 11, 12],
+      "credits": 10, "prerequisites": [],
+      "tracks": ["ARTS"],
+      "ucApproved": true, "nextCourses": []
+    },
+    {
+      "id": "SYMPBAND", "name": "Symphonic Band", "department": "Performing Arts",
+      "agCategory": "F", "courseType": "STANDARD", "gradeLevel": [9, 10, 11, 12],
+      "credits": 10, "prerequisites": [],
+      "tracks": ["ARTS", "GENERAL"],
+      "ucApproved": true, "nextCourses": ["WINDENSEMBLE"]
+    },
+    {
+      "id": "WINDENSEMBLE", "name": "Wind Ensemble", "department": "Performing Arts",
+      "agCategory": "F", "courseType": "STANDARD", "gradeLevel": [9, 10, 11, 12],
+      "credits": 10, "prerequisites": ["SYMPBAND"],
+      "tracks": ["ARTS"],
+      "ucApproved": true, "nextCourses": []
+    },
+    {
+      "id": "JAZZENSEMBLE", "name": "Jazz Ensemble", "department": "Performing Arts",
+      "agCategory": "F", "courseType": "STANDARD", "gradeLevel": [9, 10, 11, 12],
+      "credits": 10, "prerequisites": [],
+      "tracks": ["ARTS"],
+      "ucApproved": true, "nextCourses": []
+    },
+    {
+      "id": "ORCHESTRA", "name": "Orchestra", "department": "Performing Arts",
+      "agCategory": "F", "courseType": "STANDARD", "gradeLevel": [9, 10, 11, 12],
+      "credits": 10, "prerequisites": [],
+      "tracks": ["ARTS"],
+      "ucApproved": true, "nextCourses": ["CHAMORCH"]
+    },
+    {
+      "id": "CHAMORCH", "name": "Honors Chamber Orchestra", "department": "Performing Arts",
+      "agCategory": "F", "courseType": "HONORS", "gradeLevel": [9, 10, 11, 12],
+      "credits": 10, "prerequisites": ["ORCHESTRA"],
+      "tracks": ["ARTS"],
+      "ucApproved": true, "nextCourses": []
+    },
+    {
+      "id": "APMUSICTHEORY", "name": "AP Music Theory", "department": "Performing Arts",
+      "agCategory": "F", "courseType": "AP", "gradeLevel": [10, 11, 12],
+      "credits": 10, "prerequisites": [],
+      "tracks": ["ARTS"],
+      "ucApproved": true, "nextCourses": []
+    },
+    {
+      "id": "DANCE1PE", "name": "Dance 1 P.E.", "department": "Physical Education",
+      "agCategory": null, "courseType": "STANDARD", "gradeLevel": [10, 11, 12],
+      "credits": 10, "prerequisites": ["PE9"],
+      "tracks": ["ARTS", "GENERAL"],
+      "ucApproved": false, "nextCourses": ["DANCE2PE"]
+    },
+    {
+      "id": "DANCE2PE", "name": "Dance 2 P.E.", "department": "Physical Education",
+      "agCategory": null, "courseType": "STANDARD", "gradeLevel": [10, 11, 12],
+      "credits": 10, "prerequisites": ["DANCE1PE"],
+      "tracks": ["ARTS"],
+      "ucApproved": false, "nextCourses": ["DANCE3PE"]
+    },
+    {
+      "id": "DANCE3PE", "name": "Dance 3 P.E.", "department": "Physical Education",
+      "agCategory": null, "courseType": "STANDARD", "gradeLevel": [10, 11, 12],
+      "credits": 10, "prerequisites": ["DANCE2PE"],
+      "tracks": ["ARTS"],
+      "ucApproved": false, "nextCourses": []
+    },
+    {
+      "id": "PE9", "name": "Freshman P.E.", "department": "Physical Education",
+      "agCategory": null, "courseType": "STANDARD", "gradeLevel": [9],
+      "credits": 10, "prerequisites": [], "required": true,
+      "tracks": ["GENERAL"],
+      "ucApproved": false, "nextCourses": ["TEAMPE", "RUNFIT", "WEIGHTPE", "DANCE1PE"]
+    },
+    {
+      "id": "TEAMPE", "name": "Team Sports", "department": "Physical Education",
+      "agCategory": null, "courseType": "STANDARD", "gradeLevel": [10, 11, 12],
+      "credits": 10, "prerequisites": ["PE9"],
+      "tracks": ["GENERAL"],
+      "ucApproved": false, "nextCourses": []
+    },
+    {
+      "id": "WEIGHTPE", "name": "Weight Lifting", "department": "Physical Education",
+      "agCategory": null, "courseType": "STANDARD", "gradeLevel": [10, 11, 12],
+      "credits": 10, "prerequisites": ["PE9"],
+      "tracks": ["GENERAL"],
+      "ucApproved": false, "nextCourses": []
+    },
+    {
+      "id": "RUNFIT", "name": "Running for Fitness", "department": "Physical Education",
+      "agCategory": null, "courseType": "STANDARD", "gradeLevel": [10, 11, 12],
+      "credits": 10, "prerequisites": ["PE9"],
+      "tracks": ["GENERAL"],
+      "ucApproved": false, "nextCourses": []
+    }
+  ],
+  "pathways": [
+    {
+      "id": "STEM_ENGINEERING",
+      "label": "STEM / Engineering",
+      "description": "Engineering, CS, or physical sciences at a 4-year university.",
+      "targetGPA": 3.5,
+      "flagCourseIds": ["APCALCBC", "APCALCAB", "APPHYSC", "PLTW_CSA", "PLTW_POE", "APCHEM"]
+    },
+    {
+      "id": "STEM_BIOMEDICAL",
+      "label": "STEM / Biomedical",
+      "description": "Pre-med or biological sciences.",
+      "targetGPA": 3.7,
+      "flagCourseIds": ["APBIO", "APCHEM", "APCALCAB", "APENVS"]
+    },
+    {
+      "id": "HUMANITIES",
+      "label": "Humanities & Social Sciences",
+      "description": "Law, political science, journalism, social sciences.",
+      "targetGPA": 3.3,
+      "flagCourseIds": ["ENGAP12", "APUSHIST", "APCIVICS", "APPSYCH", "APHUMANGEOG"]
+    },
+    {
+      "id": "BUSINESS",
+      "label": "Business & Entrepreneurship",
+      "description": "Business, economics, finance.",
+      "targetGPA": 3.0,
+      "flagCourseIds": ["APSTATS", "APMACRO", "APMICRO", "FINANCIALAPP"]
+    },
+    {
+      "id": "ARTS",
+      "label": "Visual & Performing Arts",
+      "description": "Portfolio pathway for art schools and conservatories.",
+      "targetGPA": 2.8,
+      "flagCourseIds": ["APMUSICTHEORY", "DRAMA3H", "CHAMVOCAL", "CHAMORCH"]
+    },
+    {
+      "id": "GENERAL",
+      "label": "General A-G Prep",
+      "description": "Meets A-G requirements for broad college eligibility.",
+      "targetGPA": 3.0,
+      "flagCourseIds": []
+    }
+  ]
+}
