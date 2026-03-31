@@ -1,0 +1,7 @@
+Developed for Stang Hacks 2026
+
+
+Vela is a student academic monitoring and planning platform built around Canvas API integration. It pulls course data, assignments, and grades into a clean dashboard...giving students a clearer, less overwhelming view of where they stand academically.
+Students can edit scores or add hypothetical assignments to project how future performance affects their course grades and GPA. The platform also includes an advising engine that analyzes grade trends, completion patterns, and course difficulty to recommend courses for the next year, with reasoning attached so both students and counselors understand the logic.
+When Canvas posts a new grade, Vela sends an instant Telegram and email alert flagging any missing assignments. The goal is to reduce academic stress by keeping students informed before small issues become bigger ones; cutting down on the volume of students reaching out to counselors for things they could have caught earlier.
+For cases that genuinely need counselor attention, Vela's AI Academic Advisor, named Kepler, forwards academic reports and flags concerning patterns automatically to your counselor via email. Counselors can later, after meeting with you, add notes that feed into Kepler, an AI assistant that factors in mental health, rigor, and curriculum fit when refining course recommendations for what electives you should take for the next grade level, keeping counselors informed without stretching them thin.
