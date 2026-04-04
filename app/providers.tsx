@@ -1,14 +1,11 @@
 "use client";
 import { AuthProvider } from "@/contexts/AuthContext";
-import { CanvasProvider } from "@/contexts/CanvasContext";
-import { ClassroomProvider } from "@/contexts/ClassroomContext";
+import { InfiniteCampusProvider } from "@/contexts/InfiniteCampusContext";
 
 export function Providers({ children }: { children: React.ReactNode }) {
-    return (
-        <AuthProvider>
-            <CanvasProvider>
-                <ClassroomProvider>{children}</ClassroomProvider>
-            </CanvasProvider>
-        </AuthProvider>
-    );
+  return (
+    <AuthProvider>
+      <InfiniteCampusProvider>{children}</InfiniteCampusProvider>
+    </AuthProvider>
+  );
 }

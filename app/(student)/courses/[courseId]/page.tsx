@@ -3,14 +3,11 @@ import { useState, useEffect, useRef, use } from "react";
 import { TopBar } from "@/components/layout/TopBar";
 import { Badge } from "@/components/ui/Badge";
 import { useAuth } from "@/contexts/AuthContext";
-import { useCanvas } from "@/contexts/CanvasContext";
-import { useClassroom } from "@/contexts/ClassroomContext";
-import { useCanvasCourses } from "@/hooks/useCanvasCourses";
-import { useClassroomCourses, getLocalWeightTemplates, WeightTemplate } from "@/hooks/useClassroomCourses";
-import { WeightCategoryEditor } from "@/components/courses/WeightCategoryEditor";
+import { useIC } from "@/contexts/InfiniteCampusContext";
+import { useCourses } from "@/hooks/useCourses";
 import {
   ArrowLeft, ChevronDown, ChevronRight, Clock, AlertTriangle,
-  MoreVertical, Pencil, MinusCircle, RotateCcw, X, Check, Calculator, Settings2
+  MoreVertical, Pencil, MinusCircle, RotateCcw, X, Check, Calculator,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -231,26 +228,14 @@ function HeroMenu({
 export default function CourseDetailPage({ params }: { params: Promise<{ courseId: string }> }) {
   const { courseId } = use(params);
   const { user } = useAuth();
-  const { token, isConnected } = useCanvas();
-  const { classroomToken, isConnected: classroomConnected } = useClassroom();
-  const { courses: canvasCourses } = useCanvasCourses();
-  const { courses: classroomCourses, refetch: refetchClassroom } = useClassroomCourses();
+  const { session, isConnected } = useIC();
+  const { courses } = useCourses();
   const displayName = user?.displayName || "Student";
 
-  // Detect source: check Canvas first, then Classroom
-  const canvasCourse = canvasCourses.find((c) => c.id === courseId);
-  const classroomCourse = classroomCourses.find((c) => c.id === courseId);
-  const course = canvasCourse ?? classroomCourse;
-  const isClassroomCourse = !canvasCourse && !!classroomCourse;
+  const course = courses.find((c) => c.id === courseId);
   const [groups, setGroups] = useState<AssignmentGroup[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
-
-  // Classroom weight template state
-  const [weightTemplates, setWeightTemplates] = useState<WeightTemplate[]>(() =>
-    getLocalWeightTemplates(courseId)
-  );
-  const [showWeightEditor, setShowWeightEditor] = useState(false);
 
   // What-if state
   const [mods, setMods] = useState<Record<string, WhatIfMod>>({});
@@ -265,51 +250,21 @@ export default function CourseDetailPage({ params }: { params: Promise<{ courseI
   const [calcWeight, setCalcWeight] = useState("10");
 
   useEffect(() => {
-    // ── Canvas course ────────────────────────────────────────────────────
-    if (!isClassroomCourse) {
-      if (!isConnected || !token) {
-        setLoading(false);
-        return;
-      }
-      async function fetchCanvasGroups() {
-        try {
-          const res = await fetch("/api/canvas/assignments", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ token, courseId }),
-          });
-          if (res.ok) {
-            const data = await res.json();
-            setGroups(data.groups);
-          }
-        } catch {
-          // silently fail
-        } finally {
-          setLoading(false);
-        }
-      }
-      fetchCanvasGroups();
-      return;
-    }
-
-    // ── Classroom course ─────────────────────────────────────────────────
-    if (!classroomConnected || !classroomToken) {
-      // Not connected — show empty state, no mock data
+    if (!isConnected || !session) {
       setGroups([]);
       setLoading(false);
       return;
     }
 
-
-    async function fetchClassroomGroups() {
+    async function fetchICGroups() {
       try {
-        const res = await fetch("/api/classroom/assignments", {
+        const res = await fetch("/api/ic/assignments", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            token: classroomToken,
+            authToken: session!.authToken,
+            baseUrl: session!.baseUrl,
             courseId,
-            weightTemplates,
           }),
         });
         if (res.ok) {
@@ -322,8 +277,8 @@ export default function CourseDetailPage({ params }: { params: Promise<{ courseI
         setLoading(false);
       }
     }
-    fetchClassroomGroups();
-  }, [token, isConnected, classroomToken, classroomConnected, courseId, isClassroomCourse, weightTemplates]);
+    fetchICGroups();
+  }, [session, isConnected, courseId]);
 
   const toggleGroup = (groupId: string) => {
     setExpandedGroups((prev) => {
@@ -414,27 +369,12 @@ export default function CourseDetailPage({ params }: { params: Promise<{ courseI
             <div>
               <div className="flex items-center gap-2">
                 <h2 className="text-xl font-bold text-[#fcfcfc]">Course Grade</h2>
-                {isClassroomCourse && (
-                  <span className="text-[10px] font-medium uppercase tracking-wider px-2 py-0.5 rounded-full border border-[#4ade80]/30 text-[#4ade80] bg-[#4ade80]/8">
-                    Classroom
-                  </span>
-                )}
               </div>
               <p className="text-sm text-[#A0A0A0] mt-1.5 flex items-center gap-1.5">
                 updated recently <Clock size={12} className="text-[#A0A0A0]" />
               </p>
             </div>
             <div className="flex items-center gap-3">
-              {/* Classroom weight editor button */}
-              {isClassroomCourse && (
-                <button
-                  onClick={() => setShowWeightEditor(true)}
-                  className="p-1.5 rounded-md hover:bg-[#1C2A45]/60 transition-colors"
-                  title="Configure grade weights"
-                >
-                  <Settings2 size={18} className={weightTemplates.length > 0 ? "text-[#4ade80]" : "text-amber-400"} />
-                </button>
-              )}
               {/* Grade display */}
               {hasAnyMod && whatIfCourseGrade != null ? (
                 <div className="flex items-center gap-4">
@@ -663,30 +603,11 @@ export default function CourseDetailPage({ params }: { params: Promise<{ courseI
           {groups.length === 0 && !loading && (
             <div className="text-center py-12 text-[#4A5578]">
               <p className="text-lg">No assignment groups found</p>
-              {isClassroomCourse ? (
-                <p className="text-sm mt-1">
-                  Connect Google Classroom in Settings to view your assignments
-                </p>
-              ) : (
-                <p className="text-sm mt-1">
-                  Connect Canvas in Settings to view your assignments
-                </p>
-              )}
-            </div>
-          )}
-
-          {/* Classroom: prompt to set up weights if none defined */}
-          {isClassroomCourse && weightTemplates.length === 0 && groups.length > 0 && (
-            <div className="rounded-xl border border-amber-500/30 bg-amber-500/8 p-5 flex items-start gap-4">
-              <AlertTriangle size={18} className="text-amber-400 flex-shrink-0 mt-0.5" />
-              <div className="flex-1">
-                <p className="text-sm font-medium text-[#E8ECFF]">Grade weights not configured</p>
-                <p className="text-xs text-[#8B98B8] mt-1">Google Classroom doesn't define category weights. Set them up so Vela can calculate your grade accurately and run what-if simulations.</p>
-                <button onClick={() => setShowWeightEditor(true)}
-                  className="mt-3 rounded-lg bg-[#818CF8] px-4 py-2 text-xs font-medium text-white hover:bg-[#6366F1] transition-colors shadow-[0_0_12px_rgba(129,140,248,0.25)]">
-                  Set Up Grade Weights
-                </button>
-              </div>
+              <p className="text-sm mt-1">
+                {isConnected
+                  ? "Infinite Campus did not return any assignment data for this course."
+                  : "Connect Infinite Campus in Settings to view your assignments."}
+              </p>
             </div>
           )}
         </div>
@@ -777,20 +698,6 @@ export default function CourseDetailPage({ params }: { params: Promise<{ courseI
         </div>
       )}
 
-      {/* Classroom Weight Editor Modal */}
-      {showWeightEditor && (
-        <WeightCategoryEditor
-          courseId={courseId}
-          courseName={course?.name ?? "Course"}
-          initialTemplates={weightTemplates}
-          onSave={(templates) => {
-            setWeightTemplates(templates);
-            setShowWeightEditor(false);
-            refetchClassroom(); // refresh course list to update hasWeights badge
-          }}
-          onClose={() => setShowWeightEditor(false)}
-        />
-      )}
     </div>
   );
 }

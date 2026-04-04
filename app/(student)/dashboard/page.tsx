@@ -4,17 +4,16 @@ import { TopBar } from "@/components/layout/TopBar";
 import { GpaHeroCard } from "@/components/dashboard/GpaHeroCard";
 import { GradeCard } from "@/components/dashboard/GradeCard";
 import { AdvisorFeed } from "@/components/dashboard/AdvisorFeed";
-import { useCombinedCourses } from "@/hooks/useCombinedCourses";
+import { useCourses } from "@/hooks/useCourses";
 import { useAuth } from "@/contexts/AuthContext";
-import { useCanvas } from "@/contexts/CanvasContext";
+import { useIC } from "@/contexts/InfiniteCampusContext";
 
 export default function DashboardPage() {
   const { user } = useAuth();
-  const { isConnected } = useCanvas();
-  const { courses, loading, gpa } = useCombinedCourses();
+  const { isConnected } = useIC();
+  const { courses, loading, gpa } = useCourses();
   const history: { date: string; term: number; gpa: number }[] = [];
   const logs: { id: string; isRead: boolean; logType: string; severity: string; title: string; body: unknown; createdAt: string }[] = [];
-
 
   const alertCount = logs.filter((l) => !l.isRead).length;
   const unreadLogs = logs.filter((l) => !l.isRead);
@@ -24,7 +23,7 @@ export default function DashboardPage() {
 
   const notifiedGradesRef = useRef<Set<string>>(new Set());
 
-  // Academic Risk Alert + Grade/Assignment change notifications
+  // Academic Risk Alert + Grade change notifications
   useEffect(() => {
     if (loading || !courses.length) return;
 
@@ -37,14 +36,14 @@ export default function DashboardPage() {
     // ── Risk alert to counselor ──
     const checkRisk = async () => {
       if (sessionStorage.getItem("vela_risk_alert_sent")) return;
-      const riskCourses = courses.filter(c => c.currentGrade !== null && c.currentGrade <= 79);
+      const riskCourses = courses.filter((c) => c.currentGrade !== null && c.currentGrade <= 79);
       if (riskCourses.length >= 3) {
         const counselorName = localStorage.getItem("vela_student_counselor");
         const counselorEmails: Record<string, string> = {
-          "Nemesio Ordonez": "ordoneznemesio@dublinusd.org",
-          "Christina Henning": "henningchristina@dublinusd.org",
-          "Pallavi Nandakishore": "nandakishorepallavi@dublinusd.org",
-          "Dianna Heise": "heisedianna@dublinusd.org",
+          "Nemesio Ordonez": "counselor1@example.com",
+          "Christina Henning": "counselor2@example.com",
+          "Pallavi Nandakishore": "counselor3@example.com",
+          "Dianna Heise": "counselor4@example.com",
         };
         if (counselorName && counselorEmails[counselorName]) {
           try {
@@ -90,7 +89,7 @@ export default function DashboardPage() {
 
       // Save new snapshot
       const newSnapshot: Record<string, number> = {};
-      courses.forEach(c => { if (c.currentGrade != null) newSnapshot[c.id] = c.currentGrade; });
+      courses.forEach((c) => { if (c.currentGrade != null) newSnapshot[c.id] = c.currentGrade; });
       localStorage.setItem("vela_grade_snapshot", JSON.stringify(newSnapshot));
     };
 
@@ -105,7 +104,9 @@ export default function DashboardPage() {
         <div className="flex-1 flex items-center justify-center">
           <div className="flex flex-col items-center gap-3">
             <div className="h-8 w-8 rounded-full border-2 border-[#818CF8]/30 border-t-[#818CF8] animate-spin" />
-            <p className="text-sm text-[#8B98B8]">Loading courses{isConnected ? " from Canvas" : ""}...</p>
+            <p className="text-sm text-[#8B98B8]">
+              Loading courses{isConnected ? " from Infinite Campus" : ""}...
+            </p>
           </div>
         </div>
       </div>

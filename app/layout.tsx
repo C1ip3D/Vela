@@ -7,7 +7,7 @@ const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 
 export const metadata: Metadata = {
   title: "Vela — Academic Navigator",
-  description: "Student performance monitoring powered by Canvas LMS",
+  description: "Student performance monitoring powered by Infinite Campus",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

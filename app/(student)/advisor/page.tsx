@@ -2,12 +2,12 @@
 import { useState, useEffect, useMemo } from "react";
 import { TopBar } from "@/components/layout/TopBar";
 import { AdvisorChatbot } from "@/components/advisor/AdvisorChatbot";
-import { useCanvasCourses } from "@/hooks/useCanvasCourses";
+import { useCourses } from "@/hooks/useCourses";
 import { useAuth } from "@/contexts/AuthContext";
 
 export default function AdvisorPage() {
   const { user } = useAuth();
-  const { courses } = useCanvasCourses();
+  const { courses } = useCourses();
   const displayName = user?.displayName || "Student";
   const [gradeLevel, setGradeLevel] = useState(11);
   useEffect(() => {

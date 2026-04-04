@@ -12,7 +12,7 @@ enum CourseType { STANDARD ADVANCED HONORS AP DUAL_ENROLLMENT }
 enum AlertSeverity { INFO WARNING CRITICAL }
 enum AdvisorLogType { GPA_DROP_ALERT MISSING_ASSIGNMENT_ALERT POSITIVE_TREND COURSE_RECOMMENDATION MILESTONE_REACHED }
 enum AlertStatus { PENDING ACKNOWLEDGED IN_PROGRESS RESOLVED DISMISSED }
-enum DataSource { CANVAS CLASSROOM }
+enum DataSource { INFINITE_CAMPUS }
 
 model User {
   id             String    @id @default(cuid())
@@ -48,8 +48,8 @@ model Course {
   creditHours    Float      @default(1.0)
   apBoost        Float      @default(0.0)
   isActive       Boolean    @default(true)
-  source         DataSource @default(CANVAS)
-  externalId     String?    // Google Classroom courseId when source = CLASSROOM
+  source         DataSource @default(INFINITE_CAMPUS)
+  externalId     String?    // IC courseSectionID
   createdAt      DateTime   @default(now())
   updatedAt      DateTime   @updatedAt
 
@@ -57,7 +57,6 @@ model Course {
   assignments           Assignment[]
   weightCategories      WeightCategory[]
   gradingPeriods        GradingPeriod[]
-  classroomWeightTemplates ClassroomWeightTemplate[]
 }
 
 model WeightCategory {
@@ -114,8 +113,8 @@ model Assignment {
   pointsPossible   Float
   dueDate          DateTime?
   isPublished      Boolean    @default(true)
-  source           DataSource @default(CANVAS)
-  externalId       String?    // Google Classroom courseWorkId when source = CLASSROOM
+  source           DataSource @default(INFINITE_CAMPUS)
+  externalId       String?    // IC assignmentID
   createdAt        DateTime   @default(now())
   updatedAt        DateTime   @updatedAt
 
@@ -264,32 +263,3 @@ model CourseRecommendation {
   @@index([userId])
 }
 
-// ── Google Classroom weight configuration ──────────────────────────────────
-
-// Per-course weight templates (defined by the student for each Classroom course)
-model ClassroomWeightTemplate {
-  id         String   @id @default(cuid())
-  userId     String
-  courseId   String   // Vela internal Course.id OR Classroom externalId before course is upserted
-  name       String   // e.g. "Tests"
-  weight     Float    // fraction 0–1 (e.g. 0.60 = 60%)
-  dropLowest Int      @default(0)
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-
-  course Course @relation(fields: [courseId], references: [id])
-
-  @@index([userId, courseId])
-}
-
-// Global presets — user can define reusable weight schemes and apply them to any Classroom course
-model ClassroomWeightPreset {
-  id        String   @id @default(cuid())
-  userId    String
-  name      String   // e.g. "My School Default"
-  categories Json    // [{name, weight, dropLowest}][]
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([userId])
-}

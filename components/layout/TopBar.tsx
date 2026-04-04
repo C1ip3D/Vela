@@ -4,7 +4,7 @@ import { Bell } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useState, useRef, useEffect } from "react";
 import { AdvisorFeed } from "@/components/dashboard/AdvisorFeed";
-import { useCanvasNotifications } from "@/hooks/useCanvasNotifications";
+import { useICNotifications } from "@/hooks/useICNotifications";
 
 export function TopBar({ title, studentName }: { title?: string; studentName?: string }) {
   const { user } = useAuth();
@@ -14,8 +14,8 @@ export function TopBar({ title, studentName }: { title?: string; studentName?: s
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // Fetch live notifications
-  const { unreadLogs } = useCanvasNotifications();
+  // Fetch live notifications from Infinite Campus
+  const { unreadLogs } = useICNotifications();
   const alertCount = unreadLogs.length;
 
   useEffect(() => {

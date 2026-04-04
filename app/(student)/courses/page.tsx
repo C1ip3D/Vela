@@ -2,9 +2,9 @@
 import Link from "next/link";
 import { TopBar } from "@/components/layout/TopBar";
 import { Badge } from "@/components/ui/Badge";
-import { useCombinedCourses } from "@/hooks/useCombinedCourses";
+import { useCourses } from "@/hooks/useCourses";
 import { useAuth } from "@/contexts/AuthContext";
-import { useCanvas } from "@/contexts/CanvasContext";
+import { useIC } from "@/contexts/InfiniteCampusContext";
 import { ChevronRight, Clock, AlertTriangle } from "lucide-react";
 
 function gradeColor(grade: number): string {
@@ -16,8 +16,8 @@ function gradeColor(grade: number): string {
 
 export default function CoursesPage() {
   const { user } = useAuth();
-  const { isConnected } = useCanvas();
-  const { courses, loading } = useCombinedCourses();
+  const { isConnected } = useIC();
+  const { courses, loading } = useCourses();
   const displayName = user?.displayName || "Student";
 
   if (loading) {
@@ -27,7 +27,27 @@ export default function CoursesPage() {
         <div className="flex-1 flex items-center justify-center">
           <div className="flex flex-col items-center gap-3">
             <div className="h-8 w-8 rounded-full border-2 border-[#818CF8]/30 border-t-[#818CF8] animate-spin" />
-            <p className="text-sm text-[#8B98B8]">Loading courses{isConnected ? " from Canvas" : ""}...</p>
+            <p className="text-sm text-[#8B98B8]">
+              Loading courses{isConnected ? " from Infinite Campus" : ""}...
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isConnected) {
+    return (
+      <div className="flex flex-col min-h-screen">
+        <TopBar title="My Grades" studentName={displayName} />
+        <div className="flex-1 flex items-center justify-center">
+          <div className="text-center space-y-3 px-4">
+            <p className="text-lg text-[#E8ECFF]">Connect Infinite Campus to view your grades</p>
+            <p className="text-sm text-[#8B98B8]">Go to Settings and sign in with your IC credentials.</p>
+            <Link href="/settings"
+              className="inline-block mt-3 rounded-lg bg-[#818CF8] px-5 py-2.5 text-sm font-medium text-white hover:bg-[#6366F1] transition-colors">
+              Go to Settings
+            </Link>
           </div>
         </div>
       </div>
@@ -39,6 +59,12 @@ export default function CoursesPage() {
       <TopBar title="My Grades" studentName={displayName} />
       <div className="flex-1 p-6">
         <div className="max-w-3xl mx-auto flex flex-col gap-6">
+          {courses.length === 0 && (
+            <div className="text-center py-16 text-[#4A5578]">
+              <p className="text-lg">No courses found</p>
+              <p className="text-sm mt-1">Your Infinite Campus account may not have any active courses this term.</p>
+            </div>
+          )}
           {courses.map((course, i) => {
             const hasGrade = course.currentGrade != null;
             return (
@@ -56,21 +82,20 @@ export default function CoursesPage() {
                           {course.courseType}
                         </Badge>
                       )}
-                      {course.source === "CLASSROOM" && (
-                        <span className="text-[9px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded-full border border-[#4ade80]/30 text-[#4ade80] bg-[#4ade80]/8 shrink-0">
-                          Classroom
-                        </span>
-                      )}
                     </div>
                     <p className="flex items-center gap-1.5 text-sm text-[#4A5578]">
                       <Clock size={12} />
                       {course.courseCode}
-                      {course.source === "CLASSROOM" && !course.hasWeights && (
+                      {course.period && <span className="ml-1 text-[#4A5578]">· Period {course.period}</span>}
+                      {course.missingCount > 0 && (
                         <span className="flex items-center gap-1 text-[10px] text-amber-400 ml-1">
-                          <AlertTriangle size={10} /> Weights not set
+                          <AlertTriangle size={10} /> {course.missingCount} missing
                         </span>
                       )}
                     </p>
+                    {course.teacher && (
+                      <p className="text-xs text-[#4A5578] mt-1">{course.teacher}</p>
+                    )}
                   </div>
 
                   {/* Right: grade + chevron */}

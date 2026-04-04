@@ -1,14 +1,19 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { TopBar } from "@/components/layout/TopBar";
 import { useAuth } from "@/contexts/AuthContext";
-import { useCanvas } from "@/contexts/CanvasContext";
-import { useClassroom } from "@/contexts/ClassroomContext";
+import { useIC } from "@/contexts/InfiniteCampusContext";
 import {
   Eye, EyeOff, CheckCircle, XCircle, Loader2,
-  User as UserIcon, GraduationCap, Bell, Mail, MessageCircle, ChevronDown, ChevronUp,
-  BookOpen, Trash2, Plus
+  Bell, Mail, MessageCircle,
+  ChevronDown, ChevronUp, School, MapPin, Search
 } from "lucide-react";
+
+export const US_STATES = [
+  "AL", "AK", "AZ", "AR", "CA", "CO", "CT", "DE", "FL", "GA", "HI", "ID", "IL", "IN", "IA", "KS", "KY", "LA", "ME", "MD",
+  "MA", "MI", "MN", "MS", "MO", "MT", "NE", "NV", "NH", "NJ", "NM", "NY", "NC", "ND", "OH", "OK", "OR", "PA", "RI", "SC",
+  "SD", "TN", "TX", "UT", "VT", "VA", "WA", "WV", "WI", "WY"
+];
 
 interface NotificationPrefs {
   emailEnabled: boolean;
@@ -45,97 +50,101 @@ function Toggle({ on, onToggle }: { on: boolean; onToggle: () => void }) {
   );
 }
 
-interface WeightPresetCategory { name: string; weight: number; dropLowest: number; }
-interface LocalPreset { id: string; name: string; categories: WeightPresetCategory[]; }
-
-const PRESETS_STORAGE_KEY = "vela_classroom_global_presets";
-
 export default function SettingsPage() {
   const { user } = useAuth();
-  const { token, isConnected, isChecking, userName, testConnection, disconnect } = useCanvas();
-  const { isConnected: classroomConnected, isChecking: classroomChecking, displayName: classroomName, connect: connectClassroom, disconnect: disconnectClassroom } = useClassroom();
+  const { session, isConnected, isChecking, login, logout, loginError } = useIC();
   const displayName = user?.displayName || "Student";
   const email = user?.email || "not connected";
+
+  // IC login form state
+  const [districtUrl, setDistrictUrl] = useState("");
+  const [icUsername, setIcUsername] = useState("");
+  const [icPassword, setIcPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+
+  // IC District Search
+  const [icStateCode, setIcStateCode] = useState("CA");
+  const [districtQuery, setDistrictQuery] = useState("");
+  const [districts, setDistricts] = useState<any[]>([]);
+  const [isSearchingDistrict, setIsSearchingDistrict] = useState(false);
+  const [showDropdown, setShowDropdown] = useState(false);
+  const searchTimeout = useRef<NodeJS.Timeout | null>(null);
+  const [selectedDistrict, setSelectedDistrict] = useState<any | null>(null);
+
+  useEffect(() => {
+    if (!districtQuery || selectedDistrict) {
+      setDistricts([]);
+      return;
+    }
+    if (searchTimeout.current) clearTimeout(searchTimeout.current);
+    searchTimeout.current = setTimeout(async () => {
+      setIsSearchingDistrict(true);
+      try {
+        const res = await fetch(`/api/ic/districts?query=${encodeURIComponent(districtQuery)}&state=${icStateCode}`);
+        if (res.ok) {
+          const json = await res.json();
+          setDistricts(json.data || []);
+          setShowDropdown(true);
+        }
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setIsSearchingDistrict(false);
+      }
+    }, 400);
+    return () => { if (searchTimeout.current) clearTimeout(searchTimeout.current); };
+  }, [districtQuery, icStateCode, selectedDistrict]);
 
   const [prefs, setPrefs] = useState<NotificationPrefs>(DEFAULT_PREFS);
   const [showTelegramSetup, setShowTelegramSetup] = useState(false);
   const [showTelegramToken, setShowTelegramToken] = useState(false);
-  const [patInput, setPatInput] = useState(token || "");
-  const [showToken, setShowToken] = useState(false);
-  const [connectionError, setConnectionError] = useState("");
-  const [classroomError, setClassroomError] = useState("");
   const [isSendingEmail, setIsSendingEmail] = useState(false);
   const [isSendingTelegram, setIsSendingTelegram] = useState(false);
   const [testStatus, setTestStatus] = useState<Record<string, "idle" | "success" | "error">>({});
-  const [counselor, setCounselor] = useState("");
-  const [grade, setGrade] = useState("");
-
-  // Global weight presets (stored in localStorage)
-  const [globalPresets, setGlobalPresets] = useState<LocalPreset[]>([]);
-  const [showPresetsSection, setShowPresetsSection] = useState(false);
-
-  useEffect(() => {
-    try {
-      const raw = localStorage.getItem(PRESETS_STORAGE_KEY);
-      if (raw) setGlobalPresets(JSON.parse(raw));
-    } catch {}
-  }, []);
-
-  function deletePreset(id: string) {
-    const next = globalPresets.filter(p => p.id !== id);
-    setGlobalPresets(next);
-    localStorage.setItem(PRESETS_STORAGE_KEY, JSON.stringify(next));
-  }
-
-  async function handleConnectClassroom() {
-    setClassroomError("");
-    const ok = await connectClassroom();
-    if (!ok) setClassroomError("Could not connect to Google Classroom. Make sure you have the Classroom API enabled and allow the required permissions.");
-  }
-
   // Load from localStorage
   useEffect(() => {
-    const savedCounselor = localStorage.getItem("vela_student_counselor");
-    const savedGrade = localStorage.getItem("vela_student_grade");
     const savedPrefs = localStorage.getItem("vela_notif_prefs");
-    if (savedCounselor) setCounselor(savedCounselor);
-    if (savedGrade) setGrade(savedGrade);
     if (savedPrefs) {
       try { setPrefs({ ...DEFAULT_PREFS, ...JSON.parse(savedPrefs) }); } catch {}
     }
   }, []);
 
   // Persist changes
-  useEffect(() => { localStorage.setItem("vela_student_counselor", counselor); }, [counselor]);
-  useEffect(() => { localStorage.setItem("vela_student_grade", grade); }, [grade]);
   useEffect(() => { localStorage.setItem("vela_notif_prefs", JSON.stringify(prefs)); }, [prefs]);
 
   const updatePref = <K extends keyof NotificationPrefs>(key: K, val: NotificationPrefs[K]) =>
-    setPrefs(p => ({ ...p, [key]: val }));
+    setPrefs((p) => ({ ...p, [key]: val }));
+
+  const handleLogin = async () => {
+    const finalUrl = selectedDistrict ? selectedDistrict.district_baseurl : districtUrl;
+    if (!finalUrl.trim() || !icUsername.trim() || !icPassword.trim()) return;
+    await login(finalUrl.trim(), icUsername.trim(), icPassword.trim());
+    if (isConnected) setIcPassword("");
+  };
 
   const handleTestEmail = async () => {
     if (!email || email === "not connected") return;
     setIsSendingEmail(true);
-    setTestStatus(s => ({ ...s, email: "idle" }));
+    setTestStatus((s) => ({ ...s, email: "idle" }));
     try {
       const res = await fetch("/api/notifications/test-email", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email }),
       });
-      setTestStatus(s => ({ ...s, email: res.ok ? "success" : "error" }));
+      setTestStatus((s) => ({ ...s, email: res.ok ? "success" : "error" }));
     } catch {
-      setTestStatus(s => ({ ...s, email: "error" }));
+      setTestStatus((s) => ({ ...s, email: "error" }));
     } finally {
       setIsSendingEmail(false);
-      setTimeout(() => setTestStatus(s => ({ ...s, email: "idle" })), 3000);
+      setTimeout(() => setTestStatus((s) => ({ ...s, email: "idle" })), 3000);
     }
   };
 
   const handleTestTelegram = async () => {
     if (!prefs.telegramBotToken || !prefs.telegramChatId) return;
     setIsSendingTelegram(true);
-    setTestStatus(s => ({ ...s, telegram: "idle" }));
+    setTestStatus((s) => ({ ...s, telegram: "idle" }));
     try {
       const res = await fetch("/api/notifications/grade-alert", {
         method: "POST",
@@ -148,193 +157,159 @@ export default function SettingsPage() {
           prefs: { ...prefs, email: email, gradeAlerts: true },
         }),
       });
-      setTestStatus(s => ({ ...s, telegram: res.ok ? "success" : "error" }));
+      setTestStatus((s) => ({ ...s, telegram: res.ok ? "success" : "error" }));
     } catch {
-      setTestStatus(s => ({ ...s, telegram: "error" }));
+      setTestStatus((s) => ({ ...s, telegram: "error" }));
     } finally {
       setIsSendingTelegram(false);
-      setTimeout(() => setTestStatus(s => ({ ...s, telegram: "idle" })), 3000);
+      setTimeout(() => setTestStatus((s) => ({ ...s, telegram: "idle" })), 3000);
     }
   };
 
-  const handleConnect = async () => {
-    setConnectionError("");
-    if (!patInput.trim()) { setConnectionError("Please enter a Canvas access token"); return; }
-    const success = await testConnection(patInput.trim());
-    if (!success) setConnectionError("Invalid token or unable to reach Canvas. Check your token and try again.");
-  };
-
-  const handleDisconnect = () => { disconnect(); setPatInput(""); setConnectionError(""); };
-
-  const COUNSELORS = [
-    { name: "Nemesio Ordonez", email: "ordoneznemesio@dublinusd.org" },
-    { name: "Christina Henning", email: "henningchristina@dublinusd.org" },
-    { name: "Pallavi Nandakishore", email: "nandakishorepallavi@dublinusd.org" },
-    { name: "Dianna Heise", email: "heisedianna@dublinusd.org" },
-  ];
 
   return (
     <div className="flex flex-col min-h-screen">
       <TopBar title="Settings" studentName={displayName} />
       <div className="flex-1 p-6 max-w-4xl mx-auto space-y-6">
 
-        {/* Student Profile */}
-        <div className="animate-fade-in rounded-xl border border-[#1C2A45]/60 bg-[#101828]/50 backdrop-blur-sm p-5 space-y-5">
-          <h2 className="text-sm font-semibold text-[#E8ECFF] flex items-center gap-2">
-            <span className="text-[#818CF8]">◈</span> Student Profile
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label className="mb-1.5 block text-xs font-medium text-[#8B98B8] uppercase tracking-wider">Grade Level</label>
-              <div className="relative">
-                <select value={grade} onChange={e => setGrade(e.target.value)}
-                  className="w-full appearance-none rounded-lg border border-[#1C2A45]/50 bg-[#0C1220]/60 px-4 py-2.5 text-sm text-[#E8ECFF] outline-none focus:border-[#818CF8]/40 transition-all">
-                  <option value="" disabled className="bg-[#101828]">Select Grade</option>
-                  {["9", "10", "11", "12"].map(g => (
-                    <option key={g} value={g} className="bg-[#101828]">
-                      {g === "9" ? "9th (Freshman)" : g === "10" ? "10th (Sophomore)" : g === "11" ? "11th (Junior)" : "12th (Senior)"}
-                    </option>
-                  ))}
-                </select>
-                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-[#4A5578]">
-                  <GraduationCap size={24} />
-                </div>
-              </div>
-            </div>
-            <div>
-              <label className="mb-1.5 block text-xs font-medium text-[#8B98B8] uppercase tracking-wider">Assigned Counselor</label>
-              <div className="relative">
-                <select value={counselor} onChange={e => setCounselor(e.target.value)}
-                  className="w-full appearance-none rounded-lg border border-[#1C2A45]/50 bg-[#0C1220]/60 px-4 py-2.5 text-sm text-[#E8ECFF] outline-none focus:border-[#818CF8]/40 transition-all">
-                  <option value="" disabled className="bg-[#101828]">Select Counselor</option>
-                  {COUNSELORS.map(c => (
-                    <option key={c.email} value={c.name} className="bg-[#101828]">{c.name}</option>
-                  ))}
-                </select>
-                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-[#4A5578]">
-                  <UserIcon size={24} />
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Canvas Integration */}
+        {/* Infinite Campus Integration */}
         <div className="animate-fade-in rounded-xl border border-[#1C2A45]/60 bg-[#101828]/50 backdrop-blur-sm p-5">
           <h2 className="text-sm font-semibold text-[#E8ECFF] mb-4 flex items-center gap-2">
-            <span className="text-[#818CF8]">◈</span> Canvas Integration
+            <School size={14} className="text-[#818CF8]" /> Infinite Campus
           </h2>
-          <div className="flex items-center justify-between rounded-lg bg-[#162032]/60 border border-[#1C2A45]/40 px-4 py-3 mb-3">
+
+          {/* Connection status row */}
+          <div className="flex items-center justify-between rounded-lg bg-[#162032]/60 border border-[#1C2A45]/40 px-4 py-3 mb-4">
             <div>
-              <p className="text-sm text-[#E8ECFF]">Dublin USD Canvas</p>
-              <p className="text-xs text-[#8B98B8]">dublinusd.instructure.com</p>
-              {isConnected && userName && <p className="text-xs text-[#A5B4FC] mt-0.5">Signed in as {userName}</p>}
+              <p className="text-sm text-[#E8ECFF]">Infinite Campus Portal</p>
+              {isConnected && session?.baseUrl && (
+                <p className="text-xs text-[#8B98B8] mt-0.5">{session.baseUrl}</p>
+              )}
+              {isConnected && session?.displayName && (
+                <p className="text-xs text-[#A5B4FC] mt-0.5">Signed in as {session.displayName}</p>
+              )}
             </div>
             {isChecking ? (
-              <span className="flex items-center gap-1.5 text-xs text-[#8B98B8]"><Loader2 size={12} className="animate-spin" /> Checking...</span>
+              <span className="flex items-center gap-1.5 text-xs text-[#8B98B8]"><Loader2 size={12} className="animate-spin" /> Connecting...</span>
             ) : isConnected ? (
               <span className="flex items-center gap-1.5 text-xs text-emerald-400"><CheckCircle size={12} /> Connected</span>
             ) : (
               <span className="flex items-center gap-1.5 text-xs text-[#8B98B8]"><XCircle size={12} /> Not Connected</span>
             )}
           </div>
+
           {!isConnected ? (
             <div className="space-y-3">
-              <div>
-                <label className="mb-1.5 block text-xs font-medium text-[#8B98B8] uppercase tracking-wider">Personal Access Token</label>
-                <div className="relative">
-                  <input type={showToken ? "text" : "password"} value={patInput} onChange={e => setPatInput(e.target.value)}
-                    className="w-full rounded-lg border border-[#1C2A45]/50 bg-[#0C1220]/60 px-4 pr-10 py-2.5 text-sm text-[#E8ECFF] placeholder-[#4A5578] outline-none focus:border-[#818CF8]/40 transition-all font-mono"
-                    placeholder="Paste your Canvas access token..." />
-                  <button type="button" onClick={() => setShowToken(!showToken)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-[#4A5578] hover:text-[#8B98B8] transition-colors">
-                    {showToken ? <EyeOff size={14} /> : <Eye size={14} />}
-                  </button>
-                </div>
-                <p className="text-[10px] text-[#4A5578] mt-1.5">Canvas → Account → Settings → New Access Token</p>
-              </div>
-              {connectionError && <div className="rounded-lg border border-rose-500/20 bg-rose-500/10 px-3 py-2 text-xs text-rose-400">{connectionError}</div>}
-              <button onClick={handleConnect} disabled={isChecking || !patInput.trim()}
-                className="w-full flex items-center justify-center gap-2 rounded-lg bg-[#818CF8] py-2.5 text-sm font-medium text-white hover:bg-[#6366F1] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-[0_0_16px_rgba(129,140,248,0.25)]">
-                {isChecking ? <Loader2 size={14} className="animate-spin" /> : "Connect Canvas Account"}
-              </button>
-            </div>
-          ) : (
-            <button onClick={handleDisconnect}
-              className="w-full rounded-lg border border-rose-500/20 bg-rose-500/5 py-2.5 text-sm text-rose-400 hover:bg-rose-500/10 transition-all duration-200">
-              Disconnect Canvas Account
-            </button>
-          )}
-        </div>
-
-        {/* Google Classroom Integration */}
-        <div className="animate-fade-in rounded-xl border border-[#1C2A45]/60 bg-[#101828]/50 backdrop-blur-sm p-5" style={{ animationDelay: "40ms" }}>
-          <h2 className="text-sm font-semibold text-[#E8ECFF] mb-4 flex items-center gap-2">
-            <BookOpen size={14} className="text-[#4ade80]" /> Google Classroom Integration
-          </h2>
-          <div className="flex items-center justify-between rounded-lg bg-[#162032]/60 border border-[#1C2A45]/40 px-4 py-3 mb-3">
-            <div>
-              <p className="text-sm text-[#E8ECFF]">Google Classroom</p>
-              <p className="text-xs text-[#8B98B8]">classroom.google.com</p>
-              {classroomConnected && classroomName && <p className="text-xs text-[#4ade80] mt-0.5">Signed in as {classroomName}</p>}
-            </div>
-            {classroomChecking ? (
-              <span className="flex items-center gap-1.5 text-xs text-[#8B98B8]"><Loader2 size={12} className="animate-spin" /> Connecting...</span>
-            ) : classroomConnected ? (
-              <span className="flex items-center gap-1.5 text-xs text-emerald-400"><CheckCircle size={12} /> Connected</span>
-            ) : (
-              <span className="flex items-center gap-1.5 text-xs text-[#8B98B8]"><XCircle size={12} /> Not Connected</span>
-            )}
-          </div>
-
-          {classroomError && <div className="rounded-lg border border-rose-500/20 bg-rose-500/10 px-3 py-2 text-xs text-rose-400 mb-3">{classroomError}</div>}
-
-          {!classroomConnected ? (
-            <button onClick={handleConnectClassroom} disabled={classroomChecking}
-              className="w-full flex items-center justify-center gap-2 rounded-lg py-2.5 text-sm font-medium text-white transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-              style={{ background: "linear-gradient(135deg, #4285F4 0%, #34A853 50%, #FBBC05 75%, #EA4335 100%)", boxShadow: classroomChecking ? "none" : "0 0 16px rgba(66,133,244,0.3)" }}>
-              {classroomChecking ? <Loader2 size={14} className="animate-spin" /> : "Connect Google Classroom"}
-            </button>
-          ) : (
-            <div className="space-y-3">
-              <button onClick={disconnectClassroom}
-                className="w-full rounded-lg border border-rose-500/20 bg-rose-500/5 py-2.5 text-sm text-rose-400 hover:bg-rose-500/10 transition-all duration-200">
-                Disconnect Google Classroom
-              </button>
-
-              {/* Global Weight Presets */}
-              <button onClick={() => setShowPresetsSection(v => !v)}
-                className="flex items-center gap-2 text-xs text-[#818CF8] hover:text-[#A5B4FC] transition-colors">
-                {showPresetsSection ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
-                Manage global weight presets ({globalPresets.length})
-              </button>
-
-              {showPresetsSection && (
-                <div className="rounded-xl border border-[#1C2A45]/60 bg-[#0C1220]/60 p-4 space-y-3 animate-fade-in">
-                  <p className="text-xs text-[#8B98B8]">Global presets can be applied to any Classroom course when setting up grade weights.</p>
-                  {globalPresets.length === 0 ? (
-                    <p className="text-xs text-[#4A5578] py-2">No presets yet. Create one from the course weight editor.</p>
-                  ) : (
-                    <div className="space-y-2">
-                      {globalPresets.map(preset => (
-                        <div key={preset.id} className="flex items-center justify-between rounded-lg border border-[#1C2A45]/40 bg-[#101828]/60 px-3 py-2.5">
-                          <div>
-                            <p className="text-sm text-[#E8ECFF]">{preset.name}</p>
-                            <p className="text-[10px] text-[#4A5578] mt-0.5">
-                              {preset.categories.map(c => `${c.name} ${Math.round(c.weight * 100)}%`).join(" · ")}
-                            </p>
-                          </div>
-                          <button onClick={() => deletePreset(preset.id)}
-                            className="p-1.5 rounded text-[#4A5578] hover:text-rose-400 transition-colors">
-                            <Trash2 size={13} />
-                          </button>
-                        </div>
+              {/* District Search */}
+              <div className="flex gap-3">
+                <div className="w-[85px]">
+                  <label className="mb-1.5 block text-xs font-medium text-[#8B98B8] uppercase tracking-wider">State</label>
+                  <div className="relative">
+                    <select value={icStateCode} onChange={(e) => { setIcStateCode(e.target.value); setSelectedDistrict(null); }}
+                      className="w-full appearance-none rounded-lg border border-[#1C2A45]/50 bg-[#0C1220]/60 px-3 py-2.5 text-sm text-[#E8ECFF] outline-none focus:border-[#818CF8]/40 transition-all">
+                      {US_STATES.map((s) => (
+                        <option key={s} value={s} className="bg-[#101828]">{s}</option>
                       ))}
-                    </div>
-                  )}
+                    </select>
+                    <MapPin size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#4A5578] pointer-events-none" />
+                  </div>
+                </div>
+
+                <div className="flex-1 relative">
+                  <label className="mb-1.5 block text-xs font-medium text-[#8B98B8] uppercase tracking-wider">District Name</label>
+                  <div className="relative">
+                    <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#4A5578]" />
+                    <input type="text" value={districtQuery}
+                      onChange={(e) => { setDistrictQuery(e.target.value); setSelectedDistrict(null); setShowDropdown(true); setDistrictUrl(""); }}
+                      className="w-full rounded-lg border border-[#1C2A45]/50 bg-[#0C1220]/60 pl-9 pr-8 py-2.5 text-sm text-[#E8ECFF] placeholder-[#4A5578] outline-none focus:border-[#818CF8]/40 focus:shadow-[0_0_12px_rgba(129,140,248,0.1)] transition-all"
+                      placeholder="Search district..." />
+                    {isSearchingDistrict && <Loader2 size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#4A5578] animate-spin" />}
+                    
+                    {showDropdown && districts.length > 0 && !selectedDistrict && (
+                      <div className="absolute z-50 left-0 right-0 top-[110%] rounded-lg border border-[#1C2A45] bg-[#0C1220]/95 backdrop-blur-md shadow-xl max-h-48 overflow-y-auto">
+                        {districts.map((d, i) => (
+                          <button key={i} type="button" onClick={() => { setSelectedDistrict(d); setDistrictQuery(d.district_name); setShowDropdown(false); }}
+                            className="w-full text-left px-4 py-2.5 text-sm text-[#E8ECFF] hover:bg-[#818CF8]/10 border-b border-[#1C2A45]/50 last:border-0 truncate">
+                            {d.district_name}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {!selectedDistrict && (
+                <div>
+                  <label className="mb-1.5 block text-xs font-medium text-[#8B98B8] uppercase tracking-wider">Or Portal URL directly</label>
+                  <input
+                    type="url"
+                    value={districtUrl}
+                    onChange={(e) => { setDistrictUrl(e.target.value); setSelectedDistrict(null); setDistrictQuery(""); }}
+                    className="w-full rounded-lg border border-[#1C2A45]/50 bg-[#0C1220]/60 px-4 py-2.5 text-sm text-[#E8ECFF] placeholder-[#4A5578] outline-none focus:border-[#818CF8]/40 transition-all"
+                    placeholder="https://dublinusd.infinitecampus.org/campus"
+                  />
                 </div>
               )}
+
+
+              {/* Username */}
+              <div>
+                <label className="mb-1.5 block text-xs font-medium text-[#8B98B8] uppercase tracking-wider">Username</label>
+                <input
+                  type="text"
+                  value={icUsername}
+                  onChange={(e) => setIcUsername(e.target.value)}
+                  className="w-full rounded-lg border border-[#1C2A45]/50 bg-[#0C1220]/60 px-4 py-2.5 text-sm text-[#E8ECFF] placeholder-[#4A5578] outline-none focus:border-[#818CF8]/40 transition-all"
+                  placeholder="Username"
+                  autoComplete="username"
+                />
+              </div>
+
+              {/* Password */}
+              <div>
+                <label className="mb-1.5 block text-xs font-medium text-[#8B98B8] uppercase tracking-wider">Password</label>
+                <div className="relative">
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    value={icPassword}
+                    onChange={(e) => setIcPassword(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === "Enter") handleLogin(); }}
+                    className="w-full rounded-lg border border-[#1C2A45]/50 bg-[#0C1220]/60 px-4 pr-10 py-2.5 text-sm text-[#E8ECFF] placeholder-[#4A5578] outline-none focus:border-[#818CF8]/40 transition-all"
+                    placeholder="Your IC password"
+                    autoComplete="current-password"
+                  />
+                  <button type="button" onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-[#4A5578] hover:text-[#8B98B8] transition-colors">
+                    {showPassword ? <EyeOff size={14} /> : <Eye size={14} />}
+                  </button>
+                </div>
+                <p className="text-[10px] text-[#4A5578] mt-1.5">
+                  Your password is not stored — only a short-lived session token is kept.
+                </p>
+              </div>
+
+              {loginError && (
+                <div className="rounded-lg border border-rose-500/20 bg-rose-500/10 px-3 py-2 text-xs text-rose-400">
+                  {loginError}
+                </div>
+              )}
+
+              <button
+                onClick={handleLogin}
+                disabled={isChecking || (!selectedDistrict && !districtUrl.trim()) || !icUsername.trim() || !icPassword.trim()}
+                className="w-full flex items-center justify-center gap-2 rounded-lg bg-[#818CF8] py-2.5 text-sm font-medium text-white hover:bg-[#6366F1] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-[0_0_16px_rgba(129,140,248,0.25)]"
+              >
+                {isChecking ? <Loader2 size={14} className="animate-spin" /> : "Connect Infinite Campus"}
+              </button>
             </div>
+          ) : (
+            <button
+              onClick={logout}
+              className="w-full rounded-lg border border-rose-500/20 bg-rose-500/5 py-2.5 text-sm text-rose-400 hover:bg-rose-500/10 transition-all duration-200"
+            >
+              Disconnect Infinite Campus
+            </button>
           )}
         </div>
 
@@ -349,9 +324,9 @@ export default function SettingsPage() {
             <p className="text-xs font-medium text-[#8B98B8] uppercase tracking-wider">Alert Types</p>
             {[
               { key: "gradeAlerts" as const, label: "Overall Grade Updates", desc: "Alert when a course grade changes" },
-              { key: "assignmentAlerts" as const, label: "Assignment Updates", desc: "Alert when an assignment is graded" },
+              { key: "assignmentAlerts" as const, label: "Assignment Updates", desc: "Alert when a missing assignment is detected" },
               { key: "weeklyDigest" as const, label: "Weekly Digest", desc: "Weekly summary of your academic progress" },
-            ].map(item => (
+            ].map((item) => (
               <div key={item.key} className="flex items-center justify-between rounded-lg bg-[#162032]/60 border border-[#1C2A45]/40 px-4 py-3">
                 <div>
                   <p className="text-sm text-[#E8ECFF]">{item.label}</p>
@@ -412,7 +387,6 @@ export default function SettingsPage() {
               </div>
               {prefs.telegram && (
                 <div className="px-4 pb-4 pt-3 bg-[#0C1220]/40 border-t border-[#1C2A45]/30 space-y-3">
-                  {/* Setup instructions collapsible */}
                   <button onClick={() => setShowTelegramSetup(!showTelegramSetup)}
                     className="flex items-center gap-1.5 text-xs text-[#818CF8] hover:text-[#A5B4FC] transition-colors">
                     {showTelegramSetup ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
@@ -433,7 +407,7 @@ export default function SettingsPage() {
                       <input
                         type={showTelegramToken ? "text" : "password"}
                         value={prefs.telegramBotToken}
-                        onChange={e => updatePref("telegramBotToken", e.target.value)}
+                        onChange={(e) => updatePref("telegramBotToken", e.target.value)}
                         placeholder="1234567890:ABCdef..."
                         className="w-full rounded-lg border border-[#1C2A45]/50 bg-[#0C1220]/60 px-4 pr-10 py-2 text-xs text-[#E8ECFF] placeholder-[#4A5578] outline-none focus:border-[#818CF8]/40 transition-all font-mono"
                       />
@@ -448,7 +422,7 @@ export default function SettingsPage() {
                     <input
                       type="text"
                       value={prefs.telegramChatId}
-                      onChange={e => updatePref("telegramChatId", e.target.value)}
+                      onChange={(e) => updatePref("telegramChatId", e.target.value)}
                       placeholder="123456789"
                       className="w-full rounded-lg border border-[#1C2A45]/50 bg-[#0C1220]/60 px-4 py-2 text-xs text-[#E8ECFF] placeholder-[#4A5578] outline-none focus:border-[#818CF8]/40 transition-all font-mono"
                     />
