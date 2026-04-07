@@ -63,7 +63,7 @@ export default function SignupPage() {
   }, [user, router, step, authMode]);
 
   useEffect(() => {
-    if (!districtQuery || selectedDistrict) {
+    if (!districtQuery || districtQuery.length < 3 || selectedDistrict) {
       setDistricts([]);
       return;
     }
@@ -124,7 +124,7 @@ export default function SignupPage() {
     const url = selectedDistrict.district_baseurl.replace(/\/$/, "");
 
     // 1. Fetch the short-lived token
-    await icLogin(url, icUsername.trim(), icPassword.trim());
+    await icLogin(url, icUsername.trim(), icPassword.trim(), selectedDistrict.district_app_name);
     if (icError) return;
 
     // 2. If this is a purely IC sign-up (they clicked Continue with IC at the very beginning)

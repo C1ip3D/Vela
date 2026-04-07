@@ -58,7 +58,7 @@ export default function LoginPage() {
   }, [user, router, authMode]);
 
   useEffect(() => {
-    if (!districtQuery || selectedDistrict) {
+    if (!districtQuery || districtQuery.length < 3 || selectedDistrict) {
       setDistricts([]);
       return;
     }
@@ -110,7 +110,7 @@ export default function LoginPage() {
     const url = selectedDistrict.district_baseurl.replace(/\/$/, "");
 
     // Verify via IC first
-    await icLogin(url, icUsername.trim(), icPassword.trim());
+    await icLogin(url, icUsername.trim(), icPassword.trim(), selectedDistrict.district_app_name);
     if (icError) return;
 
     // Login logic via "Shadow Account" to maintain platform access

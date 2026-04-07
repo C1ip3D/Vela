@@ -28,36 +28,46 @@ interface ICCourse {
 }
 
 export async function POST(req: NextRequest) {
-  let body: { authToken?: string; baseUrl?: string };
+  let body: { authToken?: string; baseUrl?: string; appName?: string };
   try {
     body = await req.json();
   } catch {
     return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
   }
 
-  const { authToken, baseUrl } = body;
+  const { authToken, baseUrl, appName } = body;
   if (!authToken || !baseUrl) {
     return NextResponse.json({ error: "authToken and baseUrl are required" }, { status: 400 });
   }
 
   const cookieStr = authToken.includes("=") ? authToken : `ICSID=${authToken}`;
+  const finalCookieStr = appName && !cookieStr.includes("appName=") 
+    ? `${cookieStr}; appName=${appName}` 
+    : cookieStr;
 
-  const headers = {
-    Cookie: cookieStr,
+  const headers: Record<string, string> = {
+    Cookie: finalCookieStr,
     Accept: "application/json",
-    "User-Agent": "InfiniteCampus/1.0",
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36",
   };
+  if (appName) {
+    headers["appName"] = appName;
+    headers["X-Campus-AppName"] = appName;
+    headers["Referer"] = `${baseUrl}/portal/students/${appName}`;
+  }
 
   // Try the main IC Portal grades API
   let courses: ICCourse[] = [];
   let fetched = false;
 
+  const appQuery = appName ? `?appName=${encodeURIComponent(appName)}` : "";
+
   // Endpoint 1: prism API (newer IC versions)
-  console.log(`[IC Debug] Attempting to fetch prism API at: ${baseUrl}/prism/api/portal/grades`);
+  console.log(`[IC Debug] Attempting to fetch prism API at: ${baseUrl}/prism/api/portal/grades${appQuery}`);
   console.log(`[IC Debug] Using authToken: ${authToken.substring(0, 10)}... (length: ${authToken.length})`);
   
   try {
-    const gradesRes = await fetch(`${baseUrl}/prism/api/portal/grades`, { headers });
+    const gradesRes = await fetch(`${baseUrl}/prism/api/portal/grades${appQuery}`, { headers });
     console.log(`[IC Debug] Prism API Status: ${gradesRes.status}`);
     
     if (gradesRes.ok) {
@@ -86,9 +96,9 @@ export async function POST(req: NextRequest) {
 
   // Endpoint 2: legacy resources/portal/grades
   if (!fetched) {
-    console.log(`[IC Debug] Prism failed or returned 0 courses. Falling back to Legacy API at: ${baseUrl}/resources/portal/grades`);
+    console.log(`[IC Debug] Prism failed or returned 0 courses. Falling back to Legacy API at: ${baseUrl}/resources/portal/grades${appQuery}`);
     try {
-      const gradesRes = await fetch(`${baseUrl}/resources/portal/grades`, { headers });
+      const gradesRes = await fetch(`${baseUrl}/resources/portal/grades${appQuery}`, { headers });
       console.log(`[IC Debug] Legacy API Status: ${gradesRes.status}`);
       
       if (gradesRes.ok) {
@@ -113,6 +123,86 @@ export async function POST(req: NextRequest) {
       }
     } catch (e) {
       console.error(`[IC Debug] Legacy API network error:`, e);
+    }
+  }
+
+  // Endpoint 3: Modern API /api/portal/students -> /api/portal/students/[id]/grades
+  if (!fetched) {
+    console.log(`[IC Debug] Legacy failed. Trying Modern API at: ${baseUrl}/api/portal/students${appQuery}`);
+    try {
+      const studentsRes = await fetch(`${baseUrl}/api/portal/students${appQuery}`, { headers });
+      console.log(`[IC Debug] Modern Students API Status: ${studentsRes.status}`);
+      if (studentsRes.ok) {
+        const studentsData = await studentsRes.json();
+        const studentsList = Array.isArray(studentsData) ? studentsData : (studentsData.data || []);
+        console.log(`[IC Debug] Found ${studentsList.length} students in modern API.`);
+        
+        for (const student of studentsList) {
+          const personId = student.personID || student.personId || student.id;
+          if (personId) {
+             const gradesUrl = `${baseUrl}/api/portal/students/${personId}/grades${appQuery}`;
+             console.log(`[IC Debug] Fetching grades for ${personId}: ${gradesUrl}`);
+             const sGradesRes = await fetch(gradesUrl, { headers });
+             if (sGradesRes.ok) {
+               const sGradesRaw = await sGradesRes.text();
+               const parsed = parseResilient(JSON.parse(sGradesRaw), baseUrl);
+               if (parsed.length > 0) {
+                 courses.push(...parsed);
+                 fetched = true;
+               }
+             } else {
+               console.log(`[IC Debug] Modern grades returned non-ok: ${sGradesRes.status}`);
+             }
+          }
+        }
+      } else {
+        console.log(`[IC Debug] Modern Students API returned non-ok: ${studentsRes.status}`);
+        const errText = await studentsRes.text();
+        console.log(`[IC Debug] Modern Students Error: ${errText.substring(0, 500)}`);
+        
+        // SELF-HEALING: If it throws conflicting app name values, the IC backend literally tells us the correct appName in the error JSON!
+        if (studentsRes.status === 400 && errText.includes("conflicting app name values")) {
+           try {
+             const errJson = JSON.parse(errText);
+             const recoveredAppName = errJson.appName;
+             if (recoveredAppName) {
+               console.log(`[IC Debug] Recovered correct appName from error: ${recoveredAppName}. Retrying with Cookie Injection...`);
+               const retryAppQuery = `?appName=${encodeURIComponent(recoveredAppName)}`;
+               const retryHeaders = { ...headers, Cookie: `${headers.Cookie}; appName=${recoveredAppName}` };
+               const retryRes = await fetch(`${baseUrl}/api/portal/students${retryAppQuery}`, { headers: retryHeaders });
+               
+               if (retryRes.ok) {
+                 const studentsData = await retryRes.json();
+                 const studentsList = Array.isArray(studentsData) ? studentsData : (studentsData.data || []);
+                 console.log(`[IC Debug] Retry successful! Found ${studentsList.length} students.`);
+                 
+                 for (const student of studentsList) {
+                   const personId = student.personID || student.personId || student.id;
+                   if (personId) {
+                      const gradesUrl = `${baseUrl}/api/portal/students/${personId}/grades${retryAppQuery}`;
+                      const sGradesRes = await fetch(gradesUrl, { headers: retryHeaders });
+                      if (sGradesRes.ok) {
+                        const sGradesRaw = await sGradesRes.text();
+                        const parsed = parseResilient(JSON.parse(sGradesRaw), baseUrl);
+                        if (parsed.length > 0) {
+                          courses.push(...parsed);
+                          fetched = true;
+                        }
+                      }
+                   }
+                 }
+               } else {
+                 console.log(`[IC Debug] Retry Failed! Status: ${retryRes.status}`);
+                 console.log(`[IC Debug] Retry Body: ${await retryRes.text()}`);
+               }
+             }
+           } catch(e) {
+             console.log("[IC Debug] Self-healing failed:", e);
+           }
+        }
+      }
+    } catch (e) {
+      console.error(`[IC Debug] Modern API network error:`, e);
     }
   }
 
@@ -174,8 +264,8 @@ function parseResilient(data: any, baseUrl: string): ICCourse[] {
     function findGrades(node: any) {
       if (!node || typeof node !== "object") return;
       
-      const score = node.score ?? node.percent ?? node.grade?.percent ?? node.currentGrade?.percent;
-      const letter = node.gradeCalculated ?? node.grade?.letter ?? node.letter ?? node.currentGrade?.letter;
+      const score = node.score ?? node.percent ?? node.grade?.percent ?? node.currentGrade?.percent ?? node.progressPercent ?? node.progressScore;
+      const letter = node.gradeCalculated ?? node.grade?.letter ?? node.letter ?? node.currentGrade?.letter ?? node.progressGrade;
       const missing = node.missingCount ?? node.missing ?? 0;
 
       if (score != null && !isNaN(Number(score))) {

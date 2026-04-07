@@ -20,14 +20,14 @@ import { NextRequest, NextResponse } from "next/server";
  */
 
 export async function POST(req: NextRequest) {
-  let body: { districtUrl?: string; username?: string; password?: string };
+  let body: { districtUrl?: string; username?: string; password?: string; appName?: string };
   try {
     body = await req.json();
   } catch {
     return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
   }
 
-  const { districtUrl, username, password } = body;
+  const { districtUrl, username, password, appName: providedAppName } = body;
 
   if (!districtUrl || !username || !password) {
     return NextResponse.json(
@@ -39,18 +39,37 @@ export async function POST(req: NextRequest) {
   // Normalise base URL (strip trailing slash)
   const base = districtUrl.replace(/\/+$/, "");
 
-  // Build the IC verify endpoint
-  const appName = base.split("/").pop() ?? "campus";
-  const verifyUrl = `${base}/verify.jsp?nonBrowser=true&username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}&appName=${encodeURIComponent(appName)}`;
+  const appName = providedAppName || base.split("/").pop() || "campus";
+  
+  // Initialize Tenancy Session (CRITICAL FOR DUBLIN UNIFIED)
+  const initRes = await fetch(`${base}/portal/students/${appName}.jsp`, {
+    headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/121.0.0.0 Safari/537.36" }
+  });
+  const initCookies = typeof initRes.headers.getSetCookie === "function" ? initRes.headers.getSetCookie() : initRes.headers.get("set-cookie")?.split(/,(?=\s*[A-Za-z0-9_-]+\=)/) || [];
+  const initCookieStr = initCookies.map(c => c.split(";")[0].trim()).join("; ");
+
+  const verifyUrl = `${base}/verify.jsp`;
+  const formBody = new URLSearchParams();
+  formBody.append("username", username);
+  formBody.append("password", password);
+  formBody.append("appName", appName);
+  formBody.append("portalLoginPage", "students");
+  formBody.append("portalUrl", `portal/students/${appName}.jsp`);
+  formBody.append("url", "nav-wrapper");
+  formBody.append("lang", "en");
 
   let icRes: Response;
   try {
+    console.log(`[IC Auth Debug] verifyUrl (POST): ${verifyUrl}`);
     icRes = await fetch(verifyUrl, {
-      method: "GET",
+      method: "POST",
       headers: {
-        "User-Agent": "Mozilla/5.0 (Vela Academic Navigator)",
+        "Content-Type": "application/x-www-form-urlencoded",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/121.0.0.0 Safari/537.36",
+        "Cookie": initCookieStr
       },
-      redirect: "manual", // don't follow redirects — we need the cookies
+      body: formBody.toString(),
+      redirect: "manual",
     });
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : "Network error";
@@ -64,17 +83,40 @@ export async function POST(req: NextRequest) {
   // It returns 200 with an error page on bad credentials
   const setCookieHeader = icRes.headers.get("set-cookie") ?? "";
   const location = icRes.headers.get("location") ?? "";
+  
+  console.log("[IC Auth Debug] Response status:", icRes.status);
+  console.log("[IC Auth Debug] Location header:", location);
+  console.log("[IC Auth Debug] SetCookie length:", setCookieHeader.length);
 
-  // A successful login always has a redirect and sets IC session cookies
-  if (icRes.status !== 302 || !location || !setCookieHeader) {
-    // Try parsing response body for an error message
+  const locLower = location.toLowerCase();
+  
+  // In standard POST login, success is usually a 302 redirecting to portal/parents.jsp or portal/students.jsp
+  // Or it might be a 200 OK if it doesn't redirect. We can check if cookies contain XSRF-TOKEN or similar.
+  const isFailedRedirect = locLower.includes("error") || locLower.includes("failed") || locLower.includes("verify.jsp") || locLower.includes("login") || locLower.includes("noappname");
+
+  console.log(`[IC Auth Debug] Response status: ${icRes.status}`);
+  console.log(`[IC Auth Debug] Location header: ${location}`);
+  console.log(`[IC Auth Debug] SetCookie length: ${setCookieHeader.length}`);
+  console.log(`[IC Auth Debug] isFailedRedirect: ${isFailedRedirect}`);
+
+  // If it redirected back to login or threw an error
+  if (isFailedRedirect) {
     return NextResponse.json(
-      {
-        error:
-          "Invalid username or password. Make sure you are using your Infinite Campus login.",
-      },
+      { error: "Invalid username, password, or district setting." },
       { status: 401 }
     );
+  }
+  
+  // If it's a 200 OK, it might be the login page again (failure).
+  if (icRes.status === 200) {
+    const text = await icRes.text();
+    // If the page contains a standard error message
+    if (text.includes("username and/or password") || text.includes("error in the application") || text.includes("signinForm")) {
+       return NextResponse.json(
+         { error: "Invalid username or password." },
+         { status: 401 }
+       );
+    }
   }
 
   // Extract ALL cookies to use as our short-lived token
@@ -88,11 +130,22 @@ export async function POST(req: NextRequest) {
     cookiesArray = setCookieHeader ? setCookieHeader.split(/,(?=\s*[A-Za-z0-9_-]+\=)/) : [];
   }
 
-  // Map "cookie1=val1; Path=/; Secure" into "cookie1=val1"
-  const authToken = cookiesArray
-    .map((c) => c.split(";")[0].trim())
-    .filter((c) => c && !c.toLowerCase().startsWith("path=") && !c.toLowerCase().startsWith("domain=") && !c.toLowerCase().startsWith("expires="))
-    .join("; ");
+  // Deduplicate cookies to prevent 'conflicting app name values' errors 
+  // where IC sends duplicate cookies like appName= and appName=dublin
+  const cookieMap = new Map<string, string>();
+  cookiesArray.forEach(c => {
+    const pair = c.split(";")[0].trim();
+    if (pair && !pair.toLowerCase().startsWith("path=") && !pair.toLowerCase().startsWith("domain=") && !pair.toLowerCase().startsWith("expires=")) {
+      const splitIdx = pair.indexOf("=");
+      if (splitIdx !== -1) {
+         const key = pair.substring(0, splitIdx).trim();
+         const val = pair.substring(splitIdx + 1).trim();
+         cookieMap.set(key, val);
+      }
+    }
+  });
+
+  const authToken = Array.from(cookieMap.entries()).map(([k, v]) => `${k}=${v}`).join("; ");
 
   if (!authToken) {
     return NextResponse.json(
@@ -126,5 +179,6 @@ export async function POST(req: NextRequest) {
     authToken,
     baseUrl: base,
     displayName,
+    appName,
   });
 }

@@ -6,6 +6,8 @@ export interface ICSession {
   authToken: string;
   /** The base URL of the district portal, e.g. https://dublinusd.infinitecampus.org/campus */
   baseUrl: string;
+  /** App partition name, e.g. dublin */
+  appName?: string;
   /** Student's display name from IC */
   displayName: string | null;
 }
@@ -14,7 +16,7 @@ interface ICContextType {
   session: ICSession | null;
   isConnected: boolean;
   isChecking: boolean;
-  login: (districtUrl: string, username: string, password: string) => Promise<boolean>;
+  login: (districtUrl: string, username: string, password: string, appName?: string) => Promise<boolean>;
   logout: () => void;
   loginError: string | null;
 }
@@ -57,7 +59,8 @@ export function InfiniteCampusProvider({ children }: { children: ReactNode }) {
   const login = async (
     districtUrl: string,
     username: string,
-    password: string
+    password: string,
+    appName?: string
   ): Promise<boolean> => {
     setIsChecking(true);
     setLoginError(null);
@@ -65,7 +68,7 @@ export function InfiniteCampusProvider({ children }: { children: ReactNode }) {
       const res = await fetch("/api/ic/auth", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ districtUrl, username, password }),
+        body: JSON.stringify({ districtUrl, username, password, appName }),
       });
 
       const data = await res.json();
@@ -78,6 +81,7 @@ export function InfiniteCampusProvider({ children }: { children: ReactNode }) {
       const newSession: ICSession = {
         authToken: data.authToken,
         baseUrl: data.baseUrl,
+        appName: data.appName,
         displayName: data.displayName ?? null,
       };
       persist(newSession);

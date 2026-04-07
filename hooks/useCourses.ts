@@ -85,6 +85,7 @@ export function useCourses() {
         body: JSON.stringify({
           authToken: session.authToken,
           baseUrl: session.baseUrl,
+          appName: session.appName,
         }),
       });
 
