@@ -67,14 +67,15 @@ export async function GET() {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/121.0.0.0 Safari/537.36",
   };
   
-  // Fetch Legacy API with our authenticated headers
-  const lRes = await fetch(`${DISTRICT_URL}/resources/portal/grades`, { headers });
+  const appQuery = `?appName=dublin`;
+  const lRes = await fetch(
+    `${DISTRICT_URL}/resources/portal/grades/detail/479195${appQuery}`,
+    { headers }
+  );
   const lBody = await lRes.text();
 
   return NextResponse.json({
-    authStatus: authRes.status,
-    authLocation: authRes.headers.get("location"),
     legacyStatus: lRes.status,
-    legacyBody: lBody.substring(0, 10000), // First 10k chars to inspect gradingTasks array
+    legacyBody: lBody.substring(0, 50000),
   });
 }
