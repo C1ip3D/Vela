@@ -72,7 +72,7 @@ export default function SettingsPage() {
   const [selectedDistrict, setSelectedDistrict] = useState<any | null>(null);
 
   useEffect(() => {
-    if (!districtQuery || selectedDistrict) {
+    if (!districtQuery || districtQuery.length < 3 || selectedDistrict) {
       setDistricts([]);
       return;
     }
@@ -118,7 +118,7 @@ export default function SettingsPage() {
   const handleLogin = async () => {
     const finalUrl = selectedDistrict ? selectedDistrict.district_baseurl : districtUrl;
     if (!finalUrl.trim() || !icUsername.trim() || !icPassword.trim()) return;
-    await login(finalUrl.trim(), icUsername.trim(), icPassword.trim());
+    await login(finalUrl.trim(), icUsername.trim(), icPassword.trim(), selectedDistrict?.district_app_name);
     if (isConnected) setIcPassword("");
   };
 

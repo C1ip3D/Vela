@@ -264,6 +264,7 @@ export default function CourseDetailPage({ params }: { params: Promise<{ courseI
           body: JSON.stringify({
             authToken: session!.authToken,
             baseUrl: session!.baseUrl,
+            appName: session!.appName,
             courseId,
           }),
         });

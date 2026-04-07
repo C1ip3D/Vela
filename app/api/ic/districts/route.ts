@@ -9,6 +9,11 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Missing query or state parameter" }, { status: 400 });
   }
 
+  // Infinite Campus API requires at least 3 characters for search
+  if (query.length < 3) {
+    return NextResponse.json({ data: [] });
+  }
+
   try {
     const response = await fetch(
       `https://mobile.infinitecampus.com/api/district/searchDistrict?query=${encodeURIComponent(query)}&state=${encodeURIComponent(state)}`,
