@@ -8,10 +8,10 @@ import {
   Switch,
   ActivityIndicator,
   Alert,
-  SafeAreaView,
   Modal,
   FlatList,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
   Settings,
@@ -19,7 +19,6 @@ import {
   Bell,
   LogOut,
   Search,
-  MapPin,
   ChevronDown,
   Eye,
   EyeOff,
@@ -37,20 +36,14 @@ const US_STATES = [
 ];
 
 interface NotifPrefs {
-  emailEnabled: boolean;
-  telegram: boolean;
   gradeAlerts: boolean;
   assignmentAlerts: boolean;
-  weeklyDigest: boolean;
   gradeThreshold: number;
 }
 
 const DEFAULT_PREFS: NotifPrefs = {
-  emailEnabled: false,
-  telegram: false,
   gradeAlerts: true,
   assignmentAlerts: true,
-  weeklyDigest: false,
   gradeThreshold: 80,
 };
 
@@ -89,7 +82,6 @@ export default function SettingsScreen() {
   const { session, login: icLogin, logout: icLogout, isChecking, loginError } = useIC();
 
   const [notifPrefs, setNotifPrefs] = useState<NotifPrefs>(DEFAULT_PREFS);
-  const [gradeLevel, setGradeLevel] = useState("");
 
   // IC connect form
   const [icStateCode, setIcStateCode] = useState("CA");
@@ -109,9 +101,6 @@ export default function SettingsScreen() {
       if (raw) {
         try { setNotifPrefs({ ...DEFAULT_PREFS, ...JSON.parse(raw) }); } catch {}
       }
-    });
-    AsyncStorage.getItem("vela_student_grade").then((v) => {
-      if (v) setGradeLevel(v);
     });
   }, []);
 
@@ -331,36 +320,6 @@ export default function SettingsScreen() {
           )}
         </View>
 
-        {/* Grade Level */}
-        <SectionHeader title="Academic Info" />
-        <View className="rounded-xl border border-space-border bg-space-surface/50 p-4 mb-5">
-          <Text className="text-xs text-star-faint mb-2">Current Grade Level</Text>
-          <View className="flex-row gap-2">
-            {["9", "10", "11", "12"].map((g) => (
-              <TouchableOpacity
-                key={g}
-                onPress={async () => {
-                  setGradeLevel(g);
-                  await AsyncStorage.setItem("vela_student_grade", g);
-                }}
-                className={`flex-1 py-2 rounded-lg border items-center ${
-                  gradeLevel === g
-                    ? "border-vela-400 bg-vela-400/20"
-                    : "border-space-border bg-space-mid/40"
-                }`}
-              >
-                <Text
-                  className={`text-sm font-medium ${
-                    gradeLevel === g ? "text-vela-300" : "text-star-dim"
-                  }`}
-                >
-                  {g}th
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        </View>
-
         {/* Notifications */}
         <SectionHeader title="Notifications" />
         <View className="rounded-xl border border-space-border bg-space-surface/50 px-4 mb-5">
@@ -369,26 +328,11 @@ export default function SettingsScreen() {
             value={notifPrefs.gradeAlerts}
             onToggle={(v) => savePrefs({ ...notifPrefs, gradeAlerts: v })}
           />
-          <SettingRow
-            label="Assignment Alerts"
-            value={notifPrefs.assignmentAlerts}
-            onToggle={(v) => savePrefs({ ...notifPrefs, assignmentAlerts: v })}
-          />
-          <SettingRow
-            label="Email Notifications"
-            value={notifPrefs.emailEnabled}
-            onToggle={(v) => savePrefs({ ...notifPrefs, emailEnabled: v })}
-          />
-          <SettingRow
-            label="Telegram Alerts"
-            value={notifPrefs.telegram}
-            onToggle={(v) => savePrefs({ ...notifPrefs, telegram: v })}
-          />
           <View className="py-3">
             <SettingRow
-              label="Weekly Digest"
-              value={notifPrefs.weeklyDigest}
-              onToggle={(v) => savePrefs({ ...notifPrefs, weeklyDigest: v })}
+              label="Assignment Alerts"
+              value={notifPrefs.assignmentAlerts}
+              onToggle={(v) => savePrefs({ ...notifPrefs, assignmentAlerts: v })}
             />
           </View>
         </View>

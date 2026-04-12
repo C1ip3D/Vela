@@ -5,8 +5,8 @@ import {
   FlatList,
   TouchableOpacity,
   ActivityIndicator,
-  SafeAreaView,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { useCourses } from "@/hooks/useCourses";
 import { useIC } from "@/contexts/InfiniteCampusContext";

@@ -69,35 +69,42 @@ export async function POST(req: NextRequest) {
   
   const appQuery = appName ? `&appName=${encodeURIComponent(appName)}` : "";
 
+  console.log(`[Assignments] courseId=${courseId} baseUrl=${baseUrl} appName=${appName}`);
+
   // ── Endpoint 1: Prism API ────────────────────────────────────────────────
   try {
-    const res = await fetch(
-      `${baseUrl}/prism/api/portal/grades/assignmentDetail?courseSectionID=${courseId}${appQuery}`,
-      { headers }
-    );
+    const url = `${baseUrl}/prism/api/portal/grades/assignmentDetail?courseSectionID=${courseId}${appQuery}`;
+    const res = await fetch(url, { headers });
+    console.log(`[Assignments] Prism status=${res.status}`);
     if (res.ok) {
       const data = await res.json();
       groups = parsePrismAssignments(data);
       fetched = true;
+    } else {
+      const t = await res.text();
+      console.log(`[Assignments] Prism body: ${t.substring(0, 200)}`);
     }
-  } catch {
-    // fall through
+  } catch (e) {
+    console.log(`[Assignments] Prism error: ${e}`);
   }
 
   // ── Endpoint 2: Legacy resources assignment API ──────────────────────────
   if (!fetched) {
     try {
-      const res = await fetch(
-        `${baseUrl}/resources/portal/assignment?courseSectionID=${courseId}${appQuery}`,
-        { headers }
-      );
+      const url = `${baseUrl}/resources/portal/assignment?courseSectionID=${courseId}${appQuery}`;
+      const res = await fetch(url, { headers });
+      console.log(`[Assignments] Legacy status=${res.status}`);
       if (res.ok) {
         const data = await res.json();
         groups = parseLegacyAssignments(data);
+        console.log(`[Assignments] Legacy parsed ${groups.length} groups`);
         if (groups.length > 0) fetched = true;
+      } else {
+        const t = await res.text();
+        console.log(`[Assignments] Legacy body: ${t.substring(0, 200)}`);
       }
-    } catch {
-      // fall through
+    } catch (e) {
+      console.log(`[Assignments] Legacy error: ${e}`);
     }
   }
 
@@ -105,20 +112,48 @@ export async function POST(req: NextRequest) {
   if (!fetched) {
     try {
       const dbQuery = appName ? `?appName=${encodeURIComponent(appName)}` : "";
-      const res = await fetch(
-        `${baseUrl}/resources/portal/grades/detail/${courseId}${dbQuery}`,
-        { headers }
-      );
+      const url = `${baseUrl}/resources/portal/grades/detail/${courseId}${dbQuery}`;
+      const res = await fetch(url, { headers });
+      console.log(`[Assignments] Detail status=${res.status}`);
       if (res.ok) {
         const data = await res.json();
         const parsed = parseLegacyAssignments(data);
+        console.log(`[Assignments] Detail parsed ${parsed.length} groups`);
         if (parsed && parsed.length > 0) {
            groups = parsed;
            fetched = true;
+        } else {
+          console.log(`[Assignments] Detail raw: ${JSON.stringify(data).substring(0, 300)}`);
+        }
+      } else {
+        const t = await res.text();
+        console.log(`[Assignments] Detail body: ${t.substring(0, 200)}`);
+      }
+    } catch (e) {
+      console.log(`[Assignments] Detail error: ${e}`);
+    }
+  }
+
+  // ── Endpoint 4: Extract from the full grades payload (Dublin USD fallback) ─
+  if (!fetched) {
+    try {
+      const gradesQuery = appName ? `?appName=${encodeURIComponent(appName)}` : "";
+      const url = `${baseUrl}/resources/portal/grades${gradesQuery}`;
+      const res = await fetch(url, { headers });
+      console.log(`[Assignments] GradesFallback status=${res.status}`);
+      if (res.ok) {
+        const data = await res.json();
+        const extracted = extractAssignmentsFromGrades(data, courseId);
+        console.log(`[Assignments] GradesFallback extracted ${extracted.length} groups`);
+        if (extracted.length > 0) {
+          groups = extracted;
+          fetched = true;
+        } else {
+          console.log(`[Assignments] GradesFallback: course not found or no assignments`);
         }
       }
-    } catch {
-      // fall through
+    } catch (e) {
+      console.log(`[Assignments] GradesFallback error: ${e}`);
     }
   }
 
@@ -234,4 +269,128 @@ function parseLegacyAssignments(data: any): ICAssignmentGroup[] {
       })),
     };
   });
+}
+
+/**
+ * Extracts assignment groups for a specific course from the full grades payload.
+ * Dublin USD returns all courses + assignments in /resources/portal/grades.
+ *
+ * Grades shape (array of enrollments):
+ * [{ enrollmentID, terms: [{ termName, courses: [{ _id, sectionID, rosterID, courseName,
+ *    gradingTasks: [{ taskName, taskID, score, weight,
+ *      categories: [{ name, groupID, weight, assignments: [...] }]
+ *    }] }] }] }]
+ *
+ * We match the course by sectionID, _id, or rosterID against courseId.
+ */
+function extractAssignmentsFromGrades(data: any, courseId: string): ICAssignmentGroup[] {
+  const enrollments: any[] = Array.isArray(data) ? data : (data?.enrollments ?? data?.data ?? []);
+
+  for (const enrollment of enrollments) {
+    const terms: any[] = enrollment?.terms ?? [];
+    for (const term of terms) {
+      const courses: any[] = term?.courses ?? [];
+      for (const course of courses) {
+        const sid = String(course?.sectionID ?? "");
+        const id = String(course?._id ?? "");
+        const rid = String(course?.rosterID ?? "");
+        if (sid !== courseId && id !== courseId && rid !== courseId) continue;
+
+        // Found the course — extract assignment groups from gradingTasks or categories
+        const groups: ICAssignmentGroup[] = [];
+
+        // Shape A: gradingTasks[].categories[].assignments[]
+        const gradingTasks: any[] = course?.gradingTasks ?? course?.GradingTask ?? course?.tasks ?? [];
+        for (const task of gradingTasks) {
+          const categories: any[] = task?.categories ?? task?.Categories ?? [];
+          if (categories.length > 0) {
+            for (const cat of categories) {
+              const assignments: any[] = cat?.assignments ?? cat?.Assignments ?? [];
+              groups.push({
+                id: String(cat?.groupID ?? cat?.categoryID ?? cat?.id ?? cat?.name),
+                name: cat?.name ?? cat?.categoryName ?? task?.taskName ?? "Category",
+                weight: parseFloat(cat?.weight ?? task?.weight ?? 0) || 0,
+                score: cat?.score != null ? parseFloat(cat.score) : null,
+                assignments: assignments.map((a: any, j: number) => ({
+                  id: String(a?.assignmentID ?? a?.objectSectionID ?? a?.id ?? j),
+                  name: a?.assignmentName ?? a?.name ?? "Assignment",
+                  pointsPossible: parseFloat(a?.totalPoints ?? a?.pointsPossible ?? 0),
+                  score: a?.score != null ? parseFloat(a.score) : null,
+                  grade: a?.scorePercentage != null
+                    ? `${parseFloat(a.scorePercentage).toFixed(2)}%`
+                    : a?.percent != null ? `${parseFloat(a.percent).toFixed(2)}%` : null,
+                  submittedAt: a?.turnInDate ?? a?.scoreModifiedDate ?? null,
+                  missing: !!(a?.missing ?? a?.isMissing ?? false),
+                  late: !!(a?.late ?? a?.isLate ?? false),
+                  dueAt: a?.dueDate ?? null,
+                })),
+              });
+            }
+          } else {
+            // Shape B: gradingTasks[].assignments[] (flat, no nested categories)
+            const assignments: any[] = task?.assignments ?? task?.Assignments ?? [];
+            groups.push({
+              id: String(task?.taskID ?? task?.id ?? groups.length),
+              name: task?.taskName ?? task?.name ?? "Assignments",
+              weight: parseFloat(task?.weight ?? 0) || 0,
+              score: task?.score != null ? parseFloat(task.score) : null,
+              assignments: assignments.map((a: any, j: number) => ({
+                id: String(a?.assignmentID ?? a?.objectSectionID ?? a?.id ?? j),
+                name: a?.assignmentName ?? a?.name ?? "Assignment",
+                pointsPossible: parseFloat(a?.totalPoints ?? a?.pointsPossible ?? 0),
+                score: a?.score != null ? parseFloat(a.score) : null,
+                grade: a?.scorePercentage != null
+                  ? `${parseFloat(a.scorePercentage).toFixed(2)}%`
+                  : a?.percent != null ? `${parseFloat(a.percent).toFixed(2)}%` : null,
+                submittedAt: a?.turnInDate ?? a?.scoreModifiedDate ?? null,
+                missing: !!(a?.missing ?? a?.isMissing ?? false),
+                late: !!(a?.late ?? a?.isLate ?? false),
+                dueAt: a?.dueDate ?? null,
+              })),
+            });
+          }
+        }
+
+        // Shape C: course-level categories[]
+        if (groups.length === 0) {
+          const categories: any[] = course?.categories ?? course?.Categories ?? [];
+          for (const cat of categories) {
+            const assignments: any[] = cat?.assignments ?? cat?.Assignments ?? [];
+            groups.push({
+              id: String(cat?.groupID ?? cat?.categoryID ?? cat?.id ?? cat?.name),
+              name: cat?.name ?? cat?.categoryName ?? "Category",
+              weight: parseFloat(cat?.weight ?? 0) || 0,
+              score: cat?.score != null ? parseFloat(cat.score) : null,
+              assignments: assignments.map((a: any, j: number) => ({
+                id: String(a?.assignmentID ?? a?.id ?? j),
+                name: a?.assignmentName ?? a?.name ?? "Assignment",
+                pointsPossible: parseFloat(a?.totalPoints ?? a?.pointsPossible ?? 0),
+                score: a?.score != null ? parseFloat(a.score) : null,
+                grade: a?.percent != null ? `${parseFloat(a.percent).toFixed(2)}%` : null,
+                submittedAt: a?.turnInDate ?? null,
+                missing: !!(a?.missing ?? a?.isMissing ?? false),
+                late: !!(a?.late ?? a?.isLate ?? false),
+                dueAt: a?.dueDate ?? null,
+              })),
+            });
+          }
+        }
+
+        // Sort assignments within each group newest-first
+        groups.forEach(g => {
+          g.assignments.sort((a, b) => {
+            const dA = a.dueAt ? new Date(a.dueAt).getTime() : 0;
+            const dB = b.dueAt ? new Date(b.dueAt).getTime() : 0;
+            return dB - dA;
+          });
+        });
+
+        console.log(`[Assignments] extractAssignmentsFromGrades: course ${courseId}, ${groups.length} groups, total=${groups.reduce((s,g)=>s+g.assignments.length,0)} assignments`);
+        return groups;
+      }
+    }
+  }
+
+  console.log(`[Assignments] extractAssignmentsFromGrades: course ${courseId} not found in grades payload`);
+  return [];
 }

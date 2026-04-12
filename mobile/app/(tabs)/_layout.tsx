@@ -1,5 +1,5 @@
 import { Tabs } from "expo-router";
-import { LayoutDashboard, BookOpen, Compass, Settings } from "lucide-react-native";
+import { LayoutDashboard, Compass, Settings } from "lucide-react-native";
 
 export default function TabLayout() {
   return (
@@ -33,12 +33,7 @@ export default function TabLayout() {
       />
       <Tabs.Screen
         name="courses/index"
-        options={{
-          title: "Grades",
-          tabBarIcon: ({ color, size }) => (
-            <BookOpen size={size} color={color} />
-          ),
-        }}
+        options={{ href: null }}
       />
       <Tabs.Screen
         name="advisor/index"
