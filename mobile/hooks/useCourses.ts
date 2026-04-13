@@ -64,13 +64,13 @@ function computeGpa(courses: NormalizedCourse[]) {
 }
 
 export function useCourses() {
-  const { session, isConnected } = useIC();
+  const { session, isConnected, isInitializing, reauth } = useIC();
   const [courses, setCourses] = useState<NormalizedCourse[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchCourses = useCallback(async () => {
-    if (!isConnected || !session) {
+  const fetchCourses = useCallback(async (currentSession = session) => {
+    if (!isConnected || !currentSession) {
       setCourses([]);
       setLoading(false);
       return;
@@ -79,14 +79,33 @@ export function useCourses() {
     setLoading(true);
     setError(null);
 
-    try {
+    const doFetch = async (s: typeof currentSession) => {
       const res = await api.post("/api/ic/courses", {
-        authToken: session.authToken,
-        baseUrl: session.baseUrl,
-        appName: session.appName,
+        authToken: s!.authToken,
+        baseUrl: s!.baseUrl,
+        appName: s!.appName,
       });
+      return res.data;
+    };
 
-      const data = res.data;
+    try {
+      let data: any;
+      try {
+        data = await doFetch(currentSession);
+      } catch (err: any) {
+        // Auto-reauth on 401 then retry once with the fresh session
+        if (err?.response?.status === 401) {
+          const newSession = await reauth();
+          if (newSession) {
+            data = await doFetch(newSession);
+          } else {
+            throw err;
+          }
+        } else {
+          throw err;
+        }
+      }
+
       const normalized: NormalizedCourse[] = (data.courses as any[]).map((c) => ({
         id: c.id,
         name: c.name,
@@ -110,11 +129,13 @@ export function useCourses() {
     } finally {
       setLoading(false);
     }
-  }, [session, isConnected]);
+  }, [session, isConnected, reauth]);
 
   useEffect(() => {
+    // Wait until SecureStore has been read before deciding whether to fetch
+    if (isInitializing) return;
     fetchCourses();
-  }, [fetchCourses]);
+  }, [fetchCourses, isInitializing]);
 
   const gradedCourses = courses.filter((c) => c.currentGrade != null);
   const gpa = computeGpa(gradedCourses);

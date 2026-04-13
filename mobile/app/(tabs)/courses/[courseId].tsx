@@ -1,11 +1,11 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   View,
   Text,
   ScrollView,
   TouchableOpacity,
   TextInput,
-  ActivityIndicator,
+  Animated,
   Alert,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -97,6 +97,82 @@ function calcCourseGrade(
       ? scores.reduce((a, b) => a + b, 0) / scores.length
       : null;
   }
+}
+
+function usePulse() {
+  const anim = useRef(new Animated.Value(0.4)).current;
+  useEffect(() => {
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(anim, { toValue: 1, duration: 900, useNativeDriver: true }),
+        Animated.timing(anim, { toValue: 0.4, duration: 900, useNativeDriver: true }),
+      ])
+    ).start();
+  }, [anim]);
+  return anim;
+}
+
+function Bone({ w, h }: { w?: number | `${number}%`; h?: number }) {
+  const opacity = usePulse();
+  const width: number | `${number}%` = w ?? "100%";
+  return (
+    <Animated.View
+      style={{
+        opacity,
+        width,
+        height: h ?? 12,
+        borderRadius: 6,
+        backgroundColor: "#1C2A45",
+      }}
+    />
+  );
+}
+
+function SkeletonCourseDetail() {
+  return (
+    <ScrollView
+      contentContainerStyle={{ padding: 16, paddingBottom: 40 }}
+      showsVerticalScrollIndicator={false}
+    >
+      {/* Grade card skeleton */}
+      <View
+        style={{ borderRadius: 12, borderWidth: 1, borderColor: "#1C2A45", backgroundColor: "#0F1829", padding: 16, marginBottom: 20, gap: 12 }}
+      >
+        <Bone w={90} h={10} />
+        <Bone w={64} h={48} />
+        <Bone w={50} h={12} />
+      </View>
+
+      {/* Group skeletons */}
+      {[0, 1, 2].map((i) => (
+        <View
+          key={i}
+          style={{ borderRadius: 12, borderWidth: 1, borderColor: "#1C2A45", marginBottom: 12, overflow: "hidden" }}
+        >
+          <View style={{ backgroundColor: "#0F1829", padding: 16, flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+            <View style={{ gap: 6 }}>
+              <Bone w={120} h={13} />
+              <Bone w={80} h={10} />
+            </View>
+            <Bone w={44} h={13} />
+          </View>
+          {i === 0 && (
+            <View style={{ padding: 16, gap: 14 }}>
+              {[0, 1, 2, 3].map((j) => (
+                <View key={j} style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+                  <View style={{ flex: 1, gap: 5, marginRight: 12 }}>
+                    <Bone w="70%" h={12} />
+                    <Bone w="35%" h={9} />
+                  </View>
+                  <Bone w={52} h={13} />
+                </View>
+              ))}
+            </View>
+          )}
+        </View>
+      ))}
+    </ScrollView>
+  );
 }
 
 function AssignmentRow({
@@ -233,7 +309,7 @@ function AssignmentRow({
 
 export default function CourseDetailScreen() {
   const { courseId } = useLocalSearchParams<{ courseId: string }>();
-  const { session } = useIC();
+  const { session, reauth } = useIC();
   const { courses } = useCourses();
 
   const course = courses.find((c) => c.id === courseId);
@@ -250,23 +326,45 @@ export default function CourseDetailScreen() {
       setLoading(false);
       return;
     }
-    api
-      .post("/api/ic/assignments", {
-        authToken: session.authToken,
-        baseUrl: session.baseUrl,
-        appName: session.appName,
+
+    const fetchAssignments = async (s: typeof session) => {
+      const res = await api.post("/api/ic/assignments", {
+        authToken: s.authToken,
+        baseUrl: s.baseUrl,
+        appName: s.appName,
         courseId,
-      })
-      .then((res) => {
-        setGroups(res.data.groups ?? []);
-        // Expand first group by default
-        if (res.data.groups?.length > 0) {
-          setExpandedGroups(new Set([res.data.groups[0].id]));
+      });
+      return res.data;
+    };
+
+    (async () => {
+      try {
+        let data: any;
+        try {
+          data = await fetchAssignments(session);
+        } catch (err: any) {
+          if (err?.response?.status === 401) {
+            const newSession = await reauth();
+            if (newSession) {
+              data = await fetchAssignments(newSession);
+            } else {
+              throw err;
+            }
+          } else {
+            throw err;
+          }
         }
-      })
-      .catch((e) => setError(e.message))
-      .finally(() => setLoading(false));
-  }, [session, courseId]);
+        setGroups(data.groups ?? []);
+        if (data.groups?.length > 0) {
+          setExpandedGroups(new Set([data.groups[0].id]));
+        }
+      } catch (e: any) {
+        setError(e.message ?? "Failed to load assignments");
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, [session, courseId, reauth]);
 
   const setMod = (assignmentId: string, mod: Partial<WhatIfMod>) => {
     setMods((prev) => ({
@@ -297,15 +395,6 @@ export default function CourseDetailScreen() {
   const projectedLetter =
     projectedGrade != null ? percentageToLetter(projectedGrade) : null;
 
-  if (loading) {
-    return (
-      <SafeAreaView className="flex-1 bg-space-void items-center justify-center">
-        <ActivityIndicator color="#818CF8" size="large" />
-        <Text className="text-sm text-star-dim mt-3">Loading assignments...</Text>
-      </SafeAreaView>
-    );
-  }
-
   return (
     <SafeAreaView className="flex-1 bg-space-void">
       {/* Header */}
@@ -328,7 +417,7 @@ export default function CourseDetailScreen() {
         </TouchableOpacity>
       </View>
 
-      <ScrollView
+      {loading ? <SkeletonCourseDetail /> : <ScrollView
         className="flex-1"
         contentContainerStyle={{ padding: 16, paddingBottom: 40 }}
         showsVerticalScrollIndicator={false}
@@ -482,7 +571,7 @@ export default function CourseDetailScreen() {
             </Text>
           </View>
         )}
-      </ScrollView>
+      </ScrollView>}
     </SafeAreaView>
   );
 }

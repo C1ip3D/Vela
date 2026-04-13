@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
+import { extractUid } from "@/lib/authToken";
+import { syncICCoursesToDB, getCachedCourses } from "@/lib/syncIC";
 
 /**
  * POST /api/ic/courses
@@ -38,6 +40,16 @@ export async function POST(req: NextRequest) {
   const { authToken, baseUrl, appName } = body;
   if (!authToken || !baseUrl) {
     return NextResponse.json({ error: "authToken and baseUrl are required" }, { status: 400 });
+  }
+
+  // Check DB cache first (5 min TTL) — skip IC entirely if fresh data exists
+  const uid = extractUid(req.headers.get("authorization"));
+  if (uid) {
+    const cached = await getCachedCourses(uid);
+    if (cached) {
+      console.log(`[IC Courses] Serving ${cached.length} courses from DB cache for uid=${uid}`);
+      return NextResponse.json({ courses: cached, source: "cache" });
+    }
   }
 
   const cookieStr = authToken.includes("=") ? authToken : `ICSID=${authToken}`;
@@ -213,8 +225,26 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  return NextResponse.json({ courses });
+  // Persist to DB in the background (don't block the response)
+  if (uid && courses.length > 0) {
+    // Extract email/displayName from the JWT payload for user upsert
+    let email = "";
+    let displayName = "";
+    try {
+      const payload = req.headers.get("authorization")!.slice(7).split(".")[1];
+      const parsed = JSON.parse(Buffer.from(payload, "base64url").toString("utf8"));
+      email = parsed.email ?? "";
+      displayName = parsed.name ?? parsed.email ?? "";
+    } catch {}
+
+    syncICCoursesToDB(uid, email, displayName, courses).catch((e: unknown) =>
+      console.error("[IC Courses] DB sync error:", e)
+    );
+  }
+
+  return NextResponse.json({ courses, source: "ic" });
 }
+
 
 // ── Resilient Recursive Parser ──────────────────────────────────────────────────
 

@@ -65,8 +65,10 @@ export async function POST(req: NextRequest) {
   }
 
   let groups: ICAssignmentGroup[] = [];
-  let fetched = false;
-  
+  // Track whether we got any successful (non-auth) response from IC.
+  // If true, return 200 even if we found 0 assignments (no data ≠ auth error).
+  let gotSuccessfulResponse = false;
+
   const appQuery = appName ? `&appName=${encodeURIComponent(appName)}` : "";
 
   console.log(`[Assignments] courseId=${courseId} baseUrl=${baseUrl} appName=${appName}`);
@@ -77,9 +79,10 @@ export async function POST(req: NextRequest) {
     const res = await fetch(url, { headers });
     console.log(`[Assignments] Prism status=${res.status}`);
     if (res.ok) {
+      gotSuccessfulResponse = true;
       const data = await res.json();
-      groups = parsePrismAssignments(data);
-      fetched = true;
+      const parsed = parsePrismAssignments(data);
+      if (parsed.length > 0) { groups = parsed; }
     } else {
       const t = await res.text();
       console.log(`[Assignments] Prism body: ${t.substring(0, 200)}`);
@@ -89,16 +92,17 @@ export async function POST(req: NextRequest) {
   }
 
   // ── Endpoint 2: Legacy resources assignment API ──────────────────────────
-  if (!fetched) {
+  if (groups.length === 0) {
     try {
       const url = `${baseUrl}/resources/portal/assignment?courseSectionID=${courseId}${appQuery}`;
       const res = await fetch(url, { headers });
       console.log(`[Assignments] Legacy status=${res.status}`);
       if (res.ok) {
+        gotSuccessfulResponse = true;
         const data = await res.json();
-        groups = parseLegacyAssignments(data);
-        console.log(`[Assignments] Legacy parsed ${groups.length} groups`);
-        if (groups.length > 0) fetched = true;
+        const parsed = parseLegacyAssignments(data);
+        console.log(`[Assignments] Legacy parsed ${parsed.length} groups`);
+        if (parsed.length > 0) groups = parsed;
       } else {
         const t = await res.text();
         console.log(`[Assignments] Legacy body: ${t.substring(0, 200)}`);
@@ -108,63 +112,82 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  // ── Endpoint 3: Dublin Unified detail API ────────────────────────────────
-  if (!fetched) {
+  // ── Endpoint 3: Dublin USD detail API (try sectionID + alternate IDs) ────
+  // We'll also collect alternate IDs from the grades payload for retry
+  let rosterID: string | null = null;
+  let altID: string | null = null;
+
+  // First fetch grades to find alternate IDs for this course
+  const gradesQuery = appName ? `?appName=${encodeURIComponent(appName)}` : "";
+  let gradesData: any = null;
+  try {
+    const gradesRes = await fetch(`${baseUrl}/resources/portal/grades${gradesQuery}`, { headers });
+    console.log(`[Assignments] GradesFetch status=${gradesRes.status}`);
+    if (gradesRes.ok) {
+      gotSuccessfulResponse = true;
+      gradesData = await gradesRes.json();
+      const allCourses: any[] = (gradesData ?? []).flatMap((e: any) =>
+        (e?.terms ?? []).flatMap((t: any) => t?.courses ?? [])
+      );
+      const match = allCourses.find((c: any) =>
+        String(c?.sectionID) === courseId || String(c?._id) === courseId || String(c?.rosterID) === courseId
+      );
+      if (match) {
+        rosterID = match.rosterID != null ? String(match.rosterID) : null;
+        altID = match._id != null ? String(match._id) : null;
+        if (match.gradingTasks?.length > 0) {
+          console.log(`[Assignments] gradingTask[0] keys: ${Object.keys(match.gradingTasks[0]).join(", ")}`);
+        }
+      }
+    }
+  } catch (e) {
+    console.log(`[Assignments] GradesFetch error: ${e}`);
+  }
+
+  // Try detail endpoint with sectionID, rosterID, and _id
+  const detailIds = [...new Set([courseId, rosterID, altID].filter(Boolean))] as string[];
+  for (const id of detailIds) {
+    if (groups.length > 0) break;
     try {
       const dbQuery = appName ? `?appName=${encodeURIComponent(appName)}` : "";
-      const url = `${baseUrl}/resources/portal/grades/detail/${courseId}${dbQuery}`;
+      const url = `${baseUrl}/resources/portal/grades/detail/${id}${dbQuery}`;
       const res = await fetch(url, { headers });
-      console.log(`[Assignments] Detail status=${res.status}`);
+      console.log(`[Assignments] Detail(${id}) status=${res.status}`);
       if (res.ok) {
+        gotSuccessfulResponse = true;
         const data = await res.json();
         const parsed = parseLegacyAssignments(data);
-        console.log(`[Assignments] Detail parsed ${parsed.length} groups`);
-        if (parsed && parsed.length > 0) {
-           groups = parsed;
-           fetched = true;
+        console.log(`[Assignments] Detail(${id}) parsed ${parsed.length} groups`);
+        if (parsed.length > 0) {
+          groups = parsed;
         } else {
-          console.log(`[Assignments] Detail raw: ${JSON.stringify(data).substring(0, 300)}`);
-        }
-      } else {
-        const t = await res.text();
-        console.log(`[Assignments] Detail body: ${t.substring(0, 200)}`);
-      }
-    } catch (e) {
-      console.log(`[Assignments] Detail error: ${e}`);
-    }
-  }
-
-  // ── Endpoint 4: Extract from the full grades payload (Dublin USD fallback) ─
-  if (!fetched) {
-    try {
-      const gradesQuery = appName ? `?appName=${encodeURIComponent(appName)}` : "";
-      const url = `${baseUrl}/resources/portal/grades${gradesQuery}`;
-      const res = await fetch(url, { headers });
-      console.log(`[Assignments] GradesFallback status=${res.status}`);
-      if (res.ok) {
-        const data = await res.json();
-        const extracted = extractAssignmentsFromGrades(data, courseId);
-        console.log(`[Assignments] GradesFallback extracted ${extracted.length} groups`);
-        if (extracted.length > 0) {
-          groups = extracted;
-          fetched = true;
-        } else {
-          console.log(`[Assignments] GradesFallback: course not found or no assignments`);
+          console.log(`[Assignments] Detail(${id}) raw: ${JSON.stringify(data).substring(0, 300)}`);
         }
       }
     } catch (e) {
-      console.log(`[Assignments] GradesFallback error: ${e}`);
+      console.log(`[Assignments] Detail(${id}) error: ${e}`);
     }
   }
 
-  if (!fetched) {
+  // ── Endpoint 4: Extract from grades payload already fetched above ─────────
+  if (groups.length === 0 && gradesData) {
+    const extracted = extractAssignmentsFromGrades(gradesData, courseId);
+    console.log(`[Assignments] GradesFallback extracted ${extracted.length} groups`);
+    if (extracted.length > 0) groups = extracted;
+  }
+
+
+  // Return 401 only if we never got any successful response from IC (token fully expired).
+  // If IC responded but had no assignment data, return 200 with empty groups — the grade
+  // is still shown and no error banner appears.
+  if (!gotSuccessfulResponse) {
     return NextResponse.json(
-      { error: "Session expired or could not load assignments. Please log in again." },
+      { error: "Session expired or could not reach Infinite Campus. Please reconnect in Settings." },
       { status: 401 }
     );
   }
 
-  return NextResponse.json({ groups });
+  return NextResponse.json({ groups, source: groups.length > 0 ? "ic" : "none" });
 }
 
 // ── Parsers ────────────────────────────────────────────────────────────────

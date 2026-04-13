@@ -1,18 +1,51 @@
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
+  previewFeatures = ["driverAdapters"]
 }
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
 }
 
-enum UserRole { STUDENT COUNSELOR ADMIN }
-enum CourseType { STANDARD ADVANCED HONORS AP DUAL_ENROLLMENT }
-enum AlertSeverity { INFO WARNING CRITICAL }
-enum AdvisorLogType { GPA_DROP_ALERT MISSING_ASSIGNMENT_ALERT POSITIVE_TREND COURSE_RECOMMENDATION MILESTONE_REACHED }
-enum AlertStatus { PENDING ACKNOWLEDGED IN_PROGRESS RESOLVED DISMISSED }
-enum DataSource { INFINITE_CAMPUS }
+enum UserRole {
+  STUDENT
+  COUNSELOR
+  ADMIN
+}
+
+enum CourseType {
+  STANDARD
+  ADVANCED
+  HONORS
+  AP
+  DUAL_ENROLLMENT
+}
+
+enum AlertSeverity {
+  INFO
+  WARNING
+  CRITICAL
+}
+
+enum AdvisorLogType {
+  GPA_DROP_ALERT
+  MISSING_ASSIGNMENT_ALERT
+  POSITIVE_TREND
+  COURSE_RECOMMENDATION
+  MILESTONE_REACHED
+}
+
+enum AlertStatus {
+  PENDING
+  ACKNOWLEDGED
+  IN_PROGRESS
+  RESOLVED
+  DISMISSED
+}
+
+enum DataSource {
+  INFINITE_CAMPUS
+}
 
 model User {
   id             String    @id @default(cuid())
@@ -49,14 +82,14 @@ model Course {
   apBoost        Float      @default(0.0)
   isActive       Boolean    @default(true)
   source         DataSource @default(INFINITE_CAMPUS)
-  externalId     String?    // IC courseSectionID
+  externalId     String?
   createdAt      DateTime   @default(now())
   updatedAt      DateTime   @updatedAt
 
-  enrollments           Enrollment[]
-  assignments           Assignment[]
-  weightCategories      WeightCategory[]
-  gradingPeriods        GradingPeriod[]
+  enrollments      Enrollment[]
+  assignments      Assignment[]
+  weightCategories WeightCategory[]
+  gradingPeriods   GradingPeriod[]
 }
 
 model WeightCategory {
@@ -70,6 +103,7 @@ model WeightCategory {
   course          Course                  @relation(fields: [courseId], references: [id])
   assignments     Assignment[]
   simPlaceholders SimulationPlaceholder[]
+
   @@index([courseId])
 }
 
@@ -83,6 +117,7 @@ model GradingPeriod {
 
   course      Course       @relation(fields: [courseId], references: [id])
   assignments Assignment[]
+
   @@index([courseId])
 }
 
@@ -114,7 +149,7 @@ model Assignment {
   dueDate          DateTime?
   isPublished      Boolean    @default(true)
   source           DataSource @default(INFINITE_CAMPUS)
-  externalId       String?    // IC assignmentID
+  externalId       String?
   createdAt        DateTime   @default(now())
   updatedAt        DateTime   @updatedAt
 
@@ -123,6 +158,7 @@ model Assignment {
   weightCategory WeightCategory? @relation(fields: [weightCategoryId], references: [id])
   submissions    Submission[]
   overrides      SimulationOverride[]
+
   @@index([courseId, dueDate])
 }
 
@@ -141,6 +177,7 @@ model Submission {
   updatedAt    DateTime  @updatedAt
 
   assignment Assignment @relation(fields: [assignmentId], references: [id])
+
   @@index([assignmentId, userId])
   @@index([userId, missing])
 }
@@ -156,6 +193,7 @@ model GradeHistory {
   missingCount    Int      @default(0)
 
   user User @relation(fields: [userId], references: [id])
+
   @@index([userId, recordedAt])
 }
 
@@ -170,6 +208,7 @@ model GpaSnapshot {
   term          String
 
   user User @relation(fields: [userId], references: [id])
+
   @@index([userId, recordedAt])
 }
 
@@ -188,6 +227,7 @@ model Simulation {
   user         User                    @relation(fields: [userId], references: [id])
   overrides    SimulationOverride[]
   placeholders SimulationPlaceholder[]
+
   @@index([userId, courseId])
 }
 
@@ -227,6 +267,7 @@ model AdvisorLog {
 
   user   User             @relation(fields: [userId], references: [id])
   alerts CounselorAlert[]
+
   @@index([userId, createdAt])
 }
 
@@ -242,9 +283,10 @@ model CounselorAlert {
   notes        String?
   createdAt    DateTime    @default(now())
 
-  targetUser User       @relation("AlertTarget",   fields: [targetUserId], references: [id])
+  targetUser User       @relation("AlertTarget",    fields: [targetUserId], references: [id])
   counselor  User       @relation("AlertCounselor", fields: [counselorId],  references: [id])
   advisorLog AdvisorLog @relation(fields: [advisorLogId], references: [id])
+
   @@index([counselorId, status])
 }
 
@@ -260,6 +302,6 @@ model CourseRecommendation {
   createdAt        DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id])
+
   @@index([userId])
 }
-
