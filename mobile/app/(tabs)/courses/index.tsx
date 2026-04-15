@@ -12,6 +12,7 @@ import { useCourses } from "@/hooks/useCourses";
 import { useIC } from "@/contexts/InfiniteCampusContext";
 import { gradeColor } from "@/lib/utils";
 import { AlertTriangle, ChevronRight, BookOpen } from "lucide-react-native";
+import { GradeChip } from "@/components/ui/GradeChip";
 
 const COURSE_TYPE_COLORS: Record<string, string> = {
   AP: "#F43F5E",
@@ -31,9 +32,9 @@ function CourseTypeBadge({ type }: { type: string }) {
         borderColor: color,
         backgroundColor: color + "20",
         borderWidth: 1,
-        borderRadius: 6,
-        paddingHorizontal: 6,
-        paddingVertical: 2,
+        borderRadius: 8,
+        paddingHorizontal: 7,
+        paddingVertical: 3,
       }}
     >
       <Text style={{ color, fontSize: 10, fontWeight: "600" }}>{label}</Text>
@@ -56,39 +57,38 @@ export default function CoursesScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-space-void">
-      <View className="px-5 pt-5 pb-3">
+      {/* Header */}
+      <View className="px-5 pt-5 pb-4" style={{ borderBottomWidth: 1, borderBottomColor: "#1C2A45" }}>
         <Text className="text-2xl font-bold text-star-bright">My Grades</Text>
         {isConnected && (
-          <Text className="text-xs text-star-faint mt-1">
-            Synced from Infinite Campus
-          </Text>
+          <Text className="text-xs text-star-faint mt-1">Synced from Infinite Campus</Text>
         )}
       </View>
 
       {error ? (
-        <View className="mx-5 rounded-xl border border-red-500/20 bg-red-500/10 p-4">
+        <View className="mx-5 mt-4 rounded-2xl border border-red-500/20 bg-red-500/10 p-4">
           <Text className="text-sm text-red-400">{error}</Text>
         </View>
       ) : null}
 
       {courses.length === 0 && !loading ? (
         <View className="flex-1 items-center justify-center px-10">
-          <BookOpen size={40} color="#4A5578" />
-          <Text className="text-sm text-star-dim text-center mt-4">
+          <BookOpen size={44} color="#4A5578" />
+          <Text className="text-sm text-star-dim text-center mt-4 leading-6">
             No courses found.{"\n"}Connect Infinite Campus in Settings.
           </Text>
           <TouchableOpacity
             onPress={() => router.push("/(tabs)/settings")}
-            className="mt-4 px-5 py-2.5 rounded-lg bg-vela-400/20 border border-vela-400/30"
+            className="mt-5 px-6 py-3 rounded-xl bg-vela-400/20 border border-vela-400/30"
           >
-            <Text className="text-sm text-vela-300">Go to Settings</Text>
+            <Text className="text-sm text-vela-300 font-medium">Go to Settings</Text>
           </TouchableOpacity>
         </View>
       ) : (
         <FlatList
           data={courses}
           keyExtractor={(c) => c.id}
-          contentContainerStyle={{ padding: 20, paddingTop: 4, paddingBottom: 40 }}
+          contentContainerStyle={{ padding: 20, paddingTop: 16, paddingBottom: 48 }}
           showsVerticalScrollIndicator={false}
           renderItem={({ item: course }) => {
             const letter = course.letterGrade ?? "—";
@@ -97,38 +97,29 @@ export default function CoursesScreen() {
             return (
               <TouchableOpacity
                 onPress={() => router.push(`/(tabs)/courses/${course.id}`)}
-                className="border border-space-border rounded-xl bg-space-surface/50 p-4 mb-3"
-                activeOpacity={0.7}
+                className="border border-space-border rounded-2xl bg-space-surface/50 p-4 mb-3"
+                activeOpacity={0.65}
               >
-                <View className="flex-row items-start justify-between">
+                <View className="flex-row items-start justify-between mb-3">
                   <View className="flex-1 pr-3">
                     <Text
-                      className="text-sm font-semibold text-star-bright"
+                      className="text-[15px] font-semibold text-star-bright"
                       numberOfLines={1}
                     >
                       {course.name}
                     </Text>
-                    <Text className="text-xs text-star-faint mt-0.5">
+                    <Text className="text-xs text-star-faint mt-1">
                       {course.courseCode} · Period {course.period ?? "—"} · {course.term}
                     </Text>
                   </View>
 
                   <View className="flex-row items-center gap-2">
-                    <Text
-                      style={{
-                        color,
-                        fontWeight: "700",
-                        fontSize: 20,
-                        fontVariant: ["tabular-nums"],
-                      }}
-                    >
-                      {letter}
-                    </Text>
+                    <GradeChip letter={letter} size="md" />
                     <ChevronRight size={16} color="#4A5578" />
                   </View>
                 </View>
 
-                <View className="flex-row items-center justify-between mt-3">
+                <View className="flex-row items-center justify-between">
                   <View className="flex-row items-center gap-2">
                     <CourseTypeBadge type={course.courseType} />
                     {course.missingCount > 0 && (
@@ -152,7 +143,7 @@ export default function CoursesScreen() {
                 </View>
 
                 {course.currentGrade != null && (
-                  <View className="h-1 rounded-full bg-space-border mt-2 overflow-hidden">
+                  <View className="h-1 rounded-full bg-space-border mt-3 overflow-hidden">
                     <View
                       style={{
                         width: `${Math.min(course.currentGrade, 100)}%`,

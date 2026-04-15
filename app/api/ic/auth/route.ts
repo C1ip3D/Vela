@@ -46,7 +46,17 @@ export async function POST(req: NextRequest) {
     headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/121.0.0.0 Safari/537.36" }
   });
   const initCookies = typeof initRes.headers.getSetCookie === "function" ? initRes.headers.getSetCookie() : initRes.headers.get("set-cookie")?.split(/,(?=\s*[A-Za-z0-9_-]+\=)/) || [];
-  const initCookieStr = initCookies.map(c => c.split(";")[0].trim()).join("; ");
+
+  // Parse init cookies into a map so they can be merged with verify cookies later
+  const cookieJar = new Map<string, string>();
+  for (const c of initCookies) {
+    const pair = c.split(";")[0].trim();
+    const splitIdx = pair.indexOf("=");
+    if (splitIdx !== -1) {
+      cookieJar.set(pair.substring(0, splitIdx).trim(), pair.substring(splitIdx + 1).trim());
+    }
+  }
+  const initCookieStr = Array.from(cookieJar.entries()).map(([k, v]) => `${k}=${v}`).join("; ");
 
   const verifyUrl = `${base}/verify.jsp`;
   const formBody = new URLSearchParams();
@@ -119,33 +129,35 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  // Extract ALL cookies to use as our short-lived token
-  // This accounts for JSESSIONID, ICSID, campusTimezone, etc., across all IC versions.
-  let cookiesArray: string[] = [];
+  // Extract verify cookies and merge them on top of the init cookie jar.
+  // IC expects the full accumulated browser cookie jar — both the initial session
+  // cookies (JSESSIONID, tenancy cookies) AND the auth cookies from verify.jsp.
+  let verifyCookies: string[] = [];
   if (typeof icRes.headers.getSetCookie === "function") {
-    cookiesArray = icRes.headers.getSetCookie();
+    verifyCookies = icRes.headers.getSetCookie();
   } else {
-    // Fallback if getSetCookie is somehow not available
-    const setCookieHeader = icRes.headers.get("set-cookie") ?? "";
-    cookiesArray = setCookieHeader ? setCookieHeader.split(/,(?=\s*[A-Za-z0-9_-]+\=)/) : [];
+    const raw = icRes.headers.get("set-cookie") ?? "";
+    verifyCookies = raw ? raw.split(/,(?=\s*[A-Za-z0-9_-]+\=)/) : [];
   }
 
-  // Deduplicate cookies to prevent 'conflicting app name values' errors 
-  // where IC sends duplicate cookies like appName= and appName=dublin
-  const cookieMap = new Map<string, string>();
-  cookiesArray.forEach(c => {
+  // Merge: verify cookies override init cookies (same key wins with newer value)
+  for (const c of verifyCookies) {
     const pair = c.split(";")[0].trim();
-    if (pair && !pair.toLowerCase().startsWith("path=") && !pair.toLowerCase().startsWith("domain=") && !pair.toLowerCase().startsWith("expires=")) {
-      const splitIdx = pair.indexOf("=");
-      if (splitIdx !== -1) {
-         const key = pair.substring(0, splitIdx).trim();
-         const val = pair.substring(splitIdx + 1).trim();
-         cookieMap.set(key, val);
+    const splitIdx = pair.indexOf("=");
+    if (splitIdx !== -1) {
+      const key = pair.substring(0, splitIdx).trim();
+      const val = pair.substring(splitIdx + 1).trim();
+      if (key && !key.toLowerCase().startsWith("path") && !key.toLowerCase().startsWith("domain") && !key.toLowerCase().startsWith("expires")) {
+        cookieJar.set(key, val);
       }
     }
-  });
+  }
 
-  const authToken = Array.from(cookieMap.entries()).map(([k, v]) => `${k}=${v}`).join("; ");
+  // Always ensure appName cookie is set to prevent IC "conflicting app name values" errors
+  if (appName) cookieJar.set("appName", appName);
+
+  const authToken = Array.from(cookieJar.entries()).map(([k, v]) => `${k}=${v}`).join("; ");
+  console.log(`[IC Auth Debug] Final cookie jar keys: ${Array.from(cookieJar.keys()).join(", ")}`);
 
   if (!authToken) {
     return NextResponse.json(

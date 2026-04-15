@@ -52,21 +52,29 @@ export async function POST(req: NextRequest) {
     }
   }
 
+  // authToken is already a full cookie jar string (merged init + verify cookies)
   const cookieStr = authToken.includes("=") ? authToken : `ICSID=${authToken}`;
-  const finalCookieStr = appName && !cookieStr.includes("appName=") 
-    ? `${cookieStr}; appName=${appName}` 
-    : cookieStr;
+
+  // Extract XSRF-TOKEN value — IC requires it as both a cookie AND an X-XSRF-TOKEN header
+  // on all AJAX requests, even GETs. Without it the server returns 401 despite a valid JSESSIONID.
+  const xsrfToken = cookieStr
+    .split(";")
+    .map((p) => p.trim())
+    .find((p) => p.startsWith("XSRF-TOKEN="))
+    ?.split("=")[1] ?? "";
 
   const headers: Record<string, string> = {
-    Cookie: finalCookieStr,
+    Cookie: cookieStr,
     Accept: "application/json",
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36",
+    ...(xsrfToken && { "X-XSRF-TOKEN": xsrfToken }),
   };
   if (appName) {
     headers["appName"] = appName;
     headers["X-Campus-AppName"] = appName;
     headers["Referer"] = `${baseUrl}/portal/students/${appName}`;
   }
+  console.log(`[IC Debug] XSRF-TOKEN present: ${!!xsrfToken}`);
 
   // Try the main IC Portal grades API
   let courses: ICCourse[] = [];
@@ -75,35 +83,33 @@ export async function POST(req: NextRequest) {
   const appQuery = appName ? `?appName=${encodeURIComponent(appName)}` : "";
 
   // Endpoint 1: prism API (newer IC versions)
-  console.log(`[IC Debug] Attempting to fetch prism API at: ${baseUrl}/prism/api/portal/grades${appQuery}`);
-  console.log(`[IC Debug] Using authToken: ${authToken.substring(0, 10)}... (length: ${authToken.length})`);
-  
+  console.log(`[IC Debug] Attempting prism API: ${baseUrl}/prism/api/portal/grades${appQuery}`);
+  console.log(`[IC Debug] Cookie jar keys: ${authToken.split(";").map(p => p.split("=")[0].trim()).join(", ")}`);
+
   try {
     const gradesRes = await fetch(`${baseUrl}/prism/api/portal/grades${appQuery}`, { headers });
-    console.log(`[IC Debug] Prism API Status: ${gradesRes.status}`);
-    
+    console.log(`[IC Debug] Prism status: ${gradesRes.status}`);
+
     if (gradesRes.ok) {
       const rawText = await gradesRes.text();
-      console.log(`[IC Debug] Prism raw response text length: ${rawText.length}. Sample: ${rawText.substring(0, 500)}`);
-      
+      console.log(`[IC Debug] Prism response (${rawText.length} chars): ${rawText.substring(0, 800)}`);
       try {
         const data = JSON.parse(rawText);
         const parsed = parseResilient(data, baseUrl);
-        console.log(`[IC Debug] Prism parser found ${parsed.length} courses!`);
+        console.log(`[IC Debug] Prism parsed ${parsed.length} courses`);
         if (parsed.length > 0) {
           courses = parsed;
           fetched = true;
         }
       } catch (parseErr) {
-        console.error("[IC Debug] Failed to parse Prism JSON", parseErr);
+        console.error("[IC Debug] Prism JSON parse error:", parseErr);
       }
     } else {
-      console.log(`[IC Debug] Prism API returned non-ok status: ${gradesRes.status}`);
       const errText = await gradesRes.text();
-      console.log(`[IC Debug] Prism Error Body: ${errText.substring(0, 500)}`);
+      console.log(`[IC Debug] Prism error body: ${errText.substring(0, 500)}`);
     }
   } catch (e) {
-    console.error(`[IC Debug] Prism API network error:`, e);
+    console.error(`[IC Debug] Prism network error:`, e);
   }
 
   // Endpoint 2: legacy resources/portal/grades

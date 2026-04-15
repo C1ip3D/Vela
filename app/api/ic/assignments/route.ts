@@ -49,14 +49,19 @@ export async function POST(req: NextRequest) {
   }
 
   const cookieStr = authToken.includes("=") ? authToken : `ICSID=${authToken}`;
-  const finalCookieStr = appName && !cookieStr.includes("appName=") 
-    ? `${cookieStr}; appName=${appName}` 
-    : cookieStr;
+
+  // IC requires XSRF-TOKEN as both a cookie and X-XSRF-TOKEN header on all requests
+  const xsrfToken = cookieStr
+    .split(";")
+    .map((p) => p.trim())
+    .find((p) => p.startsWith("XSRF-TOKEN="))
+    ?.split("=")[1] ?? "";
 
   const headers: Record<string, string> = {
-    Cookie: finalCookieStr,
+    Cookie: cookieStr,
     Accept: "application/json",
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36",
+    ...(xsrfToken && { "X-XSRF-TOKEN": xsrfToken }),
   };
   if (appName) {
     headers["appName"] = appName;
