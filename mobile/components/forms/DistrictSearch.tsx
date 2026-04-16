@@ -5,6 +5,7 @@ import {
   TextInput,
   TouchableOpacity,
   FlatList,
+  ScrollView,
   ActivityIndicator,
   Modal,
 } from "react-native";
@@ -89,7 +90,7 @@ export function DistrictSearch({
             className="flex-row items-center justify-between border border-space-border rounded-xl bg-space-mid/60 px-3 py-3"
             style={{ minHeight: 46 }}
           >
-            <Text className="text-sm text-star-bright">{icStateCode}</Text>
+            <Text className="text-lg text-star-bright">{icStateCode}</Text>
             <MapPin size={12} color="#4A5578" />
           </TouchableOpacity>
         </View>
@@ -110,35 +111,34 @@ export function DistrictSearch({
               }}
               placeholder="Search district..."
               placeholderTextColor="#4A5578"
-              className="flex-1 py-3 px-2 text-sm text-star-bright"
+              className="flex-1 py-3 px-2 text-lg text-star-bright"
             />
             {isSearching && <ActivityIndicator size="small" color="#4A5578" />}
           </View>
 
           {showDropdown && districts.length > 0 && !selectedDistrict && (
-            <View
+            <ScrollView
               className="border border-space-border rounded-xl bg-space-mid mt-1.5 overflow-hidden"
               style={{ maxHeight: 160 }}
+              keyboardShouldPersistTaps="handled"
+              nestedScrollEnabled
             >
-              <FlatList
-                data={districts}
-                keyExtractor={(_, i) => i.toString()}
-                renderItem={({ item }) => (
-                  <TouchableOpacity
-                    onPress={() => {
-                      onSelect(item);
-                      setDistrictQuery(item.district_name);
-                      setShowDropdown(false);
-                    }}
-                    className="px-4 py-3 border-b border-space-border/50"
-                  >
-                    <Text className="text-sm text-star-bright" numberOfLines={1}>
-                      {item.district_name}
-                    </Text>
-                  </TouchableOpacity>
-                )}
-              />
-            </View>
+              {districts.map((item, i) => (
+                <TouchableOpacity
+                  key={i.toString()}
+                  onPress={() => {
+                    onSelect(item);
+                    setDistrictQuery(item.district_name);
+                    setShowDropdown(false);
+                  }}
+                  className="px-4 py-3 border-b border-space-border/50"
+                >
+                  <Text className="text-sm text-star-bright" numberOfLines={1}>
+                    {item.district_name}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
           )}
         </View>
       </View>

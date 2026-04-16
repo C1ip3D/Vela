@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   View,
   Text,
@@ -8,13 +8,72 @@ import {
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
+  Image,
+  Animated,
+  Dimensions,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { router } from "expo-router";
-import { Eye, EyeOff, ArrowRight, School, Compass } from "lucide-react-native";
+import { Eye, EyeOff, ArrowRight } from "lucide-react-native";
 import { useAuth } from "@/contexts/AuthContext";
 import { useIC } from "@/contexts/InfiniteCampusContext";
 import { DistrictSearch, District } from "@/components/forms/DistrictSearch";
+
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
+
+const STARS = [
+  { x: 0.08, y: 0.05, size: 1.5, delay: 0 },
+  { x: 0.22, y: 0.12, size: 2,   delay: 400 },
+  { x: 0.65, y: 0.07, size: 1,   delay: 800 },
+  { x: 0.82, y: 0.18, size: 2.5, delay: 200 },
+  { x: 0.45, y: 0.03, size: 1.5, delay: 1200 },
+  { x: 0.91, y: 0.35, size: 1,   delay: 600 },
+  { x: 0.05, y: 0.28, size: 2,   delay: 1000 },
+  { x: 0.35, y: 0.22, size: 1,   delay: 300 },
+  { x: 0.72, y: 0.30, size: 1.5, delay: 900 },
+  { x: 0.55, y: 0.40, size: 1,   delay: 1400 },
+  { x: 0.15, y: 0.45, size: 2,   delay: 700 },
+  { x: 0.88, y: 0.55, size: 1.5, delay: 100 },
+  { x: 0.30, y: 0.60, size: 1,   delay: 1600 },
+  { x: 0.60, y: 0.65, size: 2,   delay: 500 },
+  { x: 0.10, y: 0.70, size: 1.5, delay: 1100 },
+  { x: 0.78, y: 0.72, size: 1,   delay: 1800 },
+  { x: 0.42, y: 0.78, size: 2,   delay: 250 },
+  { x: 0.95, y: 0.80, size: 1.5, delay: 1300 },
+  { x: 0.25, y: 0.85, size: 1,   delay: 750 },
+  { x: 0.68, y: 0.90, size: 2,   delay: 1700 },
+];
+
+function Star({ x, y, size, delay }: { x: number; y: number; size: number; delay: number }) {
+  const opacity = useRef(new Animated.Value(0.2)).current;
+
+  useEffect(() => {
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.delay(delay),
+        Animated.timing(opacity, { toValue: 1, duration: 1200, useNativeDriver: true }),
+        Animated.timing(opacity, { toValue: 0.2, duration: 1200, useNativeDriver: true }),
+      ])
+    );
+    loop.start();
+    return () => loop.stop();
+  }, []);
+
+  return (
+    <Animated.View
+      style={{
+        position: "absolute",
+        left: x * SCREEN_WIDTH,
+        top: y * SCREEN_HEIGHT,
+        width: size,
+        height: size,
+        borderRadius: size / 2,
+        backgroundColor: "#A5B4FC",
+        opacity,
+      }}
+    />
+  );
+}
 
 export default function LoginScreen() {
   const { signIn, signUp, user } = useAuth();
@@ -62,47 +121,42 @@ export default function LoginScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-space-void">
+      {/* Shimmering stars */}
+      <View style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }} pointerEvents="none">
+        {STARS.map((s, i) => (
+          <Star key={i} {...s} />
+        ))}
+      </View>
+
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         className="flex-1"
       >
+        {/* Logo — absolutely pinned to top */}
+        <View style={{ position: "absolute", top: 72, left: 0, right: 0, alignItems: "center" }} pointerEvents="none">
+          <Image
+            source={require("@/assets/logo.png")}
+            style={{ width: 150, height: 150 }}
+            resizeMode="contain"
+          />
+          <Text className="text-3xl font-bold text-star-bright tracking-widest">VELA</Text>
+          <Text className="text-[11px] text-star-faint tracking-[0.3em] mt-1.5">
+            ACADEMIC NAVIGATOR
+          </Text>
+        </View>
+
         <ScrollView
-          contentContainerStyle={{ flexGrow: 1, justifyContent: "center", padding: 24 }}
+          contentContainerStyle={{ flexGrow: 1, justifyContent: "center", paddingHorizontal: 24 }}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-          {/* Logo */}
-          <View className="items-center mb-10">
-            <View
-              className="w-20 h-20 rounded-3xl bg-vela-400/20 border border-vela-400/30 items-center justify-center mb-4"
-            >
-              <Compass size={38} color="#818CF8" />
-            </View>
-            <Text className="text-3xl font-bold text-star-bright tracking-widest">VELA</Text>
-            <Text className="text-[11px] text-star-faint tracking-[0.3em] mt-1.5">
-              ACADEMIC NAVIGATOR
-            </Text>
-          </View>
-
-          {/* Card */}
+          {/* Card — centered on screen */}
           <View className="rounded-3xl border border-space-border bg-space-surface/60 p-7">
-            {/* Card header */}
-            <View className="flex-row items-center gap-3.5 mb-6">
-              <View className="w-11 h-11 rounded-xl bg-vela-400/15 border border-vela-400/20 items-center justify-center">
-                <School size={22} color="#818CF8" />
-              </View>
-              <View>
-                <Text className="text-xl font-semibold text-star-bright">Sign In</Text>
-                <Text className="text-sm text-star-dim mt-0.5">
-                  Use your Infinite Campus credentials
-                </Text>
-              </View>
-            </View>
 
             {/* Error */}
             {icError ? (
               <View className="mb-5 rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3">
-                <Text className="text-sm text-red-400">{icError}</Text>
+                <Text className="text-base text-red-400">{icError}</Text>
               </View>
             ) : null}
 
@@ -118,7 +172,7 @@ export default function LoginScreen() {
             {/* Credentials — shown after district selected */}
             {selectedDistrict && (
               <View>
-                <Text className="text-xs text-star-dim uppercase tracking-wider mb-1.5">
+                <Text className="text-sm text-star-dim uppercase tracking-wider mb-1.5">
                   Username
                 </Text>
                 <TextInput
@@ -127,16 +181,16 @@ export default function LoginScreen() {
                   placeholder="IC Username"
                   placeholderTextColor="#4A5578"
                   autoCapitalize="none"
-                  className="border border-space-border rounded-xl bg-space-mid/60 px-4 text-sm text-star-bright mb-4"
-                  style={{ height: 48 }}
+                  className="border border-space-border rounded-xl bg-space-mid/60 px-4 text-base text-star-bright mb-4"
+                  style={{ height: 52 }}
                 />
 
-                <Text className="text-xs text-star-dim uppercase tracking-wider mb-1.5">
+                <Text className="text-sm text-star-dim uppercase tracking-wider mb-1.5">
                   Password
                 </Text>
                 <View
                   className="flex-row items-center border border-space-border rounded-xl bg-space-mid/60 px-4 mb-6"
-                  style={{ height: 48 }}
+                  style={{ height: 52 }}
                 >
                   <TextInput
                     value={icPassword}
@@ -144,7 +198,7 @@ export default function LoginScreen() {
                     placeholder="••••••••"
                     placeholderTextColor="#4A5578"
                     secureTextEntry={!showIcPassword}
-                    className="flex-1 text-sm text-star-bright"
+                    className="flex-1 text-base text-star-bright"
                   />
                   <TouchableOpacity
                     onPress={() => setShowIcPassword(!showIcPassword)}
@@ -168,7 +222,7 @@ export default function LoginScreen() {
                     <ActivityIndicator color="white" size="small" />
                   ) : (
                     <>
-                      <Text className="text-base font-semibold text-white">Sign In Securely</Text>
+                      <Text className="text-lg font-semibold text-white">Sign In</Text>
                       <ArrowRight size={16} color="white" />
                     </>
                   )}
