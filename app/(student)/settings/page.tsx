@@ -53,11 +53,11 @@ function Toggle({ on, onToggle }: { on: boolean; onToggle: () => void }) {
 export default function SettingsPage() {
   const { user } = useAuth();
   const { session, isConnected, isChecking, login, logout, loginError } = useIC();
-  const displayName = user?.displayName || "Student";
-  const email = user?.email || "not connected";
+  const displayName = user?.displayName || session?.displayName || "Student";
+  const isICAccount = user?.email?.includes(".ic.vela.app") ?? false;
+  const email = isICAccount ? null : (user?.email ?? null);
 
   // IC login form state
-  const [districtUrl, setDistrictUrl] = useState("");
   const [icUsername, setIcUsername] = useState("");
   const [icPassword, setIcPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -116,21 +116,20 @@ export default function SettingsPage() {
     setPrefs((p) => ({ ...p, [key]: val }));
 
   const handleLogin = async () => {
-    const finalUrl = selectedDistrict ? selectedDistrict.district_baseurl : districtUrl;
-    if (!finalUrl.trim() || !icUsername.trim() || !icPassword.trim()) return;
-    await login(finalUrl.trim(), icUsername.trim(), icPassword.trim(), selectedDistrict?.district_app_name);
+    if (!selectedDistrict || !icUsername.trim() || !icPassword.trim()) return;
+    await login(selectedDistrict.district_baseurl.trim(), icUsername.trim(), icPassword.trim(), selectedDistrict.district_app_name);
     if (isConnected) setIcPassword("");
   };
 
   const handleTestEmail = async () => {
-    if (!email || email === "not connected") return;
+    if (!email) return;
     setIsSendingEmail(true);
     setTestStatus((s) => ({ ...s, email: "idle" }));
     try {
       const res = await fetch("/api/notifications/test-email", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({ email: email! }),
       });
       setTestStatus((s) => ({ ...s, email: res.ok ? "success" : "error" }));
     } catch {
@@ -224,7 +223,7 @@ export default function SettingsPage() {
                       className="w-full rounded-lg border border-[#1C2A45]/50 bg-[#0C1220]/60 pl-9 pr-8 py-2.5 text-sm text-[#E8ECFF] placeholder-[#4A5578] outline-none focus:border-[#818CF8]/40 focus:shadow-[0_0_12px_rgba(129,140,248,0.1)] transition-all"
                       placeholder="Search district..." />
                     {isSearchingDistrict && <Loader2 size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#4A5578] animate-spin" />}
-                    
+
                     {showDropdown && districts.length > 0 && !selectedDistrict && (
                       <div className="absolute z-50 left-0 right-0 top-[110%] rounded-lg border border-[#1C2A45] bg-[#0C1220]/95 backdrop-blur-md shadow-xl max-h-48 overflow-y-auto">
                         {districts.map((d, i) => (
@@ -238,20 +237,6 @@ export default function SettingsPage() {
                   </div>
                 </div>
               </div>
-
-              {!selectedDistrict && (
-                <div>
-                  <label className="mb-1.5 block text-xs font-medium text-[#8B98B8] uppercase tracking-wider">Or Portal URL directly</label>
-                  <input
-                    type="url"
-                    value={districtUrl}
-                    onChange={(e) => { setDistrictUrl(e.target.value); setSelectedDistrict(null); setDistrictQuery(""); }}
-                    className="w-full rounded-lg border border-[#1C2A45]/50 bg-[#0C1220]/60 px-4 py-2.5 text-sm text-[#E8ECFF] placeholder-[#4A5578] outline-none focus:border-[#818CF8]/40 transition-all"
-                    placeholder="https://dublinusd.infinitecampus.org/campus"
-                  />
-                </div>
-              )}
-
 
               {/* Username */}
               <div>
@@ -297,7 +282,7 @@ export default function SettingsPage() {
 
               <button
                 onClick={handleLogin}
-                disabled={isChecking || (!selectedDistrict && !districtUrl.trim()) || !icUsername.trim() || !icPassword.trim()}
+                disabled={isChecking || !selectedDistrict || !icUsername.trim() || !icPassword.trim()}
                 className="w-full flex items-center justify-center gap-2 rounded-lg bg-[#818CF8] py-2.5 text-sm font-medium text-white hover:bg-[#6366F1] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-[0_0_16px_rgba(129,140,248,0.25)]"
               >
                 {isChecking ? <Loader2 size={14} className="animate-spin" /> : "Connect Infinite Campus"}
@@ -348,7 +333,7 @@ export default function SettingsPage() {
                   <Mail size={16} className="text-[#A5B4FC]" />
                   <div>
                     <p className="text-sm text-[#E8ECFF]">Email Alerts</p>
-                    <p className="text-xs text-[#8B98B8]">{email !== "not connected" ? email : "Sign in to enable"}</p>
+                    <p className="text-xs text-[#8B98B8]">{email ?? "Not available for Infinite Campus accounts"}</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
@@ -359,7 +344,7 @@ export default function SettingsPage() {
               </div>
               {prefs.emailEnabled && (
                 <div className="px-4 pb-3 pt-2 bg-[#0C1220]/40 border-t border-[#1C2A45]/30">
-                  <button onClick={handleTestEmail} disabled={isSendingEmail || email === "not connected"}
+                  <button onClick={handleTestEmail} disabled={isSendingEmail || !email}
                     className="flex items-center gap-2 rounded-lg bg-[#818CF8]/15 border border-[#818CF8]/25 px-4 py-2 text-xs text-[#A5B4FC] hover:bg-[#818CF8]/25 disabled:opacity-40 disabled:cursor-not-allowed transition-all">
                     {isSendingEmail ? <Loader2 size={12} className="animate-spin" /> : "Send Test Email"}
                   </button>
@@ -446,7 +431,8 @@ export default function SettingsPage() {
           <div className="flex items-center justify-between rounded-lg bg-[#162032]/60 border border-[#1C2A45]/40 px-4 py-3">
             <div>
               <p className="text-sm text-[#E8ECFF]">{displayName}</p>
-              <p className="text-xs text-[#8B98B8]">{email}</p>
+              {email && <p className="text-xs text-[#8B98B8]">{email}</p>}
+              {isICAccount && <p className="text-xs text-[#8B98B8]">Infinite Campus account</p>}
             </div>
             <span className="flex items-center gap-1.5 text-xs text-emerald-400">
               <div className="h-1.5 w-1.5 rounded-full bg-emerald-400 shadow-[0_0_6px_rgba(16,185,129,0.5)]" />Signed In
