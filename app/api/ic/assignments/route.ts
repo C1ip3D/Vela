@@ -192,7 +192,35 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  return NextResponse.json({ groups, source: groups.length > 0 ? "ic" : "none" });
+  const filtered = filterToCurrentSemester(groups);
+  return NextResponse.json({ groups: filtered, source: filtered.length > 0 ? "ic" : "none" });
+}
+
+// ── Semester filter ───────────────────────────────────────────────────────
+// Returns the start date of the current academic semester.
+// Spring: Jan 1 – Jul 31  →  Jan 1 of this year
+// Fall:   Aug 1 – Dec 31  →  Aug 1 of this year
+function currentSemesterStart(): Date {
+  const now = new Date();
+  const month = now.getMonth(); // 0-indexed
+  if (month >= 7) {
+    // Aug–Dec: fall semester
+    return new Date(now.getFullYear(), 7, 1); // Aug 1
+  } else {
+    // Jan–Jul: spring semester
+    return new Date(now.getFullYear(), 0, 1); // Jan 1
+  }
+}
+
+function filterToCurrentSemester(groups: ICAssignmentGroup[]): ICAssignmentGroup[] {
+  const cutoff = currentSemesterStart();
+  return groups.map((g) => ({
+    ...g,
+    assignments: g.assignments.filter((a) => {
+      if (!a.dueAt) return true; // no due date — keep it
+      return new Date(a.dueAt) >= cutoff;
+    }),
+  })).filter((g) => g.assignments.length > 0);
 }
 
 // ── Parsers ────────────────────────────────────────────────────────────────
