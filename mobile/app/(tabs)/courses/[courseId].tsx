@@ -230,20 +230,22 @@ function AssignmentRow({
         </View>
 
         {/* Right: score + 3-dot menu */}
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 12, alignSelf: "center" }}>
+          {/* Delta — vertically centered next to score */}
+          {scoreDelta != null && (
+            <Text style={{ fontSize: 14, color: deltaColor(scoreDelta), fontWeight: "700" }}>
+              {formatDelta(scoreDelta)}
+            </Text>
+          )}
+
           {/* Score display */}
           <View style={{ alignItems: "flex-end" }}>
             <Text style={{ color: "#34D399", fontSize: 22, fontWeight: "700", fontVariant: ["tabular-nums"] }}>
               {effectiveScore != null ? `${effectiveScore}/${assignment.pointsPossible}` : "—"}
             </Text>
-            <Text style={{ fontSize: 12, color: "#4A5578", marginTop: 2 }}>
+            <Text style={{ fontSize: 14, color: "#4A5578", fontWeight: "600", marginTop: 2 }}>
               {pct != null ? `${pct.toFixed(1)}%` : ""}
             </Text>
-            {scoreDelta != null && (
-              <Text style={{ fontSize: 11, color: deltaColor(scoreDelta), marginTop: 1, fontWeight: "600" }}>
-                {formatDelta(scoreDelta)}
-              </Text>
-            )}
           </View>
 
           {/* 3-dot button */}

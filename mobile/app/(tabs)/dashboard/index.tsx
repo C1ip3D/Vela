@@ -155,7 +155,7 @@ export default function DashboardScreen() {
           >
             {/* Header row */}
             <View className="px-6 pt-5 pb-4">
-              <Text className="text-[10px] text-star-faint uppercase tracking-[0.22em]">
+              <Text className="text-[15px] text-star-faint uppercase tracking-[0.22em]">
                 GPA Overview
               </Text>
             </View>
@@ -167,7 +167,7 @@ export default function DashboardScreen() {
             <View className="flex-row px-2 py-5">
               {/* Unweighted */}
               <View className="flex-1 items-center">
-                <Text className="text-[10px] text-star-faint uppercase tracking-widest mb-2">
+                <Text className="text-[13px] text-star-faint uppercase tracking-widest mb-2">
                   Unweighted
                 </Text>
                 <Text
@@ -176,7 +176,6 @@ export default function DashboardScreen() {
                 >
                   {gpa.unweighted.toFixed(2)}
                 </Text>
-                <Text className="text-[10px] text-star-faint mt-1">out of 4.0</Text>
               </View>
 
               {/* Divider */}
@@ -184,7 +183,7 @@ export default function DashboardScreen() {
 
               {/* Weighted */}
               <View className="flex-1 items-center">
-                <Text className="text-[10px] text-star-faint uppercase tracking-widest mb-2">
+                <Text className="text-[13px] text-star-faint uppercase tracking-widest mb-2">
                   Weighted
                 </Text>
                 <Text
@@ -193,7 +192,6 @@ export default function DashboardScreen() {
                 >
                   {gpa.weighted.toFixed(2)}
                 </Text>
-                <Text className="text-[10px] text-star-faint mt-1">out of 5.0</Text>
               </View>
             </View>
           </View>
