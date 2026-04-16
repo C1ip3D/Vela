@@ -3,7 +3,6 @@ import React, { useState, useEffect, useRef } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useIC } from "@/contexts/InfiniteCampusContext";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import { VelaLogo } from "@/components/ui/VelaLogo";
 import {
   Eye, EyeOff, ArrowRight,
@@ -207,12 +206,6 @@ export default function SignupPage() {
             )}
           </div>
 
-          <p className="mt-8 text-center text-sm text-[#8B98B8]">
-            Already have an account?{" "}
-            <Link href="/login" className="text-[#A5B4FC] hover:text-[#818CF8] transition-colors font-medium">
-              Sign in
-            </Link>
-          </p>
         </div>
       </div>
     </div>

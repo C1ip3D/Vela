@@ -73,7 +73,7 @@ export function Sidebar({ role = "STUDENT" }: { role?: string }) {
 
       {/* Sign out */}
       <div className="px-2 mb-2">
-        <button onClick={async () => { const { signOut } = await import("firebase/auth"); const { auth } = await import("@/lib/firebase"); await signOut(auth); window.location.href = "/login"; }}
+        <button onClick={async () => { const { signOut } = await import("firebase/auth"); const { auth } = await import("@/lib/firebase"); await signOut(auth); window.location.href = "/signup"; }}
           className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-[#8B98B8] hover:bg-[#162032]/60 hover:text-rose-400 border border-transparent hover:border-[#1C2A45]/50 transition-all duration-200">
           <LogOut size={24} className="shrink-0" />
           {!collapsed && <span>Sign Out</span>}
