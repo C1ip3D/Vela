@@ -2,25 +2,15 @@
 import { useState, useEffect } from "react";
 import { TopBar } from "@/components/layout/TopBar";
 import { useAuth } from "@/contexts/AuthContext";
-import {
-  Eye, EyeOff, CheckCircle, XCircle, Loader2,
-  Bell, MessageCircle,
-  ChevronDown, ChevronUp,
-} from "lucide-react";
+import { Bell } from "lucide-react";
 
 interface NotificationPrefs {
-  telegram: boolean;
-  telegramBotToken: string;
-  telegramChatId: string;
   gradeAlerts: boolean;
   assignmentAlerts: boolean;
   weeklyDigest: boolean;
 }
 
 const DEFAULT_PREFS: NotificationPrefs = {
-  telegram: false,
-  telegramBotToken: "",
-  telegramChatId: "",
   gradeAlerts: true,
   assignmentAlerts: true,
   weeklyDigest: false,
@@ -46,15 +36,11 @@ export default function SettingsPage() {
   const displayName = user?.displayName || "Student";
 
   const [prefs, setPrefs] = useState<NotificationPrefs>(DEFAULT_PREFS);
-  const [showTelegramSetup, setShowTelegramSetup] = useState(false);
-  const [showTelegramToken, setShowTelegramToken] = useState(false);
-  const [isSendingTelegram, setIsSendingTelegram] = useState(false);
-  const [testStatus, setTestStatus] = useState<Record<string, "idle" | "success" | "error">>({});
 
   useEffect(() => {
-    const savedPrefs = localStorage.getItem("vela_notif_prefs");
-    if (savedPrefs) {
-      try { setPrefs({ ...DEFAULT_PREFS, ...JSON.parse(savedPrefs) }); } catch {}
+    const saved = localStorage.getItem("vela_notif_prefs");
+    if (saved) {
+      try { setPrefs({ ...DEFAULT_PREFS, ...JSON.parse(saved) }); } catch {}
     }
   }, []);
 
@@ -63,45 +49,17 @@ export default function SettingsPage() {
   const updatePref = <K extends keyof NotificationPrefs>(key: K, val: NotificationPrefs[K]) =>
     setPrefs((p) => ({ ...p, [key]: val }));
 
-  const handleTestTelegram = async () => {
-    if (!prefs.telegramBotToken || !prefs.telegramChatId) return;
-    setIsSendingTelegram(true);
-    setTestStatus((s) => ({ ...s, telegram: "idle" }));
-    try {
-      const res = await fetch("/api/notifications/grade-alert", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          studentName: displayName,
-          type: "grade_update",
-          courseName: "AP Calculus BC",
-          details: { oldGrade: 88.5, newGrade: 91.4 },
-          prefs: { ...prefs, email: user?.email, gradeAlerts: true },
-        }),
-      });
-      setTestStatus((s) => ({ ...s, telegram: res.ok ? "success" : "error" }));
-    } catch {
-      setTestStatus((s) => ({ ...s, telegram: "error" }));
-    } finally {
-      setIsSendingTelegram(false);
-      setTimeout(() => setTestStatus((s) => ({ ...s, telegram: "idle" })), 3000);
-    }
-  };
-
   return (
     <div className="flex flex-col min-h-screen">
       <TopBar title="Settings" studentName={displayName} />
       <div className="flex-1 p-6 max-w-4xl mx-auto space-y-6">
 
-        {/* Notifications */}
         <div className="animate-fade-in rounded-xl border border-[#1C2A45]/60 bg-[#101828]/50 backdrop-blur-sm p-5 space-y-5">
           <h2 className="text-sm font-semibold text-[#E8ECFF] flex items-center gap-2">
             <Bell size={14} className="text-[#818CF8]" /> Notifications
           </h2>
 
-          {/* Alert types */}
           <div className="space-y-3">
-            <p className="text-xs font-medium text-[#8B98B8] uppercase tracking-wider">Alert Types</p>
             {[
               { key: "gradeAlerts" as const, label: "Overall Grade Updates", desc: "Alert when a course grade changes" },
               { key: "assignmentAlerts" as const, label: "Assignment Updates", desc: "Alert when a missing assignment is detected" },
@@ -112,87 +70,12 @@ export default function SettingsPage() {
                   <p className="text-sm text-[#E8ECFF]">{item.label}</p>
                   <p className="text-xs text-[#8B98B8]">{item.desc}</p>
                 </div>
-                <Toggle on={prefs[item.key] as boolean} onToggle={() => updatePref(item.key, !prefs[item.key])} />
+                <Toggle on={prefs[item.key]} onToggle={() => updatePref(item.key, !prefs[item.key])} />
               </div>
             ))}
           </div>
-
-          {/* Delivery channels */}
-          <div className="space-y-3">
-            <p className="text-xs font-medium text-[#8B98B8] uppercase tracking-wider">Delivery Channels</p>
-
-            {/* Telegram */}
-            <div className="rounded-lg border border-[#1C2A45]/40 overflow-hidden">
-              <div className="flex items-center justify-between bg-[#162032]/60 px-4 py-3">
-                <div className="flex items-center gap-2.5">
-                  <MessageCircle size={16} className="text-[#A5B4FC]" />
-                  <div>
-                    <p className="text-sm text-[#E8ECFF]">Telegram Alerts</p>
-                    <p className="text-xs text-[#8B98B8]">
-                      {prefs.telegramChatId ? `Chat ID: ${prefs.telegramChatId}` : "Configure below to enable"}
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3">
-                  {testStatus.telegram === "success" && <span className="text-xs text-emerald-400 flex items-center gap-1"><CheckCircle size={12} /> Sent!</span>}
-                  {testStatus.telegram === "error" && <span className="text-xs text-rose-400 flex items-center gap-1"><XCircle size={12} /> Failed</span>}
-                  <Toggle on={prefs.telegram} onToggle={() => updatePref("telegram", !prefs.telegram)} />
-                </div>
-              </div>
-              {prefs.telegram && (
-                <div className="px-4 pb-4 pt-3 bg-[#0C1220]/40 border-t border-[#1C2A45]/30 space-y-3">
-                  <button onClick={() => setShowTelegramSetup(!showTelegramSetup)}
-                    className="flex items-center gap-1.5 text-xs text-[#818CF8] hover:text-[#A5B4FC] transition-colors">
-                    {showTelegramSetup ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
-                    Setup instructions
-                  </button>
-                  {showTelegramSetup && (
-                    <div className="rounded-lg bg-[#162032]/60 border border-[#1C2A45]/30 p-3 text-xs text-[#8B98B8] space-y-1.5">
-                      <p className="text-[#A5B4FC] font-medium">How to set up Telegram alerts:</p>
-                      <p>1. Message <span className="text-[#E8ECFF] font-mono">@BotFather</span> on Telegram → create a new bot → copy the Bot Token</p>
-                      <p>2. Message your new bot (start a chat with it)</p>
-                      <p>3. Message <span className="text-[#E8ECFF] font-mono">@userinfobot</span> to get your Chat ID</p>
-                      <p>4. Enter both below and send a test message</p>
-                    </div>
-                  )}
-                  <div>
-                    <label className="mb-1 block text-xs font-medium text-[#8B98B8]">Bot Token</label>
-                    <div className="relative">
-                      <input
-                        type={showTelegramToken ? "text" : "password"}
-                        value={prefs.telegramBotToken}
-                        onChange={(e) => updatePref("telegramBotToken", e.target.value)}
-                        placeholder="1234567890:ABCdef..."
-                        className="w-full rounded-lg border border-[#1C2A45]/50 bg-[#0C1220]/60 px-4 pr-10 py-2 text-xs text-[#E8ECFF] placeholder-[#4A5578] outline-none focus:border-[#818CF8]/40 transition-all font-mono"
-                      />
-                      <button type="button" onClick={() => setShowTelegramToken(!showTelegramToken)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-[#4A5578] hover:text-[#8B98B8] transition-colors">
-                        {showTelegramToken ? <EyeOff size={12} /> : <Eye size={12} />}
-                      </button>
-                    </div>
-                  </div>
-                  <div>
-                    <label className="mb-1 block text-xs font-medium text-[#8B98B8]">Chat ID</label>
-                    <input
-                      type="text"
-                      value={prefs.telegramChatId}
-                      onChange={(e) => updatePref("telegramChatId", e.target.value)}
-                      placeholder="123456789"
-                      className="w-full rounded-lg border border-[#1C2A45]/50 bg-[#0C1220]/60 px-4 py-2 text-xs text-[#E8ECFF] placeholder-[#4A5578] outline-none focus:border-[#818CF8]/40 transition-all font-mono"
-                    />
-                  </div>
-                  <button onClick={handleTestTelegram}
-                    disabled={isSendingTelegram || !prefs.telegramBotToken || !prefs.telegramChatId}
-                    className="flex items-center gap-2 rounded-lg bg-[#818CF8]/15 border border-[#818CF8]/25 px-4 py-2 text-xs text-[#A5B4FC] hover:bg-[#818CF8]/25 disabled:opacity-40 disabled:cursor-not-allowed transition-all">
-                    {isSendingTelegram ? <Loader2 size={12} className="animate-spin" /> : "Send Test Message"}
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
         </div>
 
-        {/* Sign Out */}
         <div className="animate-fade-in" style={{ animationDelay: "80ms" }}>
           <button
             onClick={async () => {

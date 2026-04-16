@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useRef } from "react";
+import { useEffect } from "react";
 import { TopBar } from "@/components/layout/TopBar";
 import { GpaHeroCard } from "@/components/dashboard/GpaHeroCard";
 import { GradeCard } from "@/components/dashboard/GradeCard";
@@ -21,81 +21,13 @@ export default function DashboardPage() {
 
   const displayName = user?.displayName || "Student";
 
-  const notifiedGradesRef = useRef<Set<string>>(new Set());
-
-  // Academic Risk Alert + Grade change notifications
+  // Save grade snapshot for future notification diffing
   useEffect(() => {
     if (loading || !courses.length) return;
-
-    const notifPrefs = (() => {
-      try { return JSON.parse(localStorage.getItem("vela_notif_prefs") || "{}"); } catch { return {}; }
-    })();
-
-    const studentEmail = user?.email;
-
-    // ── Risk alert to counselor ──
-    const checkRisk = async () => {
-      if (sessionStorage.getItem("vela_risk_alert_sent")) return;
-      const riskCourses = courses.filter((c) => c.currentGrade !== null && c.currentGrade <= 79);
-      if (riskCourses.length >= 3) {
-        const counselorName = localStorage.getItem("vela_student_counselor");
-        const counselorEmails: Record<string, string> = {
-          "Nemesio Ordonez": "counselor1@example.com",
-          "Christina Henning": "counselor2@example.com",
-          "Pallavi Nandakishore": "counselor3@example.com",
-          "Dianna Heise": "counselor4@example.com",
-        };
-        if (counselorName && counselorEmails[counselorName]) {
-          try {
-            await fetch("/api/notifications/risk-alert", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ studentName: displayName, counselorName, counselorEmail: counselorEmails[counselorName], courses }),
-            });
-            sessionStorage.setItem("vela_risk_alert_sent", "true");
-          } catch (err) { console.error("Failed to send risk alert", err); }
-        }
-      }
-    };
-
-    // ── Grade change detection ──
-    const checkGradeChanges = async () => {
-      if (!notifPrefs.gradeAlerts || (!notifPrefs.emailEnabled && !notifPrefs.telegram)) return;
-      const snapshotRaw = localStorage.getItem("vela_grade_snapshot");
-      const snapshot: Record<string, number> = snapshotRaw ? JSON.parse(snapshotRaw) : {};
-
-      for (const course of courses) {
-        if (course.currentGrade == null) continue;
-        const prevGrade = snapshot[course.id];
-        const key = `${course.id}-${course.currentGrade}`;
-
-        if (prevGrade !== undefined && Math.abs(course.currentGrade - prevGrade) >= 0.5 && !notifiedGradesRef.current.has(key)) {
-          notifiedGradesRef.current.add(key);
-          try {
-            await fetch("/api/notifications/grade-alert", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                studentName: displayName,
-                type: "grade_update",
-                courseName: course.name,
-                details: { oldGrade: prevGrade, newGrade: course.currentGrade },
-                prefs: { ...notifPrefs, email: studentEmail },
-              }),
-            });
-          } catch (err) { console.error("Grade alert failed", err); }
-        }
-      }
-
-      // Save new snapshot
-      const newSnapshot: Record<string, number> = {};
-      courses.forEach((c) => { if (c.currentGrade != null) newSnapshot[c.id] = c.currentGrade; });
-      localStorage.setItem("vela_grade_snapshot", JSON.stringify(newSnapshot));
-    };
-
-    checkRisk();
-    checkGradeChanges();
-  }, [loading, courses, displayName, user?.email]);
+    const snapshot: Record<string, number> = {};
+    courses.forEach((c) => { if (c.currentGrade != null) snapshot[c.id] = c.currentGrade; });
+    localStorage.setItem("vela_grade_snapshot", JSON.stringify(snapshot));
+  }, [loading, courses]);
 
   if (loading) {
     return (

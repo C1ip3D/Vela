@@ -6,10 +6,9 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useIC } from "@/contexts/InfiniteCampusContext";
 import { useCourses } from "@/hooks/useCourses";
 import {
-  ArrowLeft, ChevronDown, ChevronRight, Clock, AlertTriangle,
+  ChevronDown, ChevronRight, Clock, AlertTriangle,
   MoreVertical, Pencil, MinusCircle, RotateCcw, X, Check, Calculator,
 } from "lucide-react";
-import Link from "next/link";
 
 interface Assignment {
   id: string;
@@ -357,20 +356,11 @@ export default function CourseDetailPage({ params }: { params: Promise<{ courseI
     <div className="flex flex-col min-h-screen">
       <TopBar studentName={displayName} />
       <div className="flex-1 p-6 animate-fade-in max-w-3xl mx-auto w-full">
-        {/* Back link */}
-        <Link href="/courses" className="inline-flex items-center gap-1.5 text-sm text-[#4A5578] hover:text-[#818CF8] transition-colors mb-6">
-          <ArrowLeft size={14} />
-          <span className="underline underline-offset-2">Overview</span>
-          <span className="text-[#E8ECFF] font-medium ml-1">{course?.name || "Course"}</span>
-        </Link>
-
         {/* Course Grade Hero */}
         <div className="relative z-20 rounded-xl border border-[#1C2A45]/60 bg-[#282828] backdrop-blur-sm px-6 py-5 mb-8">
           <div className="flex items-center justify-between">
             <div>
-              <div className="flex items-center gap-2">
-                <h2 className="text-xl font-bold text-[#fcfcfc]">Course Grade</h2>
-              </div>
+              <h2 className="text-xl font-bold text-[#fcfcfc]">{course?.name || "Course"}</h2>
               <p className="text-sm text-[#A0A0A0] mt-1.5 flex items-center gap-1.5">
                 updated recently <Clock size={12} className="text-[#A0A0A0]" />
               </p>
@@ -394,11 +384,6 @@ export default function CourseDetailPage({ params }: { params: Promise<{ courseI
                     <span className={`font-mono text-4xl font-bold ${gradeColor(whatIfCourseGrade)}`}>
                       {whatIfCourseGrade.toFixed(2)}%
                     </span>
-                    {course?.currentGrade != null && (
-                      <p className="text-xs text-[#4A5578] mt-0.5">
-                        Actual: {course.currentGrade.toFixed(2)}%
-                      </p>
-                    )}
                   </div>
                 </div>
               ) : course?.currentGrade != null ? (
@@ -423,9 +408,7 @@ export default function CourseDetailPage({ params }: { params: Promise<{ courseI
         <div className="flex flex-col gap-4 relative z-10">
           {groups.map((group) => {
             const isExpanded = expandedGroups.has(group.id);
-            const groupScore = hasAnyMod
-              ? calcGroupScore(group.assignments, mods)
-              : group.score;
+            const groupScore = calcGroupScore(group.assignments, mods) ?? group.score;
 
             return (
               <div
@@ -440,15 +423,15 @@ export default function CourseDetailPage({ params }: { params: Promise<{ courseI
                   <div className="flex items-center gap-4">
                     <div className="flex items-center justify-center w-10 h-10 rounded-full bg-[#1C2A45]/80 border border-[#253A5E]/60">
                       {isExpanded ? (
-                        <ChevronDown size={18} className="text-[#818CF8]" />
+                        <ChevronDown size={38} className="text-[#818CF8]" />
                       ) : (
-                        <ChevronRight size={18} className="text-[#8B98B8]" />
+                        <ChevronRight size={38} className="text-[#8B98B8]" />
                       )}
                     </div>
                     <div className="text-left">
                       <p className="text-base font-medium text-[#E8ECFF]">{group.name}</p>
                       {group.weight > 0 && (
-                        <p className="text-xs text-[#4A5578] mt-0.5">Weight: {group.weight}%</p>
+                        <p className="text-xs text-[#4A5578] mt-0.5">{group.weight}%</p>
                       )}
                     </div>
                   </div>
@@ -490,11 +473,6 @@ export default function CourseDetailPage({ params }: { params: Promise<{ courseI
                                 <p className={`text-base font-medium truncate ${isDropped ? "text-[#4A5578] line-through" : "text-[#C8D0E8]"}`}>
                                   {assignment.name}
                                 </p>
-                                {isEdited && !isDropped && (
-                                  <span className="text-xs text-[#818CF8] bg-[#818CF8]/10 px-2 py-0.5 rounded-full">
-                                    Edited
-                                  </span>
-                                )}
                                 {isDropped && (
                                   <span className="text-xs text-rose-400 bg-rose-400/10 px-2 py-0.5 rounded-full no-underline" style={{ textDecoration: "none" }}>
                                     Dropped
@@ -563,12 +541,12 @@ export default function CourseDetailPage({ params }: { params: Promise<{ courseI
                                   <div className="text-right">
                                     {displayScore != null ? (
                                       <div className="flex flex-col items-end">
-                                        <span className={`font-mono text-base font-semibold ${isEdited ? "text-[#818CF8]" : isDropped ? "text-[#4A5578] line-through" : "text-[#C8D0E8]"}`}>
+                                        <span className={`font-mono text-base font-semibold ${isEdited ? "text-[#818CF8]" : isDropped ? "text-[#4A5578] line-through" : "text-emerald-400"}`}>
                                           {displayScore}/{assignment.pointsPossible}
                                         </span>
                                         {displayScore != null && assignment.pointsPossible > 0 && (
                                           <div className="flex flex-col items-end gap-0.5 mt-0.5">
-                                            <p className={`font-mono text-sm ${isEdited ? "text-[#818CF8]/70" : isDropped ? "text-[#4A5578]/70 line-through" : "text-[#8B98B8]"}`}>
+                                            <p className={`font-mono text-sm ${isEdited ? "text-[#818CF8]/70" : isDropped ? "text-[#4A5578]/70 line-through" : "text-[#8B98B8]"} ${isDropped ? "line-through" : ""}`}>
                                               {((displayScore / assignment.pointsPossible) * 100).toFixed(2)}%
                                             </p>
                                           </div>
