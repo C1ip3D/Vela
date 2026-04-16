@@ -149,7 +149,7 @@ export default function SettingsScreen() {
           </View>
           <View>
             <Text className="text-base font-semibold text-star-bright">{displayName}</Text>
-            <Text className="text-xs text-star-faint mt-0.5">{user?.email}</Text>
+            <Text className="text-xs text-star-faint mt-0.5">Infinite Campus</Text>
           </View>
         </View>
 

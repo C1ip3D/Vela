@@ -4,12 +4,11 @@ import { TopBar } from "@/components/layout/TopBar";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   Eye, EyeOff, CheckCircle, XCircle, Loader2,
-  Bell, Mail, MessageCircle,
+  Bell, MessageCircle,
   ChevronDown, ChevronUp,
 } from "lucide-react";
 
 interface NotificationPrefs {
-  emailEnabled: boolean;
   telegram: boolean;
   telegramBotToken: string;
   telegramChatId: string;
@@ -19,7 +18,6 @@ interface NotificationPrefs {
 }
 
 const DEFAULT_PREFS: NotificationPrefs = {
-  emailEnabled: true,
   telegram: false,
   telegramBotToken: "",
   telegramChatId: "",
@@ -50,7 +48,6 @@ export default function SettingsPage() {
   const [prefs, setPrefs] = useState<NotificationPrefs>(DEFAULT_PREFS);
   const [showTelegramSetup, setShowTelegramSetup] = useState(false);
   const [showTelegramToken, setShowTelegramToken] = useState(false);
-  const [isSendingEmail, setIsSendingEmail] = useState(false);
   const [isSendingTelegram, setIsSendingTelegram] = useState(false);
   const [testStatus, setTestStatus] = useState<Record<string, "idle" | "success" | "error">>({});
 
@@ -65,26 +62,6 @@ export default function SettingsPage() {
 
   const updatePref = <K extends keyof NotificationPrefs>(key: K, val: NotificationPrefs[K]) =>
     setPrefs((p) => ({ ...p, [key]: val }));
-
-  const handleTestEmail = async () => {
-    const email = user?.email;
-    if (!email) return;
-    setIsSendingEmail(true);
-    setTestStatus((s) => ({ ...s, email: "idle" }));
-    try {
-      const res = await fetch("/api/notifications/test-email", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
-      });
-      setTestStatus((s) => ({ ...s, email: res.ok ? "success" : "error" }));
-    } catch {
-      setTestStatus((s) => ({ ...s, email: "error" }));
-    } finally {
-      setIsSendingEmail(false);
-      setTimeout(() => setTestStatus((s) => ({ ...s, email: "idle" })), 3000);
-    }
-  };
 
   const handleTestTelegram = async () => {
     if (!prefs.telegramBotToken || !prefs.telegramChatId) return;
@@ -143,32 +120,6 @@ export default function SettingsPage() {
           {/* Delivery channels */}
           <div className="space-y-3">
             <p className="text-xs font-medium text-[#8B98B8] uppercase tracking-wider">Delivery Channels</p>
-
-            {/* Email */}
-            <div className="rounded-lg border border-[#1C2A45]/40 overflow-hidden">
-              <div className="flex items-center justify-between bg-[#162032]/60 px-4 py-3">
-                <div className="flex items-center gap-2.5">
-                  <Mail size={16} className="text-[#A5B4FC]" />
-                  <div>
-                    <p className="text-sm text-[#E8ECFF]">Email Alerts</p>
-                    <p className="text-xs text-[#8B98B8]">{user?.email ?? "No email on file"}</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3">
-                  {testStatus.email === "success" && <span className="text-xs text-emerald-400 flex items-center gap-1"><CheckCircle size={12} /> Sent!</span>}
-                  {testStatus.email === "error" && <span className="text-xs text-rose-400 flex items-center gap-1"><XCircle size={12} /> Failed</span>}
-                  <Toggle on={prefs.emailEnabled} onToggle={() => updatePref("emailEnabled", !prefs.emailEnabled)} />
-                </div>
-              </div>
-              {prefs.emailEnabled && (
-                <div className="px-4 pb-3 pt-2 bg-[#0C1220]/40 border-t border-[#1C2A45]/30">
-                  <button onClick={handleTestEmail} disabled={isSendingEmail || !user?.email}
-                    className="flex items-center gap-2 rounded-lg bg-[#818CF8]/15 border border-[#818CF8]/25 px-4 py-2 text-xs text-[#A5B4FC] hover:bg-[#818CF8]/25 disabled:opacity-40 disabled:cursor-not-allowed transition-all">
-                    {isSendingEmail ? <Loader2 size={12} className="animate-spin" /> : "Send Test Email"}
-                  </button>
-                </div>
-              )}
-            </div>
 
             {/* Telegram */}
             <div className="rounded-lg border border-[#1C2A45]/40 overflow-hidden">
