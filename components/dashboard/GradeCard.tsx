@@ -72,24 +72,8 @@ export function GradeCard({ id, name, courseCode, courseType, currentGrade, lett
           )}
         </div>
 
-        {/* Progress bar */}
-        <div className="mb-3 h-1.5 w-full overflow-hidden rounded-full bg-[#1C2A45]/60">
-          {hasGrade ? (
-            <div
-              className="h-full rounded-full transition-all duration-700 ease-out"
-              style={{
-                width: `${grade}%`,
-                background: barGradient,
-                boxShadow: `0 0 8px ${grade >= 80 ? "rgba(129,140,248,0.3)" : grade >= 70 ? "rgba(245,158,11,0.3)" : "rgba(244,63,94,0.3)"}`,
-              }}
-            />
-          ) : (
-            <div className="h-full w-0 rounded-full" />
-          )}
-        </div>
-
         {/* Status row - pushed to bottom */}
-        <div className="relative mt-auto flex items-center justify-between text-sm min-h-[20px]">
+        {/* <div className="relative mt-auto flex items-center justify-between text-sm min-h-[20px]">
           <div className="flex items-center gap-2">
             {missingCount > 0 && (
               <span className="flex items-center gap-1 text-amber-400/90">
@@ -102,7 +86,7 @@ export function GradeCard({ id, name, courseCode, courseType, currentGrade, lett
               </span>
             )}
           </div>
-        </div>
+        </div> */}
       </Card>
     </Link>
   );

@@ -42,12 +42,12 @@ export function Sidebar({ role = "STUDENT" }: { role?: string }) {
       <div className="flex h-16 items-center border-b border-[#1C2A45]/40 px-4">
         {collapsed ? (
           <div className="flex justify-center w-full">
-            <Image src="/logo.png" alt="Vela" height={80} width={80} style={{ height: 80, width: "auto", objectFit: "contain" }} priority />
+            <VelaLogo size="md" />
           </div>
         ) : (
           <div className="flex items-center gap-2.5">
-            <Image src="/logo.png" alt="Vela" height={44} width={44} style={{ height: 44, width: "auto", objectFit: "contain" }} priority />
-            <span className="text-[#E8ECFF] font-bold tracking-[0.25em] text-lg select-none">VELA</span>
+            <VelaLogo size="mdx" />
+            <span className="text-[#E8ECFF] font-bold tracking-[0.25em] text-3xl select-none">VELA</span>
           </div>
         )}
       </div>
@@ -59,7 +59,7 @@ export function Sidebar({ role = "STUDENT" }: { role?: string }) {
           return (
             <Link key={item.href} href={item.href}
               className={cn(
-                "group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-all duration-200",
+                "group flex items-center gap-3 rounded-lg px-3 py-2.5 text-base transition-all duration-200",
                 active
                   ? "bg-[#818CF8]/10 border border-[#818CF8]/20 text-[#A5B4FC] font-medium shadow-[0_0_12px_rgba(129,140,248,0.1)]"
                   : "border border-transparent text-[#8B98B8] hover:bg-[#162032]/60 hover:text-[#D4DAF0] hover:border-[#1C2A45]/50"
@@ -71,18 +71,9 @@ export function Sidebar({ role = "STUDENT" }: { role?: string }) {
         })}
       </nav>
 
-      {/* Sign out */}
-      <div className="px-2 mb-2">
-        <button onClick={async () => { const { signOut } = await import("firebase/auth"); const { auth } = await import("@/lib/firebase"); await signOut(auth); window.location.href = "/signup"; }}
-          className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-[#8B98B8] hover:bg-[#162032]/60 hover:text-rose-400 border border-transparent hover:border-[#1C2A45]/50 transition-all duration-200">
-          <LogOut size={24} className="shrink-0" />
-          {!collapsed && <span>Sign Out</span>}
-        </button>
-      </div>
-
       {/* Constellation watermark */}
       {!collapsed && (
-        <div className="px-4 pb-4 pointer-events-none select-none">
+        <div className="px-4 pb-2 pointer-events-none select-none">
           <svg width="160" height="100" viewBox="0 0 200 160" className="animate-constellation" xmlns="http://www.w3.org/2000/svg">
             <defs>
               <filter id="starGlow">
@@ -111,13 +102,22 @@ export function Sidebar({ role = "STUDENT" }: { role?: string }) {
         </div>
       )}
 
+      {/* Sign out */}
+      <div className="px-2 mb-2">
+        <button onClick={async () => { const { signOut } = await import("firebase/auth"); const { auth } = await import("@/lib/firebase"); await signOut(auth); window.location.href = "/signup"; }}
+          className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-base text-[#8B98B8] hover:bg-[#162032]/60 hover:text-rose-400 border border-transparent hover:border-[#1C2A45]/50 transition-all duration-200">
+          <LogOut size={24} className="shrink-0" />
+          {!collapsed && <span>Sign Out</span>}
+        </button>
+      </div>
+
       {/* Collapse toggle */}
-      <button
+      {/* <button
         onClick={() => setCollapsed(!collapsed)}
         className="absolute -right-3 top-20 flex h-6 w-6 items-center justify-center rounded-full border border-[#1C2A45] bg-[#0C1220] text-[#8B98B8] hover:text-[#A5B4FC] hover:border-[#818CF8]/30 hover:shadow-[0_0_8px_rgba(129,140,248,0.2)] transition-all duration-200"
       >
         {collapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
-      </button>
+      </button> */}
     </aside>
   );
 }
