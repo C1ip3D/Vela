@@ -1,6 +1,5 @@
 "use client";
 import { useState, useEffect, useMemo } from "react";
-import { TopBar } from "@/components/layout/TopBar";
 import { AdvisorChatbot } from "@/components/advisor/AdvisorChatbot";
 import { useCourses } from "@/hooks/useCourses";
 import { useAuth } from "@/contexts/AuthContext";
@@ -25,7 +24,6 @@ export default function AdvisorPage() {
 
   return (
     <div className="flex flex-col h-screen">
-      <TopBar title="Kepler" studentName={displayName} />
       <div className="flex-1 min-h-0 p-6">
         <AdvisorChatbot
           courses={courseContext}

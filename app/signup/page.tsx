@@ -15,10 +15,26 @@ export const US_STATES = [
 ];
 
 const STARS = [
-  { x: 8, y: 20, s: 1, d: 0.4 }, { x: 22, y: 10, s: 1.5, d: 1.0 }, { x: 38, y: 35, s: 2, d: 0.2 },
-  { x: 52, y: 8, s: 1, d: 2.3 }, { x: 68, y: 28, s: 1.5, d: 0.6 }, { x: 82, y: 15, s: 1, d: 1.8 },
-  { x: 18, y: 60, s: 2, d: 2.0 }, { x: 58, y: 68, s: 1, d: 1.3 }, { x: 78, y: 55, s: 1.5, d: 0.9 },
-  { x: 35, y: 80, s: 1, d: 1.6 }, { x: 88, y: 75, s: 1.5, d: 2.2 }, { x: 48, y: 50, s: 1, d: 0.1 },
+  { x: 3,  y: 5,  s: 2,   d: 0.4 }, { x: 11, y: 2,  s: 2.5, d: 1.0 }, { x: 19, y: 8,  s: 1.5, d: 0.2 },
+  { x: 27, y: 3,  s: 3,   d: 2.3 }, { x: 36, y: 7,  s: 2,   d: 0.6 }, { x: 44, y: 1,  s: 1.5, d: 1.8 },
+  { x: 53, y: 6,  s: 2.5, d: 0.3 }, { x: 62, y: 2,  s: 2,   d: 1.5 }, { x: 71, y: 9,  s: 3,   d: 0.8 },
+  { x: 80, y: 4,  s: 1.5, d: 2.0 }, { x: 89, y: 7,  s: 2,   d: 1.2 }, { x: 96, y: 3,  s: 2.5, d: 0.5 },
+  { x: 6,  y: 18, s: 2,   d: 1.7 }, { x: 15, y: 22, s: 3,   d: 0.1 }, { x: 24, y: 16, s: 1.5, d: 2.4 },
+  { x: 33, y: 25, s: 2,   d: 0.9 }, { x: 42, y: 19, s: 2.5, d: 1.6 }, { x: 51, y: 28, s: 2,   d: 0.4 },
+  { x: 60, y: 14, s: 1.5, d: 2.1 }, { x: 69, y: 23, s: 3,   d: 0.7 }, { x: 78, y: 17, s: 2,   d: 1.3 },
+  { x: 87, y: 26, s: 2.5, d: 2.5 }, { x: 94, y: 20, s: 2,   d: 0.2 },
+  { x: 2,  y: 38, s: 2.5, d: 1.1 }, { x: 13, y: 42, s: 2,   d: 0.6 }, { x: 22, y: 35, s: 3,   d: 1.9 },
+  { x: 31, y: 45, s: 1.5, d: 0.3 }, { x: 40, y: 39, s: 2,   d: 2.2 }, { x: 49, y: 48, s: 2.5, d: 0.8 },
+  { x: 58, y: 36, s: 2,   d: 1.4 }, { x: 67, y: 43, s: 3,   d: 0.1 }, { x: 76, y: 37, s: 1.5, d: 2.3 },
+  { x: 85, y: 46, s: 2,   d: 0.9 }, { x: 93, y: 40, s: 2.5, d: 1.7 },
+  { x: 5,  y: 58, s: 2,   d: 2.0 }, { x: 16, y: 63, s: 3,   d: 0.5 }, { x: 25, y: 55, s: 1.5, d: 1.2 },
+  { x: 34, y: 67, s: 2.5, d: 0.4 }, { x: 43, y: 60, s: 2,   d: 1.8 }, { x: 52, y: 70, s: 2,   d: 0.7 },
+  { x: 61, y: 56, s: 3,   d: 2.4 }, { x: 70, y: 65, s: 1.5, d: 1.0 }, { x: 79, y: 59, s: 2,   d: 0.3 },
+  { x: 88, y: 68, s: 2.5, d: 1.6 }, { x: 97, y: 62, s: 2,   d: 2.1 },
+  { x: 8,  y: 78, s: 2,   d: 0.6 }, { x: 18, y: 84, s: 3,   d: 1.3 }, { x: 28, y: 76, s: 2.5, d: 0.2 },
+  { x: 38, y: 88, s: 2,   d: 1.9 }, { x: 48, y: 81, s: 1.5, d: 0.8 }, { x: 57, y: 91, s: 2,   d: 2.2 },
+  { x: 66, y: 77, s: 2.5, d: 0.5 }, { x: 75, y: 86, s: 3,   d: 1.5 }, { x: 84, y: 79, s: 2,   d: 0.1 },
+  { x: 91, y: 93, s: 2.5, d: 1.8 }, { x: 98, y: 85, s: 2,   d: 0.9 },
 ];
 
 export default function SignupPage() {
@@ -95,15 +111,15 @@ export default function SignupPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[#03060D] relative overflow-hidden">
+    <div className="min-h-screen bg-[#03060D] relative overflow-hidden">
       {/* Star field */}
       <div className="pointer-events-none absolute inset-0">
         {STARS.map((star, i) => (
           <div key={i} className="absolute rounded-full"
             style={{
               left: `${star.x}%`, top: `${star.y}%`, width: `${star.s}px`, height: `${star.s}px`,
-              background: star.s >= 2 ? "rgba(232,236,255,0.7)" : "rgba(196,210,230,0.4)",
-              boxShadow: star.s >= 2 ? "0 0 6px rgba(124,158,245,0.4)" : "0 0 3px rgba(124,158,245,0.2)",
+              background: star.s >= 2.5 ? "rgba(240,244,255,0.95)" : star.s >= 2 ? "rgba(210,220,255,0.85)" : "rgba(180,196,245,0.65)",
+              boxShadow: star.s >= 2.5 ? `0 0 ${star.s * 4}px rgba(165,180,252,0.9), 0 0 ${star.s * 8}px rgba(129,140,248,0.5)` : `0 0 ${star.s * 3}px rgba(165,180,252,0.7)`,
               animation: `twinkle ${3 + star.d}s ease-in-out ${star.d}s infinite`,
             }}
           />
@@ -112,19 +128,27 @@ export default function SignupPage() {
         <div className="absolute bottom-[10%] right-[15%] h-48 w-48 rounded-full bg-[#818CF8]/[0.03] blur-3xl" />
       </div>
 
-      <div className="relative z-10 w-full max-w-md px-6 my-10">
-        <div className="mb-8 flex justify-center animate-fade-in">
-          <VelaLogo size="lg" />
-        </div>
+      {/* Logo — pinned top center */}
+      <div className="absolute top-10 left-0 right-0 flex flex-col items-center z-10 pointer-events-none">
+        <VelaLogo size="lg" />
+        <h1 className="text-5xl font-bold text-[#E8ECFF] tracking-widest mt-3">VELA</h1>
+        <p className="text-xs text-[#8B98B8] tracking-[0.35em] mt-2 uppercase">Academic Navigator</p>
+      </div>
 
-        <div className="animate-fade-in rounded-2xl border border-[#1C2A45]/60 bg-[#101828]/60 backdrop-blur-lg p-8">
+      {/* Card — fixed center, slides down when collapsed so logo is visible */}
+      <div className="fixed inset-0 flex items-center justify-center z-20 pointer-events-none">
+        <div
+          className="pointer-events-auto w-full max-w-xl px-6"
+          style={{
+            transform: selectedDistrict ? "translateY(0)" : "translateY(45%)",
+            transition: "transform 0.45s cubic-bezier(0.4, 0, 0.2, 1)",
+          }}
+        >
+        <div className="animate-fade-in rounded-2xl border border-[#1C2A45]/60 bg-[#101828]/60 backdrop-blur-lg p-10">
           <div className="flex items-center gap-3 mb-5">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#818CF8]/15 border border-[#818CF8]/20 shadow-[0_0_16px_rgba(129,140,248,0.1)]">
-              <School size={20} className="text-[#818CF8]" />
-            </div>
             <div>
-              <h1 className="text-xl font-semibold text-[#E8ECFF] leading-tight">Create your account</h1>
-              <p className="text-sm text-[#8B98B8]">Sign in with your Infinite Campus credentials</p>
+              <h1 className="text-xl font-semibold text-[#E8ECFF] leading-tight">Sign In</h1>
+              <p className="text-sm text-[#8B98B8]">Using your Infinite Campus credentials</p>
             </div>
           </div>
 
@@ -177,13 +201,13 @@ export default function SignupPage() {
             {selectedDistrict && (
               <div className="animate-fade-in space-y-4 pt-1">
                 <div>
-                  <label className="mb-1.5 block text-xs font-medium text-[#8B98B8] uppercase tracking-wider">IC Username</label>
+                  <label className="mb-1.5 block text-xs font-medium text-[#8B98B8] uppercase tracking-wider">Username</label>
                   <input type="text" value={icUsername} onChange={(e) => setIcUsername(e.target.value)}
                     className="w-full rounded-lg border border-[#1C2A45]/50 bg-[#0C1220]/60 px-4 py-2.5 text-sm text-[#E8ECFF] placeholder-[#4A5578] outline-none" placeholder="Username" />
                 </div>
 
                 <div>
-                  <label className="mb-1.5 block text-xs font-medium text-[#8B98B8] uppercase tracking-wider">IC Password</label>
+                  <label className="mb-1.5 block text-xs font-medium text-[#8B98B8] uppercase tracking-wider">Password</label>
                   <div className="relative">
                     <input type={showIcPassword ? "text" : "password"} value={icPassword} onChange={(e) => setIcPassword(e.target.value)}
                       onKeyDown={(e) => { if (e.key === "Enter") attemptICConnection(); }}
@@ -205,6 +229,7 @@ export default function SignupPage() {
             )}
           </div>
 
+        </div>
         </div>
       </div>
     </div>

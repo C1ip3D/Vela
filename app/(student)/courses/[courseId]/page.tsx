@@ -1,6 +1,5 @@
 "use client";
 import { useState, useEffect, useRef, use } from "react";
-import { TopBar } from "@/components/layout/TopBar";
 import { Badge } from "@/components/ui/Badge";
 import { useAuth } from "@/contexts/AuthContext";
 import { useIC } from "@/contexts/InfiniteCampusContext";
@@ -36,11 +35,8 @@ interface WhatIfMod {
   dropped?: boolean;
 }
 
-function gradeColor(grade: number): string {
-  if (grade >= 90) return "text-emerald-400";
-  if (grade >= 80) return "text-[#A5B4FC]";
-  if (grade >= 70) return "text-amber-400";
-  return "text-rose-400";
+function gradeColor(_grade: number): string {
+  return "text-emerald-400";
 }
 
 // Recalculate group score with what-if mods
@@ -341,7 +337,6 @@ export default function CourseDetailPage({ params }: { params: Promise<{ courseI
   if (loading) {
     return (
       <div className="flex flex-col min-h-screen">
-        <TopBar studentName={displayName} />
         <div className="flex-1 flex items-center justify-center">
           <div className="flex flex-col items-center gap-3">
             <div className="h-8 w-8 rounded-full border-2 border-[#818CF8]/30 border-t-[#818CF8] animate-spin" />

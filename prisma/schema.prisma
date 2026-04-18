@@ -35,13 +35,6 @@ enum AdvisorLogType {
   MILESTONE_REACHED
 }
 
-enum AlertStatus {
-  PENDING
-  ACKNOWLEDGED
-  IN_PROGRESS
-  RESOLVED
-  DISMISSED
-}
 
 enum DataSource {
   INFINITE_CAMPUS
@@ -67,8 +60,6 @@ model User {
   advisorLogs       AdvisorLog[]
   simulations       Simulation[]
   recommendations   CourseRecommendation[]
-  alertsAsStudent   CounselorAlert[] @relation("AlertTarget")
-  alertsAsCounselor CounselorAlert[] @relation("AlertCounselor")
 }
 
 model Course {
@@ -266,29 +257,9 @@ model AdvisorLog {
   createdAt   DateTime       @default(now())
 
   user   User             @relation(fields: [userId], references: [id])
-  alerts CounselorAlert[]
-
   @@index([userId, createdAt])
 }
 
-model CounselorAlert {
-  id           String      @id @default(cuid())
-  targetUserId String
-  counselorId  String
-  advisorLogId String
-  status       AlertStatus @default(PENDING)
-  telegramSent Boolean     @default(false)
-  emailSent    Boolean     @default(false)
-  resolvedAt   DateTime?
-  notes        String?
-  createdAt    DateTime    @default(now())
-
-  targetUser User       @relation("AlertTarget",    fields: [targetUserId], references: [id])
-  counselor  User       @relation("AlertCounselor", fields: [counselorId],  references: [id])
-  advisorLog AdvisorLog @relation(fields: [advisorLogId], references: [id])
-
-  @@index([counselorId, status])
-}
 
 model CourseRecommendation {
   id               String   @id @default(cuid())

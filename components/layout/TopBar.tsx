@@ -5,6 +5,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useState, useRef, useEffect } from "react";
 import { AdvisorFeed } from "@/components/dashboard/AdvisorFeed";
 import { useICNotifications } from "@/hooks/useICNotifications";
+import { useCourses } from "@/hooks/useCourses";
 
 export function TopBar({ title, studentName }: { title?: string; studentName?: string }) {
   const { user } = useAuth();
@@ -14,8 +15,8 @@ export function TopBar({ title, studentName }: { title?: string; studentName?: s
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // Fetch live notifications from Infinite Campus
-  const { unreadLogs } = useICNotifications();
+  const { courses } = useCourses();
+  const { unreadLogs } = useICNotifications(courses);
   const alertCount = unreadLogs.length;
 
   useEffect(() => {

@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect, useCallback } from "react";
 import { useIC } from "@/contexts/InfiniteCampusContext";
+import { auth } from "@/lib/firebase";
 
 export interface NormalizedCourse {
   id: string;
@@ -79,9 +80,13 @@ export function useCourses() {
     setError(null);
 
     try {
+      const idToken = await auth.currentUser?.getIdToken();
       const res = await fetch("/api/ic/courses", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...(idToken && { Authorization: `Bearer ${idToken}` }),
+        },
         body: JSON.stringify({
           authToken: session.authToken,
           baseUrl: session.baseUrl,

@@ -1,6 +1,5 @@
 "use client";
 import { useEffect } from "react";
-import { TopBar } from "@/components/layout/TopBar";
 import { GpaHeroCard } from "@/components/dashboard/GpaHeroCard";
 import { GradeCard } from "@/components/dashboard/GradeCard";
 import { AdvisorFeed } from "@/components/dashboard/AdvisorFeed";
@@ -32,7 +31,6 @@ export default function DashboardPage() {
   if (loading) {
     return (
       <div className="flex flex-col min-h-screen">
-        <TopBar title="Dashboard" studentName={displayName} />
         <div className="flex-1 flex items-center justify-center">
           <div className="flex flex-col items-center gap-3">
             <div className="h-8 w-8 rounded-full border-2 border-[#818CF8]/30 border-t-[#818CF8] animate-spin" />
@@ -47,7 +45,6 @@ export default function DashboardPage() {
 
   return (
     <div className="flex flex-col min-h-screen relative">
-      <TopBar title="Dashboard" studentName={displayName} />
       <div className="flex-1 p-6 space-y-6">
         {/* GPA Hero */}
         <div className="animate-fade-in" style={{ animationDelay: "0ms" }}>

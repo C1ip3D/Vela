@@ -1,6 +1,5 @@
 "use client";
 import { useState, useEffect } from "react";
-import { TopBar } from "@/components/layout/TopBar";
 import { useAuth } from "@/contexts/AuthContext";
 import { Bell } from "lucide-react";
 
@@ -51,7 +50,6 @@ export default function SettingsPage() {
 
   return (
     <div className="flex flex-col min-h-screen">
-      <TopBar title="Settings" studentName={displayName} />
       <div className="flex-1 p-6 max-w-4xl mx-auto space-y-6">
 
         <div className="animate-fade-in rounded-xl border border-[#1C2A45]/60 bg-[#101828]/50 backdrop-blur-sm p-5 space-y-5">

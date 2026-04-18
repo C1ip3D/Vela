@@ -22,26 +22,67 @@ import { DistrictSearch, District } from "@/components/forms/DistrictSearch";
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
 
 const STARS = [
-  { x: 0.08, y: 0.05, size: 1.5, delay: 0 },
-  { x: 0.22, y: 0.12, size: 2,   delay: 400 },
-  { x: 0.65, y: 0.07, size: 1,   delay: 800 },
-  { x: 0.82, y: 0.18, size: 2.5, delay: 200 },
-  { x: 0.45, y: 0.03, size: 1.5, delay: 1200 },
-  { x: 0.91, y: 0.35, size: 1,   delay: 600 },
-  { x: 0.05, y: 0.28, size: 2,   delay: 1000 },
-  { x: 0.35, y: 0.22, size: 1,   delay: 300 },
-  { x: 0.72, y: 0.30, size: 1.5, delay: 900 },
-  { x: 0.55, y: 0.40, size: 1,   delay: 1400 },
-  { x: 0.15, y: 0.45, size: 2,   delay: 700 },
-  { x: 0.88, y: 0.55, size: 1.5, delay: 100 },
-  { x: 0.30, y: 0.60, size: 1,   delay: 1600 },
-  { x: 0.60, y: 0.65, size: 2,   delay: 500 },
-  { x: 0.10, y: 0.70, size: 1.5, delay: 1100 },
-  { x: 0.78, y: 0.72, size: 1,   delay: 1800 },
-  { x: 0.42, y: 0.78, size: 2,   delay: 250 },
-  { x: 0.95, y: 0.80, size: 1.5, delay: 1300 },
-  { x: 0.25, y: 0.85, size: 1,   delay: 750 },
-  { x: 0.68, y: 0.90, size: 2,   delay: 1700 },
+  // top band
+  { x: 0.04, y: 0.02, size: 2,   delay: 0 },
+  { x: 0.13, y: 0.06, size: 3,   delay: 400 },
+  { x: 0.22, y: 0.03, size: 1.5, delay: 800 },
+  { x: 0.31, y: 0.09, size: 2.5, delay: 200 },
+  { x: 0.40, y: 0.01, size: 2,   delay: 1200 },
+  { x: 0.50, y: 0.07, size: 3,   delay: 600 },
+  { x: 0.59, y: 0.04, size: 1.5, delay: 1000 },
+  { x: 0.68, y: 0.10, size: 2,   delay: 300 },
+  { x: 0.77, y: 0.03, size: 2.5, delay: 900 },
+  { x: 0.86, y: 0.08, size: 2,   delay: 1400 },
+  { x: 0.94, y: 0.02, size: 1.5, delay: 700 },
+  // upper-mid band
+  { x: 0.07, y: 0.15, size: 2.5, delay: 100 },
+  { x: 0.18, y: 0.20, size: 2,   delay: 1600 },
+  { x: 0.27, y: 0.17, size: 3,   delay: 500 },
+  { x: 0.38, y: 0.23, size: 1.5, delay: 1100 },
+  { x: 0.47, y: 0.18, size: 2,   delay: 1800 },
+  { x: 0.56, y: 0.25, size: 2.5, delay: 250 },
+  { x: 0.64, y: 0.14, size: 2,   delay: 1300 },
+  { x: 0.73, y: 0.22, size: 3,   delay: 750 },
+  { x: 0.83, y: 0.16, size: 1.5, delay: 1700 },
+  { x: 0.92, y: 0.26, size: 2,   delay: 350 },
+  // mid band
+  { x: 0.03, y: 0.35, size: 3,   delay: 950 },
+  { x: 0.12, y: 0.40, size: 2,   delay: 550 },
+  { x: 0.24, y: 0.33, size: 2.5, delay: 1450 },
+  { x: 0.34, y: 0.42, size: 2,   delay: 650 },
+  { x: 0.44, y: 0.37, size: 1.5, delay: 1150 },
+  { x: 0.53, y: 0.45, size: 3,   delay: 450 },
+  { x: 0.62, y: 0.38, size: 2,   delay: 1250 },
+  { x: 0.71, y: 0.44, size: 2.5, delay: 850 },
+  { x: 0.80, y: 0.36, size: 2,   delay: 1550 },
+  { x: 0.90, y: 0.43, size: 1.5, delay: 150 },
+  // lower-mid band
+  { x: 0.06, y: 0.55, size: 2,   delay: 1050 },
+  { x: 0.16, y: 0.60, size: 3,   delay: 350 },
+  { x: 0.26, y: 0.53, size: 1.5, delay: 1350 },
+  { x: 0.37, y: 0.62, size: 2.5, delay: 750 },
+  { x: 0.48, y: 0.56, size: 2,   delay: 1650 },
+  { x: 0.57, y: 0.63, size: 2,   delay: 550 },
+  { x: 0.66, y: 0.57, size: 3,   delay: 1250 },
+  { x: 0.76, y: 0.64, size: 1.5, delay: 450 },
+  { x: 0.85, y: 0.58, size: 2,   delay: 1750 },
+  { x: 0.93, y: 0.66, size: 2.5, delay: 950 },
+  // bottom band
+  { x: 0.09, y: 0.73, size: 2,   delay: 650 },
+  { x: 0.20, y: 0.78, size: 3,   delay: 1150 },
+  { x: 0.30, y: 0.72, size: 2.5, delay: 250 },
+  { x: 0.41, y: 0.80, size: 2,   delay: 1550 },
+  { x: 0.52, y: 0.75, size: 1.5, delay: 850 },
+  { x: 0.61, y: 0.82, size: 2,   delay: 1050 },
+  { x: 0.70, y: 0.76, size: 3,   delay: 350 },
+  { x: 0.79, y: 0.84, size: 2,   delay: 1450 },
+  { x: 0.88, y: 0.79, size: 2.5, delay: 750 },
+  { x: 0.96, y: 0.87, size: 2,   delay: 1850 },
+  { x: 0.15, y: 0.90, size: 1.5, delay: 550 },
+  { x: 0.35, y: 0.93, size: 2,   delay: 1650 },
+  { x: 0.55, y: 0.91, size: 2.5, delay: 450 },
+  { x: 0.75, y: 0.95, size: 2,   delay: 1250 },
+  { x: 0.92, y: 0.96, size: 3,   delay: 950 },
 ];
 
 function Star({ x, y, size, delay }: { x: number; y: number; size: number; delay: number }) {
@@ -70,6 +111,10 @@ function Star({ x, y, size, delay }: { x: number; y: number; size: number; delay
         borderRadius: size / 2,
         backgroundColor: "#A5B4FC",
         opacity,
+        shadowColor: "#A5B4FC",
+        shadowOffset: { width: 0, height: 0 },
+        shadowOpacity: 0.9,
+        shadowRadius: size * 2,
       }}
     />
   );
@@ -132,26 +177,26 @@ export default function LoginScreen() {
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         className="flex-1"
       >
-        {/* Logo — absolutely pinned to top */}
-        <View style={{ position: "absolute", top: 72, left: 0, right: 0, alignItems: "center" }} pointerEvents="none">
-          <Image
-            source={require("@/assets/logo.png")}
-            style={{ width: 150, height: 150 }}
-            resizeMode="contain"
-          />
-          <Text className="text-3xl font-bold text-star-bright tracking-widest">VELA</Text>
-          <Text className="text-[11px] text-star-faint tracking-[0.3em] mt-1.5">
-            ACADEMIC NAVIGATOR
-          </Text>
-        </View>
-
         <ScrollView
-          contentContainerStyle={{ flexGrow: 1, justifyContent: "center", paddingHorizontal: 24 }}
+          contentContainerStyle={{ flexGrow: 1, alignItems: "center", paddingHorizontal: 28, paddingTop: 72, paddingBottom: 40 }}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-          {/* Card — centered on screen */}
-          <View className="rounded-3xl border border-space-border bg-space-surface/60 p-7">
+          {/* Logo + title — centered at top */}
+          <View style={{ alignItems: "center", width: "100%", marginBottom: 40 }}>
+            <Image
+              source={require("@/assets/logo.png")}
+              style={{ width: 160, height: 160 }}
+              resizeMode="contain"
+            />
+            <Text style={{ fontSize: 42, fontWeight: "800", letterSpacing: 8, color: "#F0F4FF", marginTop: 8 }}>VELA</Text>
+            <Text className="text-[12px] text-star-faint tracking-[0.35em] mt-2">
+              ACADEMIC NAVIGATOR
+            </Text>
+          </View>
+
+          {/* Card — centered, wider */}
+          <View style={{ width: "100%", maxWidth: 480 }} className="rounded-3xl border border-space-border bg-space-surface/60 p-8">
 
             {/* Error */}
             {icError ? (

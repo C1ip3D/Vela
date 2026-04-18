@@ -99,14 +99,27 @@ export async function syncICCoursesToDB(
     }
   }
 
+  // Prune history older than 30 days, but only on Sundays to avoid running on every sync
+  if (new Date().getDay() === 0) {
+    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    await prisma.gradeHistory.deleteMany({
+      where: { userId: user.id, recordedAt: { lt: thirtyDaysAgo } },
+    });
+  }
+
   return user;
 }
 
+const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+
 /**
- * Returns cached enrollments for a user if they were synced within the last 5 minutes.
- * Returns null if the cache is stale or missing.
+ * Returns cached enrollments for a user from the DB.
+ * Always returns data if it exists; isStale=true means a background refresh is warranted.
+ * Returns null only if no enrollments are stored at all.
  */
-export async function getCachedCourses(firebaseUid: string): Promise<SyncableCourse[] | null> {
+export async function getCachedCourses(
+  firebaseUid: string
+): Promise<{ courses: SyncableCourse[]; isStale: boolean } | null> {
   const user = await prisma.user.findUnique({
     where: { canvasUserId: firebaseUid },
     include: {
@@ -120,28 +133,26 @@ export async function getCachedCourses(firebaseUid: string): Promise<SyncableCou
 
   if (!user || user.enrollments.length === 0) return null;
 
-  // Check freshness: find the most recent enrollment update
   const mostRecent = await prisma.gradeHistory.findFirst({
     where: { userId: user.id },
     orderBy: { recordedAt: "desc" },
   });
 
-  if (!mostRecent) return null;
+  const isStale = !mostRecent || Date.now() - mostRecent.recordedAt.getTime() > CACHE_TTL_MS;
 
-  const ageMs = Date.now() - mostRecent.recordedAt.getTime();
-  const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
-  if (ageMs > CACHE_TTL_MS) return null;
-
-  return user.enrollments.map((e) => ({
-    id: e.course.externalId ?? e.course.canvasCourseId,
-    name: e.course.name,
-    courseCode: e.course.courseCode,
-    term: e.course.term,
-    courseType: e.course.courseType,
-    currentGrade: e.currentGrade,
-    letterGrade: e.letterGrade,
-    missingCount: 0,
-  }));
+  return {
+    courses: user.enrollments.map((e) => ({
+      id: e.course.externalId ?? e.course.canvasCourseId,
+      name: e.course.name,
+      courseCode: e.course.courseCode,
+      term: e.course.term,
+      courseType: e.course.courseType,
+      currentGrade: e.currentGrade,
+      letterGrade: e.letterGrade,
+      missingCount: 0,
+    })),
+    isStale,
+  };
 }
 
 function normalizeCourseType(type: string): "STANDARD" | "ADVANCED" | "HONORS" | "AP" | "DUAL_ENROLLMENT" {

@@ -1,17 +1,13 @@
 "use client";
 import Link from "next/link";
-import { TopBar } from "@/components/layout/TopBar";
 import { Badge } from "@/components/ui/Badge";
 import { useCourses } from "@/hooks/useCourses";
 import { useAuth } from "@/contexts/AuthContext";
 import { useIC } from "@/contexts/InfiniteCampusContext";
 import { ChevronRight, Clock, AlertTriangle } from "lucide-react";
 
-function gradeColor(grade: number): string {
-  if (grade >= 90) return "text-emerald-400";
-  if (grade >= 80) return "text-[#A5B4FC]";
-  if (grade >= 70) return "text-amber-400";
-  return "text-rose-400";
+function gradeColor(_grade: number): string {
+  return "text-emerald-400";
 }
 
 export default function CoursesPage() {
@@ -23,7 +19,6 @@ export default function CoursesPage() {
   if (loading) {
     return (
       <div className="flex flex-col min-h-screen">
-        <TopBar title="My Grades" studentName={displayName} />
         <div className="flex-1 flex items-center justify-center">
           <div className="flex flex-col items-center gap-3">
             <div className="h-8 w-8 rounded-full border-2 border-[#818CF8]/30 border-t-[#818CF8] animate-spin" />
@@ -39,7 +34,6 @@ export default function CoursesPage() {
   if (!isConnected) {
     return (
       <div className="flex flex-col min-h-screen">
-        <TopBar title="My Grades" studentName={displayName} />
         <div className="flex-1 flex items-center justify-center">
           <div className="text-center space-y-3 px-4">
             <p className="text-lg text-[#E8ECFF]">Connect Infinite Campus to view your grades</p>
@@ -77,11 +71,6 @@ export default function CoursesPage() {
                   <div className="flex-1 min-w-0 mr-4">
                     <div className="flex items-center gap-2.5 mb-2">
                       <p className="text-lg font-medium text-[#E8ECFF] truncate">{course.name}</p>
-                      {course.courseType !== "STANDARD" && (
-                        <Badge variant={course.courseType === "AP" ? "ap" : "honors"} className="shrink-0">
-                          {course.courseType}
-                        </Badge>
-                      )}
                     </div>
                     <p className="flex items-center gap-1.5 text-sm text-[#4A5578]">
                       <Clock size={12} />
@@ -102,7 +91,7 @@ export default function CoursesPage() {
                   <div className="flex items-center gap-4 shrink-0">
                     {hasGrade ? (
                       <span className={`font-mono text-xl font-semibold ${gradeColor(course.currentGrade!)}`}>
-                        {course.letterGrade} ({course.currentGrade!.toFixed(2)}%)
+                        {course.currentGrade!.toFixed(2)}%
                       </span>
                     ) : (
                       <span className="text-base text-[#4A5578]">No grade</span>

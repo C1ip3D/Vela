@@ -42,13 +42,55 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "authToken and baseUrl are required" }, { status: 400 });
   }
 
-  // Check DB cache first (5 min TTL) — skip IC entirely if fresh data exists
   const uid = extractUid(req.headers.get("authorization"));
   if (uid) {
     const cached = await getCachedCourses(uid);
     if (cached) {
-      console.log(`[IC Courses] Serving ${cached.length} courses from DB cache for uid=${uid}`);
-      return NextResponse.json({ courses: cached, source: "cache" });
+      console.log(`[IC Courses] Serving ${cached.courses.length} courses from DB cache for uid=${uid} (stale=${cached.isStale})`);
+      if (cached.isStale) {
+        // Return immediately, refresh in the background
+        const response = NextResponse.json({ courses: cached.courses, source: "cache" });
+        // Fire-and-forget background sync — extract auth info needed for syncICCoursesToDB
+        (async () => {
+          try {
+            let email = "";
+            let displayName = "";
+            try {
+              const payload = req.headers.get("authorization")!.slice(7).split(".")[1];
+              const parsed = JSON.parse(Buffer.from(payload, "base64url").toString("utf8"));
+              email = parsed.email ?? "";
+              displayName = parsed.name ?? parsed.email ?? "";
+            } catch {}
+            const cookieStr = authToken.includes("=") ? authToken : `ICSID=${authToken}`;
+            const xsrfToken = cookieStr.split(";").map((p) => p.trim()).find((p) => p.startsWith("XSRF-TOKEN="))?.split("=")[1] ?? "";
+            const hdrs: Record<string, string> = {
+              Cookie: cookieStr,
+              Accept: "application/json",
+              "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36",
+              ...(xsrfToken && { "X-XSRF-TOKEN": xsrfToken }),
+            };
+            if (appName) {
+              hdrs["appName"] = appName;
+              hdrs["X-Campus-AppName"] = appName;
+              hdrs["Referer"] = `${baseUrl}/portal/students/${appName}`;
+            }
+            const appQ = appName ? `?appName=${encodeURIComponent(appName)}` : "";
+            const res = await fetch(`${baseUrl}/resources/portal/grades${appQ}`, { headers: hdrs });
+            if (res.ok) {
+              const data = JSON.parse(await res.text());
+              const courses = parseResilient(data, baseUrl);
+              if (courses.length > 0) {
+                await syncICCoursesToDB(uid, email, displayName, courses);
+                console.log(`[IC Courses] Background sync complete: ${courses.length} courses for uid=${uid}`);
+              }
+            }
+          } catch (e) {
+            console.error("[IC Courses] Background sync error:", e);
+          }
+        })();
+        return response;
+      }
+      return NextResponse.json({ courses: cached.courses, source: "cache" });
     }
   }
 
@@ -231,6 +273,7 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  console.log(`[IC Courses] Pre-sync check: uid=${uid}, courses=${courses.length}`);
   // Persist to DB in the background (don't block the response)
   if (uid && courses.length > 0) {
     // Extract email/displayName from the JWT payload for user upsert
@@ -243,7 +286,7 @@ export async function POST(req: NextRequest) {
       displayName = parsed.name ?? parsed.email ?? "";
     } catch {}
 
-    syncICCoursesToDB(uid, email, displayName, courses).catch((e: unknown) =>
+    await syncICCoursesToDB(uid, email, displayName, courses).catch((e: unknown) =>
       console.error("[IC Courses] DB sync error:", e)
     );
   }

@@ -40,11 +40,8 @@ export function letterToGpaPoints(letter: string, courseType: string = "STANDARD
   return pts > 0 ? Math.min(pts + boost, 5.0) : 0.0;
 }
 
-export function gradeColor(letter: string): string {
-  if (letter.startsWith("A")) return "text-emerald-400";
-  if (letter.startsWith("B")) return "text-vela-400";
-  if (letter.startsWith("C")) return "text-amber-400";
-  return "text-rose-400";
+export function gradeColor(_letter: string): string {
+  return "text-emerald-400";
 }
 
 export function severityColor(severity: string) {

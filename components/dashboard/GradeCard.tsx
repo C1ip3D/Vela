@@ -55,17 +55,13 @@ export function GradeCard({ id, name, courseCode, courseType, currentGrade, lett
           <div className="flex-1">
             <p className="text-base font-medium text-[#E8ECFF] leading-tight line-clamp-3">{name}</p>
           </div>
-          {courseType !== "STANDARD" && (
-            <Badge variant={courseType === "AP" ? "ap" : "honors"} className="ml-2 shrink-0">{courseType}</Badge>
-          )}
         </div>
 
         {/* Grade display */}
         <div className="relative mb-3 flex items-end justify-between min-h-[44px]">
           {hasGrade ? (
             <>
-              <span className={`font-mono text-4xl font-bold bg-gradient-to-r ${accentGradient} bg-clip-text text-transparent`}>{letterGrade}</span>
-              <span className="font-mono text-2xl text-[#A5B4FC]/80">{grade.toFixed(1)}%</span>
+              <span className={`font-mono text-4xl font-bold bg-gradient-to-r ${accentGradient} bg-clip-text text-transparent`}>{grade.toFixed(1)}%</span>
             </>
           ) : (
             <div className="w-full flex items-center justify-center">

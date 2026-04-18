@@ -47,7 +47,7 @@ export function GpaHeroCard({ gpa, termGpa, termLabel, termDelta, history }: Pro
         {/* GPA numbers */}
         <div className="space-y-4">
           <div>
-            <p className="mb-1 text-xs uppercase tracking-[0.2em] text-[#8B98B8]">Cumulative GPA (Unweighted)</p>
+            <p className="mb-1 text-xs uppercase tracking-[0.2em] text-[#8B98B8]">Unweighted GPA</p>
             <p className="font-mono text-6xl font-bold bg-gradient-to-r from-[#A5B4FC] to-[#818CF8] bg-clip-text text-transparent">{formatGpa(gpa)}</p>
           </div>
           <div className="h-px bg-gradient-to-r from-[#1C2A45] via-[#253A5E] to-transparent" />
