@@ -5,63 +5,17 @@ import { router } from "expo-router";
 import { useCourses } from "@/hooks/useCourses";
 import { gradeColor } from "@/lib/utils";
 import { AlertTriangle, BookOpen, Star } from "lucide-react-native";
-import { Bone } from "@/components/ui/Skeleton";
+import { Spinner } from "@/components/ui/Skeleton";
 import { SectionLabel } from "@/components/ui/SectionLabel";
 import { StatCard } from "@/components/ui/StatCard";
 
-// ── Skeleton ──────────────────────────────────────────────────────────────────
+// ── Loading ───────────────────────────────────────────────────────────────────
 
-function SkeletonDashboard() {
+function LoadingDashboard() {
   return (
-    <ScrollView
-      className="flex-1"
-      contentContainerStyle={{ padding: 20, paddingBottom: 48 }}
-      showsVerticalScrollIndicator={false}
-    >
-      {/* GPA hero skeleton */}
-      <View className="rounded-2xl border border-space-border bg-space-elevated p-6 mb-4">
-        <Bone w={90} h={10} />
-        <View className="flex-row mt-5" style={{ gap: 0 }}>
-          <View className="flex-1 gap-3">
-            <Bone w={72} h={10} />
-            <Bone w={80} h={52} />
-          </View>
-          <View style={{ width: 1, backgroundColor: "#1C2A45", marginHorizontal: 20 }} />
-          <View className="flex-1 gap-3">
-            <Bone w={72} h={10} />
-            <Bone w={80} h={52} />
-          </View>
-        </View>
-      </View>
-
-      {/* Stats row skeleton */}
-      <View className="flex-row gap-3 mb-6">
-        {[0, 1, 2].map((i) => (
-          <View key={i} className="flex-1 rounded-2xl border border-space-border bg-space-surface/50 p-3.5 gap-2" style={{ minHeight: 88 }}>
-            <Bone w={16} h={16} />
-            <Bone w="60%" h={24} />
-            <Bone w="50%" h={9} />
-          </View>
-        ))}
-      </View>
-
-      {/* Section label */}
-      <Bone w={120} h={10} />
-
-      {/* Course card skeletons */}
-      <View className="mt-3 gap-3">
-        {[0, 1, 2, 3, 4].map((i) => (
-          <View key={i} className="border border-space-border rounded-2xl bg-space-surface/50 p-4 gap-3">
-            <View className="flex-row justify-between items-start">
-              <Bone w="55%" h={14} />
-              <Bone w={32} h={26} />
-            </View>
-            <Bone w="35%" h={10} />
-            <Bone w="100%" h={3} />
-          </View>
-        ))}
-      </View>
-    </ScrollView>
+    <View className="flex-1 items-center justify-center gap-4">
+      <Spinner size={40} />
+    </View>
   );
 }
 
@@ -100,9 +54,11 @@ function GradeCard({ course }: { course: any }) {
           >
             {course.name.replace(/\s*\(.*?\)\s*$/, "")}
           </Text>
-          <Text style={{ fontSize: 13, color: "#4A5578" }}>
-            {course.courseCode} · {course.term}
-          </Text>
+          {course.teacher ? (
+            <Text style={{ fontSize: 13, color: "#4A5578" }}>
+              {course.teacher}
+            </Text>
+          ) : null}
           {course.missingCount > 0 && (
             <View className="flex-row items-center gap-1.5" style={{ marginTop: 10 }}>
               <AlertTriangle size={13} color="#F59E0B" />
@@ -141,7 +97,7 @@ export default function DashboardScreen() {
   return (
     <SafeAreaView className="flex-1 bg-space-void">
       {loading ? (
-        <SkeletonDashboard />
+        <LoadingDashboard />
       ) : (
         <ScrollView
           className="flex-1"
@@ -219,14 +175,8 @@ export default function DashboardScreen() {
             <View className="rounded-2xl border border-space-border bg-space-surface/30 p-10 items-center mt-1">
               <BookOpen size={36} color="#4A5578" />
               <Text className="text-sm text-star-dim mt-3 text-center leading-6">
-                No courses found.{"\n"}Connect Infinite Campus in Settings.
+                No courses found.{"\n"}Sign in with your Infinite Campus credentials to get started.
               </Text>
-              <TouchableOpacity
-                onPress={() => router.push("/(tabs)/settings")}
-                className="mt-5 px-5 py-3 rounded-xl bg-vela-400/20 border border-vela-400/30"
-              >
-                <Text className="text-sm text-vela-300 font-medium">Go to Settings</Text>
-              </TouchableOpacity>
             </View>
           ) : (
             courses.map((course) => <GradeCard key={course.id} course={course} />)

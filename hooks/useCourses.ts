@@ -63,6 +63,10 @@ function computeGpa(courses: NormalizedCourse[]) {
   };
 }
 
+function stripDesignation(name: string): string {
+  return name.replace(/\s*\((HP|P|H)\)\s*$/i, "").trim();
+}
+
 export function useCourses() {
   const { session, isConnected } = useIC();
   const [courses, setCourses] = useState<NormalizedCourse[]>([]);
@@ -104,7 +108,7 @@ export function useCourses() {
 
       const normalized: NormalizedCourse[] = (data.courses as any[]).map((c) => ({
         id: c.id,
-        name: c.name,
+        name: stripDesignation(c.name),
         courseCode: c.courseCode,
         term: c.term,
         courseType: c.courseType,

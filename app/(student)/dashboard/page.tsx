@@ -2,7 +2,6 @@
 import { useEffect } from "react";
 import { GpaHeroCard } from "@/components/dashboard/GpaHeroCard";
 import { GradeCard } from "@/components/dashboard/GradeCard";
-import { AdvisorFeed } from "@/components/dashboard/AdvisorFeed";
 import { useCourses } from "@/hooks/useCourses";
 import { useAuth } from "@/contexts/AuthContext";
 import { useIC } from "@/contexts/InfiniteCampusContext";
@@ -17,6 +16,10 @@ export default function DashboardPage() {
   const alertCount = logs.filter((l) => !l.isRead).length;
   const unreadLogs = logs.filter((l) => !l.isRead);
   const totalMissing = courses.reduce((sum, c) => sum + c.missingCount, 0);
+  const gradedCourses = courses.filter((c) => c.currentGrade != null);
+  const avgGrade = gradedCourses.length > 0
+    ? gradedCourses.reduce((s, c) => s + c.currentGrade!, 0) / gradedCourses.length
+    : null;
 
   const displayName = user?.displayName || "Student";
 
@@ -61,7 +64,7 @@ export default function DashboardPage() {
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
           {[
             { label: "Enrolled Courses", value: courses.length.toString(), icon: "◈" },
-            { label: "Cumulative GPA", value: gpa.unweighted.toFixed(2), icon: "✦" },
+            { label: "AVG Grade", value: avgGrade != null ? avgGrade.toFixed(1) + "%" : "N/A", icon: "✦" },
             { label: "Missing Assignments", value: totalMissing.toString(), warn: totalMissing > 0, icon: "△" },
           ].map((stat, i) => (
             <div
@@ -92,6 +95,7 @@ export default function DashboardPage() {
                   currentGrade={course.currentGrade}
                   letterGrade={course.letterGrade}
                   missingCount={course.missingCount}
+                  teacher={course.teacher}
                 />
               </div>
             ))}

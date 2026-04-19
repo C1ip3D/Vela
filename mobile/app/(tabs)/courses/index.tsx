@@ -48,14 +48,8 @@ export default function CoursesScreen() {
         <View className="flex-1 items-center justify-center px-10">
           <BookOpen size={44} color="#4A5578" />
           <Text className="text-sm text-star-dim text-center mt-4 leading-6">
-            No courses found.{"\n"}Connect Infinite Campus in Settings.
+            No courses found.{"\n"}Sign in with your Infinite Campus credentials to get started.
           </Text>
-          <TouchableOpacity
-            onPress={() => router.push("/(tabs)/settings")}
-            className="mt-5 px-6 py-3 rounded-xl bg-vela-400/20 border border-vela-400/30"
-          >
-            <Text className="text-sm text-vela-300 font-medium">Go to Settings</Text>
-          </TouchableOpacity>
         </View>
       ) : (
         <FlatList
@@ -82,7 +76,7 @@ export default function CoursesScreen() {
                       {course.name}
                     </Text>
                     <Text className="text-xs text-star-faint mt-1">
-                      {course.courseCode} · Period {course.period ?? "—"} · {course.term}
+                      {course.courseCode} · Period {course.period ?? "—"}{course.teacher ? ` · ${course.teacher}` : ""}
                     </Text>
                   </View>
 

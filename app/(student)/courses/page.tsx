@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/Badge";
 import { useCourses } from "@/hooks/useCourses";
 import { useAuth } from "@/contexts/AuthContext";
 import { useIC } from "@/contexts/InfiniteCampusContext";
-import { ChevronRight, Clock, AlertTriangle } from "lucide-react";
+import { ChevronRight, AlertTriangle } from "lucide-react";
 
 function gradeColor(_grade: number): string {
   return "text-emerald-400";
@@ -71,16 +71,16 @@ export default function CoursesPage() {
                     <div className="flex items-center gap-2.5 mb-2">
                       <p className="text-lg font-medium text-[#E8ECFF] truncate">{course.name}</p>
                     </div>
-                    <p className="flex items-center gap-1.5 text-sm text-[#4A5578]">
-                      <Clock size={12} />
-                      {course.courseCode}
-                      {course.period && <span className="ml-1 text-[#4A5578]">· Period {course.period}</span>}
-                      {course.missingCount > 0 && (
-                        <span className="flex items-center gap-1 text-[10px] text-amber-400 ml-1">
-                          <AlertTriangle size={10} /> {course.missingCount} missing
-                        </span>
-                      )}
-                    </p>
+                    {(course.period || course.missingCount > 0) && (
+                      <p className="flex items-center gap-1.5 text-sm text-[#4A5578]">
+                        {course.period && <span className="text-[#4A5578]">Period {course.period}</span>}
+                        {course.missingCount > 0 && (
+                          <span className="flex items-center gap-1 text-[10px] text-amber-400 ml-1">
+                            <AlertTriangle size={10} /> {course.missingCount} missing
+                          </span>
+                        )}
+                      </p>
+                    )}
                     {course.teacher && (
                       <p className="text-xs text-[#4A5578] mt-1">{course.teacher}</p>
                     )}

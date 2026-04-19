@@ -1,5 +1,7 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import * as SecureStore from "expo-secure-store";
+import { onAuthStateChanged } from "firebase/auth";
+import { auth } from "@/lib/firebase";
 import { api } from "@/lib/api";
 
 export interface ICSession {
@@ -54,6 +56,19 @@ export function InfiniteCampusProvider({ children }: { children: ReactNode }) {
     }).finally(() => {
       setIsInitializing(false);
     });
+  }, []);
+
+  // Clear IC session when Firebase user signs out so the next user never
+  // inherits a previous user's IC auth token and sees their grades.
+  useEffect(() => {
+    const unsub = onAuthStateChanged(auth, (user) => {
+      if (!user) {
+        setSession(null);
+        SecureStore.deleteItemAsync(IC_SESSION_KEY);
+        SecureStore.deleteItemAsync(IC_CREDS_KEY);
+      }
+    });
+    return unsub;
   }, []);
 
   const persist = async (s: ICSession | null) => {

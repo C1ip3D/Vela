@@ -1,7 +1,26 @@
 import { Tabs } from "expo-router";
-import { LayoutDashboard, Compass, Settings } from "lucide-react-native";
+import { TouchableOpacity, Alert } from "react-native";
+import { LayoutDashboard, Compass, LogOut } from "lucide-react-native";
+import { useAuth } from "@/contexts/AuthContext";
+import { router } from "expo-router";
 
 export default function TabLayout() {
+  const { signOut } = useAuth();
+
+  const handleSignOut = () => {
+    Alert.alert("Sign Out", "Are you sure you want to sign out?", [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Sign Out",
+        style: "destructive",
+        onPress: async () => {
+          await signOut();
+          router.replace("/(auth)/login");
+        },
+      },
+    ]);
+  };
+
   return (
     <Tabs
       screenOptions={{
@@ -47,13 +66,19 @@ export default function TabLayout() {
       <Tabs.Screen
         name="settings/index"
         options={{
-          title: "Settings",
+          title: "Sign Out",
           tabBarIcon: ({ color, size }) => (
-            <Settings size={size} color={color} />
+            <LogOut size={size} color={color} />
+          ),
+          tabBarButton: (props) => (
+            <TouchableOpacity
+              {...props}
+              onPress={handleSignOut}
+              activeOpacity={0.7}
+            />
           ),
         }}
       />
-      {/* Hide course detail from tab bar */}
       <Tabs.Screen
         name="courses/[courseId]"
         options={{ href: null }}

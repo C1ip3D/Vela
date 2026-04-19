@@ -380,7 +380,7 @@ function parseResilient(data: any, baseUrl: string): ICCourse[] {
         currentGrade,
         letterGrade,
         missingCount,
-        teacher: cs.teacherDisplay ?? cs.teacher ?? null,
+        teacher: cs.teacherDisplay ?? cs.teacher ?? cs.teacherName ?? cs.staffDisplayName ?? cs.instructorName ?? null,
         period: cs.sectionNumber ?? cs.period ?? null,
       });
     } else if (existing) {

@@ -504,6 +504,7 @@ export default function CourseDetailPage({ params }: { params: Promise<{ courseI
     assignments: [...g.assignments, ...newAssignments.filter((n) => n.groupId === g.id && n.score !== null).map(toAssignment)],
   }));
   const whatIfCourseGrade = hasAnyMod ? calcCourseGrade(augmentedGroups, mods) : null;
+  const baselineGrade = calcCourseGrade(groups, {});
 
   if (loading) {
     return (
@@ -526,17 +527,19 @@ export default function CourseDetailPage({ params }: { params: Promise<{ courseI
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-xl font-bold text-[#fcfcfc]">{course?.name || "Course"}</h2>
-              <p className="text-sm text-[#A0A0A0] mt-1.5 flex items-center gap-1.5">
-                updated recently <Clock size={12} className="text-[#A0A0A0]" />
-              </p>
+              {course?.teacher && (
+                <p className="text-sm text-[#A0A0A0] mt-1.5">{course.teacher}</p>
+              )}
             </div>
             <div className="flex items-center gap-3">
               {/* Grade display */}
               {hasAnyMod && whatIfCourseGrade != null ? (
                 <div className="flex items-center gap-4">
                   {/* Difference Indicator */}
-                  {course?.currentGrade != null && (() => {
-                    const diff = whatIfCourseGrade - course.currentGrade;
+                  {(() => {
+                    const baseline = baselineGrade ?? course?.currentGrade;
+                    if (baseline == null) return null;
+                    const diff = whatIfCourseGrade - baseline;
                     if (Math.abs(diff) < 0.01) return null;
                     const isPositive = diff > 0;
                     return (

@@ -744,7 +744,7 @@ export default function CourseDetailScreen() {
           <Text className="text-base font-semibold text-star-bright" numberOfLines={1}>
             {course?.name ?? "Course"}
           </Text>
-          <Text className="text-xs text-star-faint mt-0.5">{course?.courseCode}</Text>
+          <Text className="text-xs text-star-faint mt-0.5">{course?.teacher ?? course?.courseCode}</Text>
         </View>
       </View>
 
@@ -771,7 +771,7 @@ export default function CourseDetailScreen() {
                   {course?.name?.replace(/\s*\(.*?\)\s*$/, "") ?? "Course"}
                 </Text>
                 <Text style={{ fontSize: 13, color: "#4A5578" }}>
-                  {course?.courseCode}
+                  {course?.teacher ?? course?.courseCode}
                 </Text>
               </View>
 

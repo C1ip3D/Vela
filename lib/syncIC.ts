@@ -53,6 +53,7 @@ export async function syncICCoursesToDB(
         courseCode: c.courseCode,
         term: c.term,
         courseType,
+        teacher: c.teacher ?? null,
         source: "INFINITE_CAMPUS",
       },
       update: {
@@ -60,6 +61,7 @@ export async function syncICCoursesToDB(
         courseCode: c.courseCode,
         term: c.term,
         courseType,
+        teacher: c.teacher ?? null,
         updatedAt: now,
       },
     });
@@ -150,6 +152,7 @@ export async function getCachedCourses(
       currentGrade: e.currentGrade,
       letterGrade: e.letterGrade,
       missingCount: 0,
+      teacher: e.course.teacher ?? null,
     })),
     isStale,
   };

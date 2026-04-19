@@ -14,33 +14,16 @@ interface Props {
   letterGrade: string | null;
   missingCount: number;
   weekDelta?: number;
+  teacher?: string | null;
 }
 
-export function GradeCard({ id, name, courseCode, courseType, currentGrade, letterGrade, missingCount, weekDelta }: Props) {
+export function GradeCard({ id, name, courseCode, courseType, currentGrade, letterGrade, missingCount, weekDelta, teacher }: Props) {
   const hasGrade = currentGrade != null;
   const grade = currentGrade ?? 0;
   const isCritical = hasGrade && (missingCount >= 3 || grade < 70);
   const isWarning = hasGrade && (missingCount >= 1 || grade < 80);
 
-  const accentGradient = !hasGrade
-    ? "from-[#4A5578] to-[#8B98B8]"
-    : grade >= 90
-      ? "from-[#818CF8] to-[#A5B4FC]"
-      : grade >= 80
-        ? "from-[#6366F1] to-[#818CF8]"
-        : grade >= 70
-          ? "from-[#F59E0B] to-[#FCD34D]"
-          : "from-[#F43F5E] to-[#FB7185]";
-
-  const barGradient = !hasGrade
-    ? "linear-gradient(to right, #4A5578, #8B98B8)"
-    : grade >= 90
-      ? "linear-gradient(to right, #818CF8, #A5B4FC)"
-      : grade >= 80
-        ? "linear-gradient(to right, #6366F1, #818CF8)"
-        : grade >= 70
-          ? "linear-gradient(to right, #F59E0B, #FCD34D)"
-          : "linear-gradient(to right, #F43F5E, #FB7185)";
+  const gradeTextColor = hasGrade ? "text-emerald-400" : "text-[#4A5578]";
 
   return (
     <Link href={`/courses/${id}`}>
@@ -54,6 +37,7 @@ export function GradeCard({ id, name, courseCode, courseType, currentGrade, lett
         <div className="relative mb-3 flex items-start justify-between min-h-[3.75rem]">
           <div className="flex-1">
             <p className="text-base font-medium text-[#E8ECFF] leading-tight line-clamp-3">{name}</p>
+            {teacher && <p className="text-xs text-[#8B98B8] mt-0.5 truncate">{teacher}</p>}
           </div>
         </div>
 
@@ -61,7 +45,7 @@ export function GradeCard({ id, name, courseCode, courseType, currentGrade, lett
         <div className="relative mb-3 flex items-end justify-between min-h-[44px]">
           {hasGrade ? (
             <>
-              <span className={`font-mono text-4xl font-bold bg-gradient-to-r ${accentGradient} bg-clip-text text-transparent`}>{grade.toFixed(1)}%</span>
+              <span className={`font-mono text-4xl font-bold ${gradeTextColor}`}>{grade.toFixed(1)}%</span>
             </>
           ) : (
             <div className="w-full flex items-center justify-center">
