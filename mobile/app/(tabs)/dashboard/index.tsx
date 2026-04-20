@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useRef } from "react";
 import { View, Text, ScrollView, TouchableOpacity } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { router } from "expo-router";
@@ -8,6 +8,7 @@ import { AlertTriangle, BookOpen, Star } from "lucide-react-native";
 import { Spinner } from "@/components/ui/Skeleton";
 import { SectionLabel } from "@/components/ui/SectionLabel";
 import { StatCard } from "@/components/ui/StatCard";
+import { FadeSlide } from "@/components/ui/FadeSlide";
 
 // ── Loading ───────────────────────────────────────────────────────────────────
 
@@ -87,6 +88,7 @@ function GradeCard({ course }: { course: any }) {
 
 export default function DashboardScreen() {
   const { courses, loading, gpa } = useCourses();
+  const skipAnim = useRef(!loading).current;
   const totalMissing = courses.reduce((sum, c) => sum + c.missingCount, 0);
   const avgGrade =
     courses.filter((c) => c.currentGrade != null).length > 0
@@ -105,6 +107,7 @@ export default function DashboardScreen() {
           showsVerticalScrollIndicator={false}
         >
           {/* GPA Hero */}
+          <FadeSlide delay={40} skip={skipAnim}>
           <View
             className="rounded-2xl bg-space-elevated mb-4"
             style={{ borderWidth: 1, borderColor: "#253A5E" }}
@@ -151,8 +154,10 @@ export default function DashboardScreen() {
               </View>
             </View>
           </View>
+          </FadeSlide>
 
           {/* Stats row */}
+          <FadeSlide delay={180} skip={skipAnim}>
           <View className="flex-row gap-3 mb-6">
             <StatCard icon={BookOpen} value={courses.length.toString()} label="Courses" />
             <StatCard
@@ -167,19 +172,28 @@ export default function DashboardScreen() {
               label="Avg Grade"
             />
           </View>
+          </FadeSlide>
 
           {/* Course list */}
+          <FadeSlide delay={300} skip={skipAnim}>
           <SectionLabel title="Current Courses" />
+          </FadeSlide>
 
           {courses.length === 0 ? (
+            <FadeSlide delay={360} skip={skipAnim}>
             <View className="rounded-2xl border border-space-border bg-space-surface/30 p-10 items-center mt-1">
               <BookOpen size={36} color="#4A5578" />
               <Text className="text-sm text-star-dim mt-3 text-center leading-6">
                 No courses found.{"\n"}Sign in with your Infinite Campus credentials to get started.
               </Text>
             </View>
+            </FadeSlide>
           ) : (
-            courses.map((course) => <GradeCard key={course.id} course={course} />)
+            courses.map((course, i) => (
+              <FadeSlide key={course.id} delay={360 + i * 70} skip={skipAnim}>
+                <GradeCard course={course} />
+              </FadeSlide>
+            ))
           )}
         </ScrollView>
       )}

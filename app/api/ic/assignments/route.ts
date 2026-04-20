@@ -135,7 +135,10 @@ export async function POST(req: NextRequest) {
         (e?.terms ?? []).flatMap((t: any) => t?.courses ?? [])
       );
       const match = allCourses.find((c: any) =>
-        String(c?.sectionID) === courseId || String(c?._id) === courseId || String(c?.rosterID) === courseId
+        String(c?.sectionID) === courseId ||
+        String(c?.courseSectionID) === courseId ||
+        String(c?._id) === courseId ||
+        String(c?.rosterID) === courseId
       );
       if (match) {
         rosterID = match.rosterID != null ? String(match.rosterID) : null;
@@ -348,9 +351,10 @@ function extractAssignmentsFromGrades(data: any, courseId: string): ICAssignment
       const courses: any[] = term?.courses ?? [];
       for (const course of courses) {
         const sid = String(course?.sectionID ?? "");
+        const csid = String(course?.courseSectionID ?? "");
         const id = String(course?._id ?? "");
         const rid = String(course?.rosterID ?? "");
-        if (sid !== courseId && id !== courseId && rid !== courseId) continue;
+        if (sid !== courseId && csid !== courseId && id !== courseId && rid !== courseId) continue;
 
         // Found the course — extract assignment groups from gradingTasks or categories
         const groups: ICAssignmentGroup[] = [];

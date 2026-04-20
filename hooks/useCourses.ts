@@ -67,9 +67,16 @@ function stripDesignation(name: string): string {
   return name.replace(/\s*\((HP|P|H)\)\s*$/i, "").trim();
 }
 
+export interface GpaHistoryPoint {
+  date: string;
+  gpa: number;
+  term: number;
+}
+
 export function useCourses() {
   const { session, isConnected } = useIC();
   const [courses, setCourses] = useState<NormalizedCourse[]>([]);
+  const [gpaHistory, setGpaHistory] = useState<GpaHistoryPoint[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -85,22 +92,27 @@ export function useCourses() {
 
     try {
       const idToken = await auth.currentUser?.getIdToken();
-      const res = await fetch("/api/ic/courses", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          ...(idToken && { Authorization: `Bearer ${idToken}` }),
-        },
-        body: JSON.stringify({
-          authToken: session.authToken,
-          baseUrl: session.baseUrl,
-          appName: session.appName,
+      const authHeaders = {
+        "Content-Type": "application/json",
+        ...(idToken && { Authorization: `Bearer ${idToken}` }),
+      };
+
+      const [coursesRes, historyRes] = await Promise.all([
+        fetch("/api/ic/courses", {
+          method: "POST",
+          headers: authHeaders,
+          body: JSON.stringify({
+            authToken: session.authToken,
+            baseUrl: session.baseUrl,
+            appName: session.appName,
+          }),
         }),
-      });
+        fetch("/api/ic/gpa-history", { headers: authHeaders }),
+      ]);
 
-      const data = await res.json();
+      const data = await coursesRes.json();
 
-      if (!res.ok) {
+      if (!coursesRes.ok) {
         setError(data.error || "Failed to load courses");
         setCourses([]);
         return;
@@ -122,6 +134,11 @@ export function useCourses() {
       }));
 
       setCourses(normalized);
+
+      if (historyRes.ok) {
+        const historyData = await historyRes.json();
+        setGpaHistory(historyData.snapshots ?? []);
+      }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Unknown error";
       setError(msg);
@@ -138,5 +155,5 @@ export function useCourses() {
   const gradedCourses = courses.filter((c) => c.currentGrade != null);
   const gpa = computeGpa(gradedCourses);
 
-  return { courses, gradedCourses, loading, error, gpa, refetch: fetchCourses };
+  return { courses, gradedCourses, loading, error, gpa, gpaHistory, refetch: fetchCourses };
 }

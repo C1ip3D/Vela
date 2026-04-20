@@ -28,13 +28,9 @@ enum AlertSeverity {
 }
 
 enum AdvisorLogType {
-  GPA_DROP_ALERT
-  MISSING_ASSIGNMENT_ALERT
-  POSITIVE_TREND
-  COURSE_RECOMMENDATION
-  MILESTONE_REACHED
+  GRADE_ALERT
+  ASSIGNMENT_GRADED
 }
-
 
 enum DataSource {
   INFINITE_CAMPUS
@@ -51,15 +47,15 @@ model User {
   canvasRefresh  String?
   tokenExpiresAt DateTime?
   telegramChatId String?
+  expoPushToken  String?
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
 
-  enrollments       Enrollment[]
-  gradeHistory      GradeHistory[]
-  gpaSnapshots      GpaSnapshot[]
-  advisorLogs       AdvisorLog[]
-  simulations       Simulation[]
-  recommendations   CourseRecommendation[]
+  enrollments      Enrollment[]
+  gradeHistory     GradeHistory[]
+  gpaSnapshots     GpaSnapshot[]
+  advisorLogs      AdvisorLog[]
+  assignmentGrades AssignmentGrade[]
 }
 
 model Course {
@@ -79,38 +75,7 @@ model Course {
   updatedAt      DateTime   @updatedAt
 
   enrollments      Enrollment[]
-  assignments      Assignment[]
-  weightCategories WeightCategory[]
-  gradingPeriods   GradingPeriod[]
-}
-
-model WeightCategory {
-  id               String  @id @default(cuid())
-  courseId         String
-  canvasCategoryId String?
-  name             String
-  weight           Float
-  dropLowest       Int     @default(0)
-
-  course          Course                  @relation(fields: [courseId], references: [id])
-  assignments     Assignment[]
-  simPlaceholders SimulationPlaceholder[]
-
-  @@index([courseId])
-}
-
-model GradingPeriod {
-  id             String   @id @default(cuid())
-  courseId       String
-  canvasPeriodId String
-  title          String
-  startDate      DateTime
-  endDate        DateTime
-
-  course      Course       @relation(fields: [courseId], references: [id])
-  assignments Assignment[]
-
-  @@index([courseId])
+  assignmentGrades AssignmentGrade[]
 }
 
 model Enrollment {
@@ -128,50 +93,6 @@ model Enrollment {
 
   @@unique([userId, courseId])
   @@index([userId])
-}
-
-model Assignment {
-  id               String     @id @default(cuid())
-  canvasAssignId   String     @unique
-  courseId         String
-  gradingPeriodId  String?
-  weightCategoryId String?
-  title            String
-  pointsPossible   Float
-  dueDate          DateTime?
-  isPublished      Boolean    @default(true)
-  source           DataSource @default(INFINITE_CAMPUS)
-  externalId       String?
-  createdAt        DateTime   @default(now())
-  updatedAt        DateTime   @updatedAt
-
-  course         Course          @relation(fields: [courseId], references: [id])
-  gradingPeriod  GradingPeriod?  @relation(fields: [gradingPeriodId], references: [id])
-  weightCategory WeightCategory? @relation(fields: [weightCategoryId], references: [id])
-  submissions    Submission[]
-  overrides      SimulationOverride[]
-
-  @@index([courseId, dueDate])
-}
-
-model Submission {
-  id           String    @id @default(cuid())
-  canvasSubId  String    @unique
-  assignmentId String
-  userId       String
-  score        Float?
-  late         Boolean   @default(false)
-  missing      Boolean   @default(false)
-  excused      Boolean   @default(false)
-  gradedAt     DateTime?
-  submittedAt  DateTime?
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
-
-  assignment Assignment @relation(fields: [assignmentId], references: [id])
-
-  @@index([assignmentId, userId])
-  @@index([userId, missing])
 }
 
 model GradeHistory {
@@ -204,48 +125,6 @@ model GpaSnapshot {
   @@index([userId, recordedAt])
 }
 
-model Simulation {
-  id             String   @id @default(cuid())
-  userId         String
-  courseId       String
-  name           String   @default("My Scenario")
-  isActive       Boolean  @default(false)
-  baseGrade      Float
-  projectedGrade Float    @default(0)
-  projectedGpa   Float    @default(0)
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-
-  user         User                    @relation(fields: [userId], references: [id])
-  overrides    SimulationOverride[]
-  placeholders SimulationPlaceholder[]
-
-  @@index([userId, courseId])
-}
-
-model SimulationOverride {
-  id            String @id @default(cuid())
-  simulationId  String
-  assignmentId  String
-  overrideScore Float
-  originalScore Float?
-
-  simulation Simulation @relation(fields: [simulationId], references: [id], onDelete: Cascade)
-  assignment Assignment @relation(fields: [assignmentId], references: [id])
-}
-
-model SimulationPlaceholder {
-  id               String @id @default(cuid())
-  simulationId     String
-  title            String
-  weightCategoryId String
-  pointsPossible   Float
-  projectedScore   Float
-
-  simulation     Simulation     @relation(fields: [simulationId], references: [id], onDelete: Cascade)
-  weightCategory WeightCategory @relation(fields: [weightCategoryId], references: [id])
-}
-
 model AdvisorLog {
   id          String         @id @default(cuid())
   userId      String
@@ -257,23 +136,25 @@ model AdvisorLog {
   isRead      Boolean        @default(false)
   createdAt   DateTime       @default(now())
 
-  user   User             @relation(fields: [userId], references: [id])
+  user User @relation(fields: [userId], references: [id])
+
   @@index([userId, createdAt])
 }
 
+model AssignmentGrade {
+  id            String   @id @default(cuid())
+  userId        String
+  courseId      String
+  assignmentKey String
+  name          String
+  score         Float?
+  maxScore      Float?
+  dueDate       String?
+  gradedAt      DateTime @default(now())
 
-model CourseRecommendation {
-  id               String   @id @default(cuid())
-  userId           String
-  catalogCourseId  String
-  courseName       String
-  track            String
-  reason           String
-  prerequisitesMet Boolean
-  confidenceScore  Float
-  createdAt        DateTime @default(now())
+  user   User   @relation(fields: [userId], references: [id])
+  course Course @relation(fields: [courseId], references: [id])
 
-  user User @relation(fields: [userId], references: [id])
-
-  @@index([userId])
+  @@unique([userId, courseId, assignmentKey])
+  @@index([userId, courseId])
 }

@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useRef } from "react";
 import {
   View,
   Text,
@@ -13,11 +13,13 @@ import { useIC } from "@/contexts/InfiniteCampusContext";
 import { gradeColor } from "@/lib/utils";
 import { AlertTriangle, ChevronRight, BookOpen } from "lucide-react-native";
 import { GradeChip } from "@/components/ui/GradeChip";
+import { FadeSlide } from "@/components/ui/FadeSlide";
 
 
 export default function CoursesScreen() {
   const { isConnected } = useIC();
   const { courses, loading, error } = useCourses();
+  const skipAnim = useRef(!loading).current;
 
   if (loading) {
     return (
@@ -57,11 +59,12 @@ export default function CoursesScreen() {
           keyExtractor={(c) => c.id}
           contentContainerStyle={{ padding: 20, paddingTop: 16, paddingBottom: 48 }}
           showsVerticalScrollIndicator={false}
-          renderItem={({ item: course }) => {
+          renderItem={({ item: course, index }) => {
             const letter = course.letterGrade ?? "—";
             const color = course.letterGrade ? gradeColor(letter) : "#4A5578";
 
             return (
+              <FadeSlide delay={60 + index * 75} skip={skipAnim}>
               <TouchableOpacity
                 onPress={() => router.push(`/(tabs)/courses/${course.id}`)}
                 className="border border-space-border rounded-2xl bg-space-surface/50 p-4 mb-3"
@@ -112,6 +115,7 @@ export default function CoursesScreen() {
                   </View>
                 )}
               </TouchableOpacity>
+              </FadeSlide>
             );
           }}
         />

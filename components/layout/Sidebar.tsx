@@ -2,7 +2,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, BookOpen, Compass, Settings, Users, ChevronLeft, ChevronRight, LogOut } from "lucide-react";
+import { LayoutDashboard, BookOpen, Compass, Users, LogOut } from "lucide-react";
 import { VelaLogo } from "@/components/ui/VelaLogo";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
@@ -11,7 +11,6 @@ const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/courses", label: "Courses", icon: BookOpen },
   { href: "/advisor", label: "Advisor", icon: Compass },
-  { href: "/settings", label: "Settings", icon: Settings },
 ];
 
 const counselorItems = [

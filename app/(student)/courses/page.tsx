@@ -1,8 +1,6 @@
 "use client";
 import Link from "next/link";
-import { Badge } from "@/components/ui/Badge";
 import { useCourses } from "@/hooks/useCourses";
-import { useAuth } from "@/contexts/AuthContext";
 import { useIC } from "@/contexts/InfiniteCampusContext";
 import { ChevronRight, AlertTriangle } from "lucide-react";
 
@@ -11,10 +9,8 @@ function gradeColor(_grade: number): string {
 }
 
 export default function CoursesPage() {
-  const { user } = useAuth();
   const { isConnected } = useIC();
   const { courses, loading } = useCourses();
-  const displayName = user?.displayName || "Student";
 
   if (loading) {
     return (
@@ -37,11 +33,7 @@ export default function CoursesPage() {
         <div className="flex-1 flex items-center justify-center">
           <div className="text-center space-y-3 px-4">
             <p className="text-lg text-[#E8ECFF]">Connect Infinite Campus to view your grades</p>
-            <p className="text-sm text-[#8B98B8]">Go to Settings and sign in with your IC credentials.</p>
-            <Link href="/settings"
-              className="inline-block mt-3 rounded-lg bg-[#818CF8] px-5 py-2.5 text-sm font-medium text-white hover:bg-[#6366F1] transition-colors">
-              Go to Settings
-            </Link>
+            <p className="text-sm text-[#8B98B8]">Sign in with your Infinite Campus credentials to get started.</p>
           </div>
         </div>
       </div>
@@ -64,7 +56,7 @@ export default function CoursesPage() {
               <Link href={`/courses/${course.id}`} key={course.id} className="block">
                 <div
                   className="animate-fade-in group flex items-center justify-between rounded-xl border border-[#1C2A45]/60 bg-[#101828]/50 backdrop-blur-sm px-8 py-7 hover:border-[#253A5E]/80 hover:bg-[#162032]/60 transition-all duration-300 cursor-pointer"
-                  style={{ animationDelay: `${i * 50}ms` }}
+                  style={{ animationDelay: `${60 + i * 90}ms` }}
                 >
                   {/* Left: course info */}
                   <div className="flex-1 min-w-0 mr-4">

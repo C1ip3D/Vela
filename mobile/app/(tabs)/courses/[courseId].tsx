@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
+import { FadeSlide } from "@/components/ui/FadeSlide";
+import { useAssignments } from "@/hooks/useAssignments";
 import {
   View,
   Text,
@@ -16,10 +18,8 @@ import {
   ArrowLeft,
   AlertTriangle,
 } from "lucide-react-native";
-import { useIC } from "@/contexts/InfiniteCampusContext";
 import { useCourses } from "@/hooks/useCourses";
 import { percentageToLetter } from "@/lib/utils";
-import { api } from "@/lib/api";
 import { Bone } from "@/components/ui/Skeleton";
 
 interface Assignment {
@@ -582,15 +582,18 @@ function CustomAssignmentRow({
 
 export default function CourseDetailScreen() {
   const { courseId } = useLocalSearchParams<{ courseId: string }>();
-  const { session, reauth } = useIC();
   const { courses } = useCourses();
+  const { groups: rawGroups, setGroups: setRawGroups, loading, error, hadCacheOnMount } = useAssignments(courseId);
+
+  const groups = rawGroups as AssignmentGroup[];
+  const setGroups = setRawGroups as React.Dispatch<React.SetStateAction<AssignmentGroup[]>>;
+  const skipAnim = hadCacheOnMount;
 
   const course = courses.find((c) => c.id === courseId);
 
-  const [groups, setGroups] = useState<AssignmentGroup[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
+  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(
+    () => groups.length > 0 ? new Set([groups[0].id]) : new Set()
+  );
   const [mods, setMods] = useState<Record<string, WhatIfMod>>({});
   const [addedAssignments, setAddedAssignments] = useState<Record<string, CustomAssignment[]>>({});
   const [addSheetGroupId, setAddSheetGroupId] = useState<string | null>(null);
@@ -610,52 +613,14 @@ export default function CourseDetailScreen() {
   useEffect(() => {
     setMods({});
     setAddedAssignments({});
+    setExpandedGroups(groups.length > 0 ? new Set([groups[0].id]) : new Set());
   }, [courseId]);
 
   useEffect(() => {
-    if (!session || !courseId) {
-      setLoading(false);
-      return;
+    if (groups.length > 0 && expandedGroups.size === 0) {
+      setExpandedGroups(new Set([groups[0].id]));
     }
-
-    const fetchAssignments = async (s: typeof session) => {
-      const res = await api.post("/api/ic/assignments", {
-        authToken: s.authToken,
-        baseUrl: s.baseUrl,
-        appName: s.appName,
-        courseId,
-      });
-      return res.data;
-    };
-
-    (async () => {
-      try {
-        let data: any;
-        try {
-          data = await fetchAssignments(session);
-        } catch (err: any) {
-          if (err?.response?.status === 401) {
-            const newSession = await reauth();
-            if (newSession) {
-              data = await fetchAssignments(newSession);
-            } else {
-              throw err;
-            }
-          } else {
-            throw err;
-          }
-        }
-        setGroups(data.groups ?? []);
-        if (data.groups?.length > 0) {
-          setExpandedGroups(new Set([data.groups[0].id]));
-        }
-      } catch (e: any) {
-        setError(e.message ?? "Failed to load assignments");
-      } finally {
-        setLoading(false);
-      }
-    })();
-  }, [session, courseId, reauth]);
+  }, [groups]);
 
   const setMod = (assignmentId: string, mod: Partial<WhatIfMod>) => {
     setMods((prev) => ({ ...prev, [assignmentId]: { ...prev[assignmentId], ...mod } }));
@@ -757,6 +722,7 @@ export default function CourseDetailScreen() {
           showsVerticalScrollIndicator={false}
         >
           {/* Grade display — matches dashboard course card style */}
+          <FadeSlide delay={60} skip={skipAnim}>
           <View
             className="rounded-2xl border border-space-border bg-space-surface/50 mb-5"
             style={{ padding: 22 }}
@@ -804,6 +770,7 @@ export default function CourseDetailScreen() {
               </View>
             </View>
           </View>
+          </FadeSlide>
 
           {error && (
             <View className="rounded-2xl border border-red-500/20 bg-red-500/10 p-4 mb-4">
@@ -812,7 +779,7 @@ export default function CourseDetailScreen() {
           )}
 
           {/* Assignment groups */}
-          {groups.map((group) => {
+          {groups.map((group, groupIndex) => {
             const isExpanded = expandedGroups.has(group.id);
             const groupExtras = addedAssignments[group.id] ?? [];
             const groupScore = calcGroupScore(group.assignments, mods, groupExtras);
@@ -824,7 +791,8 @@ export default function CourseDetailScreen() {
                 : null;
 
             return (
-              <View key={group.id} className="border border-space-border rounded-2xl mb-3 overflow-hidden">
+              <FadeSlide key={group.id} delay={160 + groupIndex * 80} skip={skipAnim}>
+              <View className="border border-space-border rounded-2xl mb-3 overflow-hidden">
                 <View style={{ flexDirection: "row", alignItems: "center", backgroundColor: "#0F1829" }}>
                   {/* Left: tap to expand/collapse */}
                   <TouchableOpacity
@@ -910,6 +878,7 @@ export default function CourseDetailScreen() {
                   </View>
                 )}
               </View>
+              </FadeSlide>
             );
           })}
 

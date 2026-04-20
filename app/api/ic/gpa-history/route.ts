@@ -1,0 +1,29 @@
+import { NextRequest, NextResponse } from "next/server";
+import { extractUid } from "@/lib/authToken";
+import prisma from "@/lib/db";
+
+export async function GET(req: NextRequest) {
+  const uid = extractUid(req.headers.get("authorization"));
+  if (!uid) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const user = await prisma.user.findUnique({ where: { canvasUserId: uid } });
+  if (!user) {
+    return NextResponse.json({ snapshots: [] });
+  }
+
+  const snapshots = await prisma.gpaSnapshot.findMany({
+    where: { userId: user.id },
+    orderBy: { recordedAt: "asc" },
+    take: 20,
+  });
+
+  const result = snapshots.map((s) => ({
+    date: new Date(s.recordedAt).toLocaleDateString("en-US", { month: "short", day: "numeric" }),
+    gpa: s.unweightedGpa,
+    term: s.weightedGpa,
+  }));
+
+  return NextResponse.json({ snapshots: result });
+}

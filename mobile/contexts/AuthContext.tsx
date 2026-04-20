@@ -9,9 +9,8 @@ import {
 } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import * as Notifications from "expo-notifications";
 import Constants from "expo-constants";
-import { Platform } from "react-native";
+import { Platform, NativeModules } from "react-native";
 
 const PUSH_TOKEN_KEY = "vela_push_token_registered";
 
@@ -31,10 +30,11 @@ export function useAuth() {
 
 async function registerPushToken(user: User) {
   if (Platform.OS === "web") return;
+  // ExpoPushTokenManager native module only exists in dev/prod builds, not Expo Go
+  if (!NativeModules.ExpoPushTokenManager) return;
 
-  // expo-notifications push tokens require a development build in SDK 53+
-  const isExpoGo = Constants.appOwnership === "expo";
-  if (isExpoGo) return;
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const Notifications = require("expo-notifications") as typeof import("expo-notifications");
 
   try {
     const { status: existing } = await Notifications.getPermissionsAsync();

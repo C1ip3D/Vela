@@ -16,6 +16,14 @@ import { syncICCoursesToDB, getCachedCourses } from "@/lib/syncIC";
  *   GET <base>/prism/api/portal/grades
  */
 
+interface ICAssignment {
+  key: string;
+  name: string;
+  score: number | null;
+  maxScore: number | null;
+  dueDate?: string;
+}
+
 interface ICCourse {
   id: string;
   name: string;
@@ -27,6 +35,7 @@ interface ICCourse {
   missingCount: number;
   teacher: string | null;
   period: string | null;
+  assignments: ICAssignment[];
 }
 
 export async function POST(req: NextRequest) {
@@ -338,11 +347,12 @@ function parseResilient(data: any, baseUrl: string): ICCourse[] {
     let currentGrade: number | null = null;
     let letterGrade: string | null = null;
     let missingCount = 0;
+    const assignmentsMap = new Map<string, ICAssignment>();
 
     // Helper to find scores recursively inside the course section, because different districts nest them differently
     function findGrades(node: any) {
       if (!node || typeof node !== "object") return;
-      
+
       const score = node.score ?? node.percent ?? node.grade?.percent ?? node.currentGrade?.percent ?? node.progressPercent ?? node.progressScore;
       const letter = node.gradeCalculated ?? node.grade?.letter ?? node.letter ?? node.currentGrade?.letter ?? node.progressGrade;
       const missing = node.missingCount ?? node.missing ?? 0;
@@ -353,6 +363,26 @@ function parseResilient(data: any, baseUrl: string): ICCourse[] {
         if (letter) letterGrade = letter;
       }
       if (missing) missingCount += missing;
+
+      // Extract individual assignments from known field names
+      const assignmentList = node.assignments ?? node.tasks ?? node.gradebookEntries ?? node.items;
+      if (Array.isArray(assignmentList)) {
+        for (const a of assignmentList) {
+          const aName = a.assignmentName ?? a.name ?? a.title ?? "";
+          if (!aName) continue;
+          const aDue = a.dueDate ?? a.due ?? null;
+          const aKey = String(a.assignmentID ?? a.id ?? `${id}_${aName}_${aDue ?? ""}`);
+          const aScore = a.score != null && !isNaN(Number(a.score)) ? parseFloat(a.score) : null;
+          const aMax = a.totalPoints ?? a.pointsPossible ?? a.maxScore ?? null;
+          assignmentsMap.set(aKey, {
+            key: aKey,
+            name: aName,
+            score: aScore,
+            maxScore: aMax != null && !isNaN(Number(aMax)) ? parseFloat(aMax) : null,
+            dueDate: aDue ? String(aDue) : undefined,
+          });
+        }
+      }
 
       // don't recurse if we found a score block to avoid double counting, unless it's an array of periods
       if (Array.isArray(node)) {
@@ -368,6 +398,8 @@ function parseResilient(data: any, baseUrl: string): ICCourse[] {
 
     findGrades(cs);
 
+    const assignments = Array.from(assignmentsMap.values());
+
     // Merge duplicate course sections (e.g. term 1, term 2) by picking the one with grades, or updating existing
     const existing = coursesMap.get(id);
     if (!existing || (!existing.currentGrade && currentGrade)) {
@@ -382,6 +414,7 @@ function parseResilient(data: any, baseUrl: string): ICCourse[] {
         missingCount,
         teacher: cs.teacherDisplay ?? cs.teacher ?? cs.teacherName ?? cs.staffDisplayName ?? cs.instructorName ?? null,
         period: cs.sectionNumber ?? cs.period ?? null,
+        assignments,
       });
     } else if (existing) {
        // Accrue missing assignments if the course is duplicate across terms
@@ -389,6 +422,12 @@ function parseResilient(data: any, baseUrl: string): ICCourse[] {
        if (!existing.currentGrade && currentGrade) {
           existing.currentGrade = currentGrade;
           existing.letterGrade = letterGrade;
+       }
+       // Merge assignments from duplicate sections
+       for (const a of assignments) {
+         if (!existing.assignments.some((ea) => ea.key === a.key)) {
+           existing.assignments.push(a);
+         }
        }
     }
   }
