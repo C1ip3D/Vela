@@ -355,14 +355,10 @@ function parseResilient(data: any, baseUrl: string): ICCourse[] {
 
       const score = node.score ?? node.percent ?? node.grade?.percent ?? node.currentGrade?.percent ?? node.progressPercent ?? node.progressScore;
       const letter = node.gradeCalculated ?? node.grade?.letter ?? node.letter ?? node.currentGrade?.letter ?? node.progressGrade;
-      const missing = node.missingCount ?? node.missing ?? 0;
-
       if (score != null && !isNaN(Number(score))) {
-        // keep the highest or most recent valid score
         currentGrade = parseFloat(score);
         if (letter) letterGrade = letter;
       }
-      if (missing) missingCount += missing;
 
       // Extract individual assignments from known field names
       const assignmentList = node.assignments ?? node.tasks ?? node.gradebookEntries ?? node.items;
@@ -374,6 +370,7 @@ function parseResilient(data: any, baseUrl: string): ICCourse[] {
           const aKey = String(a.assignmentID ?? a.id ?? `${id}_${aName}_${aDue ?? ""}`);
           const aScore = a.score != null && !isNaN(Number(a.score)) ? parseFloat(a.score) : null;
           const aMax = a.totalPoints ?? a.pointsPossible ?? a.maxScore ?? null;
+          if (!!(a.missing ?? a.isMissing)) missingCount += 1;
           assignmentsMap.set(aKey, {
             key: aKey,
             name: aName,

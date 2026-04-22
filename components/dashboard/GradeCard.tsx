@@ -45,7 +45,7 @@ export function GradeCard({ id, name, courseCode, courseType, currentGrade, lett
         <div className="relative mb-3 flex items-end justify-between min-h-[44px]">
           {hasGrade ? (
             <>
-              <span className={`font-mono text-4xl font-bold ${gradeTextColor}`}>{grade.toFixed(1)}%</span>
+              <span className={`font-mono text-4xl font-bold ${gradeTextColor}`}>{grade.toFixed(2)}%</span>
             </>
           ) : (
             <div className="w-full flex items-center justify-center">

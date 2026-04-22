@@ -33,13 +33,13 @@ function scoreToLetter(score: number): string {
 
 function letterToGpaPoints(letter: string): number {
   const map: Record<string, number> = {
-    "A+": 4.0, A: 4.0, "A-": 4.0,
-    "B+": 3.0, B: 3.0, "B-": 3.0,
-    "C+": 2.0, C: 2.0, "C-": 2.0,
-    "D+": 1.0, D: 1.0, "D-": 1.0,
-    F: 0.0,
+    "A+": 4, A: 4, "A-": 4,
+    "B+": 3, B: 3, "B-": 3,
+    "C+": 2, C: 2, "C-": 2,
+    "D+": 1, D: 1, "D-": 1,
+    F: 0,
   };
-  return map[letter] ?? 0.0;
+  return map[letter] ?? 0;
 }
 
 function computeGpa(courses: NormalizedCourse[]) {
@@ -53,7 +53,7 @@ function computeGpa(courses: NormalizedCourse[]) {
     const base = letterToGpaPoints(letter);
     totalU += base;
     const boost =
-      c.courseType === "AP" ? 1.0 : c.courseType === "HONORS" ? 0.84 : 0;
+      c.courseType === "AP" || c.courseType === "HONORS" ? 1 : 0;
     totalW += base + boost;
   }
 

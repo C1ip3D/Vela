@@ -97,7 +97,7 @@ export default function CoursesScreen() {
                       className="text-xs text-star-dim"
                       style={{ fontVariant: ["tabular-nums"] }}
                     >
-                      {course.currentGrade.toFixed(1)}%
+                      {course.currentGrade.toFixed(2)}%
                     </Text>
                   )}
                 </View>

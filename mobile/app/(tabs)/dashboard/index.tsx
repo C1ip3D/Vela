@@ -77,7 +77,7 @@ function GradeCard({ course }: { course: any }) {
             fontVariant: ["tabular-nums"],
           }}
         >
-          {grade != null ? `${grade.toFixed(1)}%` : "—"}
+          {grade != null ? `${grade.toFixed(2)}%` : "—"}
         </Text>
       </View>
     </TouchableOpacity>
@@ -168,7 +168,7 @@ export default function DashboardScreen() {
             />
             <StatCard
               icon={Star}
-              value={avgGrade != null ? avgGrade.toFixed(1) + "%" : "—"}
+              value={avgGrade != null ? avgGrade.toFixed(2) + "%" : "—"}
               label="Avg Grade"
             />
           </View>

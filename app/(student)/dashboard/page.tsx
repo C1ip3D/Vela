@@ -71,7 +71,7 @@ export default function DashboardPage() {
             },
             {
               label: "AVG Grade",
-              value: avgGrade != null ? avgGrade.toFixed(1) + "%" : "N/A",
+              value: avgGrade != null ? avgGrade.toFixed(2) + "%" : "N/A",
               icon: "✦",
             },
           ].map((stat, i) => (

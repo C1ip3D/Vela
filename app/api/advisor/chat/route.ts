@@ -25,7 +25,7 @@ interface ChatMessage {
 
 function buildSystemPrompt(profile: StudentProfile): string {
   const courseList = profile.courses
-    .map(c => `  - ${c.name} (${c.courseType}): ${c.letterGrade} / ${c.grade.toFixed(1)}%${c.missingCount > 0 ? ` — ⚠ ${c.missingCount} missing` : ""}`)
+    .map(c => `  - ${c.name} (${c.courseType}): ${c.letterGrade} / ${c.grade.toFixed(2)}%${c.missingCount > 0 ? ` — ⚠ ${c.missingCount} missing` : ""}`)
     .join("\n");
 
   return `You are Kepler, an intelligent academic advisor AI for Vela — a student performance platform. You are named after Johannes Kepler, the astronomer who mapped the laws of planetary motion.

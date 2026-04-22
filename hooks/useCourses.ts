@@ -17,27 +17,19 @@ export interface NormalizedCourse {
 }
 
 function scoreToLetter(score: number): string {
-  if (score >= 97) return "A+";
-  if (score >= 93) return "A";
-  if (score >= 90) return "A-";
-  if (score >= 87) return "B+";
-  if (score >= 83) return "B";
-  if (score >= 80) return "B-";
-  if (score >= 77) return "C+";
-  if (score >= 73) return "C";
-  if (score >= 70) return "C-";
-  if (score >= 67) return "D+";
-  if (score >= 63) return "D";
-  if (score >= 60) return "D-";
+  if (score >= 89.5) return "A";
+  if (score >= 79.5) return "B";
+  if (score >= 69.5) return "C";
+  if (score >= 59.5) return "D";
   return "F";
 }
 
 function letterToGpaPoints(letter: string): number {
   const map: Record<string, number> = {
-    "A+": 4.0, A: 4.0, "A-": 4.0,
-    "B+": 3.0, B: 3.0, "B-": 3.0,
-    "C+": 2.0, C: 2.0, "C-": 2.0,
-    "D+": 1.0, D: 1.0, "D-": 1.0,
+    A: 4.0,
+    B: 3.0,
+    C: 2.0,
+    D: 1.0,
     F: 0.0,
   };
   return map[letter] ?? 0.0;
@@ -53,7 +45,8 @@ function computeGpa(courses: NormalizedCourse[]) {
     const letter = c.letterGrade || scoreToLetter(c.currentGrade!);
     const base = letterToGpaPoints(letter);
     totalU += base;
-    const boost = c.courseType === "AP" ? 1.0 : c.courseType === "HONORS" ? 0.84 : 0;
+    const boost =
+      c.courseType === "AP" || c.courseType === "HONORS" ? 1 : 0;
     totalW += base + boost;
   }
 
@@ -118,20 +111,22 @@ export function useCourses() {
         return;
       }
 
-      const normalized: NormalizedCourse[] = (data.courses as any[]).map((c) => ({
-        id: c.id,
-        name: stripDesignation(c.name),
-        courseCode: c.courseCode,
-        term: c.term,
-        courseType: c.courseType,
-        currentGrade: c.currentGrade,
-        letterGrade:
-          c.letterGrade ??
-          (c.currentGrade != null ? scoreToLetter(c.currentGrade) : null),
-        missingCount: c.missingCount ?? 0,
-        teacher: c.teacher ?? null,
-        period: c.period ?? null,
-      }));
+      const normalized: NormalizedCourse[] = (data.courses as any[]).map(
+        (c) => ({
+          id: c.id,
+          name: stripDesignation(c.name),
+          courseCode: c.courseCode,
+          term: c.term,
+          courseType: c.courseType,
+          currentGrade: c.currentGrade,
+          letterGrade:
+            c.letterGrade ??
+            (c.currentGrade != null ? scoreToLetter(c.currentGrade) : null),
+          missingCount: c.missingCount ?? 0,
+          teacher: c.teacher ?? null,
+          period: c.period ?? null,
+        }),
+      );
 
       setCourses(normalized);
 
@@ -155,5 +150,13 @@ export function useCourses() {
   const gradedCourses = courses.filter((c) => c.currentGrade != null);
   const gpa = computeGpa(gradedCourses);
 
-  return { courses, gradedCourses, loading, error, gpa, gpaHistory, refetch: fetchCourses };
+  return {
+    courses,
+    gradedCourses,
+    loading,
+    error,
+    gpa,
+    gpaHistory,
+    refetch: fetchCourses,
+  };
 }

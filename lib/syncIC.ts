@@ -126,7 +126,7 @@ export async function syncICCoursesToDB(
             await sendPushNotification(
               user.expoPushToken,
               `📊 New grade in ${c.name}`,
-              `You received ${c.currentGrade.toFixed(1)}% in ${c.name}`,
+              `You received ${c.currentGrade.toFixed(2)}% in ${c.name}`,
               { courseId: c.id }
             );
           } else if (Math.abs(prevHistory.percentageGrade - c.currentGrade) >= 1) {
@@ -134,7 +134,7 @@ export async function syncICCoursesToDB(
             await sendPushNotification(
               user.expoPushToken,
               `${direction} Grade updated in ${c.name}`,
-              `Your grade changed to ${c.currentGrade.toFixed(1)}% (was ${prevHistory.percentageGrade.toFixed(1)}%)`,
+              `Your grade changed to ${c.currentGrade.toFixed(2)}% (was ${prevHistory.percentageGrade.toFixed(2)}%)`,
               { courseId: c.id }
             );
 
@@ -326,16 +326,10 @@ function normalizeCourseType(type: string): "STANDARD" | "ADVANCED" | "HONORS" |
 }
 
 function syncScoreToLetter(score: number): string {
-  if (score >= 93) return "A";
-  if (score >= 90) return "A-";
-  if (score >= 87) return "B+";
-  if (score >= 83) return "B";
-  if (score >= 80) return "B-";
-  if (score >= 77) return "C+";
-  if (score >= 73) return "C";
-  if (score >= 70) return "C-";
-  if (score >= 67) return "D+";
-  if (score >= 60) return "D";
+  if (score >= 89.5) return "A";
+  if (score >= 79.5) return "B";
+  if (score >= 69.5) return "C";
+  if (score >= 59.5) return "D";
   return "F";
 }
 
@@ -345,7 +339,7 @@ function computeGpaFromSyncable(courses: SyncableCourse[]): { unweighted: number
     const letter = c.letterGrade ?? syncScoreToLetter(c.currentGrade!);
     const base = gradeToGpaPoints(letter);
     totalU += base;
-    const boost = c.courseType === "AP" ? 1.0 : c.courseType === "HONORS" ? 0.84 : 0;
+    const boost = c.courseType === "AP" || c.courseType === "HONORS" ? 1 : 0;
     totalW += base + boost;
   }
   return {
@@ -356,11 +350,11 @@ function computeGpaFromSyncable(courses: SyncableCourse[]): { unweighted: number
 
 function gradeToGpaPoints(letter: string): number {
   const map: Record<string, number> = {
-    "A+": 4.0, "A": 4.0, "A-": 3.7,
-    "B+": 3.3, "B": 3.0, "B-": 2.7,
-    "C+": 2.3, "C": 2.0, "C-": 1.7,
-    "D+": 1.3, "D": 1.0, "D-": 0.7,
-    "F": 0.0,
+    "A+": 4, A: 4, "A-": 4,
+    "B+": 3, B: 3, "B-": 3,
+    "C+": 2, C: 2, "C-": 2,
+    "D+": 1, D: 1, "D-": 1,
+    F: 0,
   };
-  return map[letter] ?? 0.0;
+  return map[letter] ?? 0;
 }
