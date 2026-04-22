@@ -119,7 +119,7 @@ export function DistrictSearch({
           {showDropdown && districts.length > 0 && !selectedDistrict && (
             <ScrollView
               className="border border-space-border rounded-xl bg-space-mid mt-1.5 overflow-hidden"
-              style={{ maxHeight: 160 }}
+              style={{ maxHeight: 280 }}
               keyboardShouldPersistTaps="handled"
               nestedScrollEnabled
             >
@@ -131,9 +131,9 @@ export function DistrictSearch({
                     setDistrictQuery(item.district_name);
                     setShowDropdown(false);
                   }}
-                  className="px-4 py-3 border-b border-space-border/50"
+                  className="px-4 py-3.5 border-b border-space-border/50"
                 >
-                  <Text className="text-sm text-star-bright" numberOfLines={1}>
+                  <Text className="text-base text-star-bright" numberOfLines={1}>
                     {item.district_name}
                   </Text>
                 </TouchableOpacity>

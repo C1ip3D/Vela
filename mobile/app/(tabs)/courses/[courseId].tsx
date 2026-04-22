@@ -13,8 +13,8 @@ import {
   Platform,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useLocalSearchParams, router } from "expo-router";
-import { ArrowLeft, AlertTriangle } from "lucide-react-native";
+import { useLocalSearchParams } from "expo-router";
+import { AlertTriangle } from "lucide-react-native";
 import { useCourses } from "@/hooks/useCourses";
 import { percentageToLetter } from "@/lib/utils";
 import { Bone } from "@/components/ui/Skeleton";
@@ -956,32 +956,6 @@ export default function CourseDetailScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-space-void">
-      {/* Header */}
-      <View
-        className="flex-row items-center px-4 pt-3 pb-3"
-        style={{ borderBottomWidth: 1, borderBottomColor: "#1C2A45" }}
-      >
-        <TouchableOpacity
-          onPress={() => router.back()}
-          className="mr-3"
-          style={{ padding: 8 }}
-          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-        >
-          <ArrowLeft size={22} color="#8B98B8" />
-        </TouchableOpacity>
-        <View className="flex-1">
-          <Text
-            className="text-base font-semibold text-star-bright"
-            numberOfLines={1}
-          >
-            {course?.name ?? "Course"}
-          </Text>
-          <Text className="text-xs text-star-faint mt-0.5">
-            {course?.teacher ?? course?.courseCode}
-          </Text>
-        </View>
-      </View>
-
       {loading ? (
         <SkeletonCourseDetail />
       ) : (

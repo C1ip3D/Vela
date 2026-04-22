@@ -102,7 +102,7 @@ export default function DashboardPage() {
           <h2 className="text-xs uppercase tracking-[0.2em] text-[#8B98B8]">
             Current Courses
           </h2>
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          <div className="grid gap-3 [grid-template-columns:repeat(auto-fill,minmax(350px,1fr))]">
             {courses.map((course, i) => (
               <div
                 key={course.id}

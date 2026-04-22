@@ -370,7 +370,13 @@ function parseResilient(data: any, baseUrl: string): ICCourse[] {
           const aKey = String(a.assignmentID ?? a.id ?? `${id}_${aName}_${aDue ?? ""}`);
           const aScore = a.score != null && !isNaN(Number(a.score)) ? parseFloat(a.score) : null;
           const aMax = a.totalPoints ?? a.pointsPossible ?? a.maxScore ?? null;
-          if (!!(a.missing ?? a.isMissing)) missingCount += 1;
+          const isMissing =
+            !!(a.missing ?? a.isMissing) ||
+            (typeof a.turnInStatus === "string" && a.turnInStatus.toUpperCase() === "MISSING") ||
+            (typeof a.status === "string" && a.status.toUpperCase() === "MISSING") ||
+            a.scoreMarkingCode === "M" ||
+            (Array.isArray(a.flags) && a.flags.some((f: unknown) => typeof f === "string" && f.toUpperCase() === "MISSING"));
+          if (isMissing) missingCount += 1;
           assignmentsMap.set(aKey, {
             key: aKey,
             name: aName,

@@ -2,7 +2,14 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, BookOpen, Compass, Users, LogOut } from "lucide-react";
+import {
+  LayoutDashboard,
+  BookOpen,
+  Compass,
+  LogOut,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react";
 import { VelaLogo } from "@/components/ui/VelaLogo";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
@@ -13,21 +20,18 @@ const navItems = [
   { href: "/advisor", label: "Advisor", icon: Compass },
 ];
 
-const counselorItems = [
-  { href: "/portal", label: "Student Portal", icon: Users },
-];
-
 export function Sidebar({ role = "STUDENT" }: { role?: string }) {
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
-  const items = role === "COUNSELOR" ? counselorItems : navItems;
 
   return (
-    <aside className={cn(
-      "relative flex h-screen flex-col border-r border-[#1C2A45]/60 transition-all duration-300",
-      "bg-gradient-to-b from-[#0C1220] via-[#070B16] to-[#03060D]",
-      collapsed ? "w-16" : "w-60"
-    )}>
+    <aside
+      className={cn(
+        "group/sidebar relative flex h-screen flex-col border-r border-[#1C2A45]/60 transition-all duration-300",
+        "bg-gradient-to-b from-[#0C1220] via-[#070B16] to-[#03060D]",
+        collapsed ? "w-16" : "w-56",
+      )}
+    >
       {/* Star dots decorations */}
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
         <div className="star-dot absolute top-[15%] left-[20%] animate-twinkle" />
@@ -38,32 +42,56 @@ export function Sidebar({ role = "STUDENT" }: { role?: string }) {
       </div>
 
       {/* Logo */}
-      <div className="flex h-16 items-center border-b border-[#1C2A45]/40 px-4">
+      <div className="flex h-16 items-center justify-between border-b border-[#1C2A45]/40 px-3">
         {collapsed ? (
           <div className="flex justify-center w-full">
-            <VelaLogo size="md" />
+            <button
+              onClick={() => setCollapsed(false)}
+              className="text-[#4A5578] hover:text-[#A5B4FC] transition-colors duration-200"
+            >
+              <ChevronRight size={30} />
+            </button>
           </div>
         ) : (
-          <div className="flex items-center gap-2.5">
-            <VelaLogo size="mdx" />
-            <span className="text-[#E8ECFF] font-bold tracking-[0.25em] text-3xl select-none">VELA</span>
-          </div>
+          <>
+            <div className="flex items-center gap-2.5">
+              <VelaLogo size="mdx" />
+              <span className="text-[#E8ECFF] font-bold tracking-[0.35em] text-xl select-none">
+                VELA
+              </span>
+            </div>
+            <button
+              onClick={() => setCollapsed(!collapsed)}
+              className="ml-3 shrink-0 text-[#4A5578] hover:text-[#A5B4FC] transition-colors duration-200"
+            >
+              <ChevronLeft size={30} />
+            </button>
+          </>
         )}
       </div>
 
       {/* Nav */}
       <nav className="flex-1 space-y-1 px-2 py-4">
-        {items.map((item) => {
+        {navItems.map((item) => {
           const active = pathname.startsWith(item.href);
           return (
-            <Link key={item.href} href={item.href}
+            <Link
+              key={item.href}
+              href={item.href}
               className={cn(
                 "group flex items-center gap-3 rounded-lg px-3 py-2.5 text-base transition-all duration-200",
                 active
                   ? "bg-[#818CF8]/10 border border-[#818CF8]/20 text-[#A5B4FC] font-medium shadow-[0_0_12px_rgba(129,140,248,0.1)]"
-                  : "border border-transparent text-[#8B98B8] hover:bg-[#162032]/60 hover:text-[#D4DAF0] hover:border-[#1C2A45]/50"
-              )}>
-              <item.icon size={24} className={cn("shrink-0 transition-all", active && "drop-shadow-[0_0_4px_rgba(129,140,248,0.5)]")} />
+                  : "border border-transparent text-[#8B98B8] hover:bg-[#162032]/60 hover:text-[#D4DAF0] hover:border-[#1C2A45]/50",
+              )}
+            >
+              <item.icon
+                size={34}
+                className={cn(
+                  "shrink-0 transition-all",
+                  active && "drop-shadow-[0_0_4px_rgba(129,140,248,0.5)]",
+                )}
+              />
               {!collapsed && <span>{item.label}</span>}
             </Link>
           );
@@ -73,11 +101,20 @@ export function Sidebar({ role = "STUDENT" }: { role?: string }) {
       {/* Constellation watermark */}
       {!collapsed && (
         <div className="px-4 pb-2 pointer-events-none select-none">
-          <svg width="160" height="100" viewBox="0 0 200 160" className="animate-constellation" xmlns="http://www.w3.org/2000/svg">
+          <svg
+            width="160"
+            height="100"
+            viewBox="0 0 200 160"
+            className="animate-constellation"
+            xmlns="http://www.w3.org/2000/svg"
+          >
             <defs>
               <filter id="starGlow">
                 <feGaussianBlur stdDeviation="2" result="blur" />
-                <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
+                <feMerge>
+                  <feMergeNode in="blur" />
+                  <feMergeNode in="SourceGraphic" />
+                </feMerge>
               </filter>
             </defs>
             <g stroke="rgba(165,180,252,0.3)" strokeWidth="0.6" fill="none">
@@ -103,20 +140,19 @@ export function Sidebar({ role = "STUDENT" }: { role?: string }) {
 
       {/* Sign out */}
       <div className="px-2 mb-2">
-        <button onClick={async () => { const { signOut } = await import("firebase/auth"); const { auth } = await import("@/lib/firebase"); await signOut(auth); window.location.href = "/signup"; }}
-          className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-base text-[#8B98B8] hover:bg-[#162032]/60 hover:text-rose-400 border border-transparent hover:border-[#1C2A45]/50 transition-all duration-200">
-          <LogOut size={24} className="shrink-0" />
+        <button
+          onClick={async () => {
+            const { signOut } = await import("firebase/auth");
+            const { auth } = await import("@/lib/firebase");
+            await signOut(auth);
+            window.location.href = "/signup";
+          }}
+          className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-base text-[#8B98B8] hover:bg-[#162032]/60 hover:text-rose-400 border border-transparent hover:border-[#1C2A45]/50 transition-all duration-200"
+        >
+          <LogOut size={34} className="shrink-0" />
           {!collapsed && <span>Sign Out</span>}
         </button>
       </div>
-
-      {/* Collapse toggle */}
-      {/* <button
-        onClick={() => setCollapsed(!collapsed)}
-        className="absolute -right-3 top-20 flex h-6 w-6 items-center justify-center rounded-full border border-[#1C2A45] bg-[#0C1220] text-[#8B98B8] hover:text-[#A5B4FC] hover:border-[#818CF8]/30 hover:shadow-[0_0_8px_rgba(129,140,248,0.2)] transition-all duration-200"
-      >
-        {collapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
-      </button> */}
     </aside>
   );
 }

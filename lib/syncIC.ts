@@ -299,6 +299,15 @@ export async function getCachedCourses(
 
   const isStale = !mostRecent || Date.now() - mostRecent.recordedAt.getTime() > CACHE_TTL_MS;
 
+  const courseIds = user.enrollments.map((e) => e.courseId);
+  const recentHistories = await prisma.gradeHistory.findMany({
+    where: { userId: user.id, courseId: { in: courseIds } },
+    orderBy: { recordedAt: "desc" },
+    distinct: ["courseId"],
+    select: { courseId: true, missingCount: true },
+  });
+  const missingMap = new Map(recentHistories.map((h) => [h.courseId, h.missingCount]));
+
   return {
     courses: user.enrollments.map((e) => ({
       id: e.course.externalId ?? e.course.canvasCourseId,
@@ -308,7 +317,7 @@ export async function getCachedCourses(
       courseType: e.course.courseType,
       currentGrade: e.currentGrade,
       letterGrade: e.letterGrade,
-      missingCount: 0,
+      missingCount: missingMap.get(e.courseId) ?? 0,
       teacher: e.course.teacher ?? null,
     })),
     isStale,

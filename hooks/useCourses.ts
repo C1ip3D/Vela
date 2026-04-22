@@ -130,6 +130,40 @@ export function useCourses() {
 
       setCourses(normalized);
 
+      // Fetch assignments for each course in parallel to compute accurate missingCount.
+      // The main grades endpoint doesn't embed assignment details for all districts.
+      Promise.all(
+        normalized.map(async (course) => {
+          try {
+            const res = await fetch("/api/ic/assignments", {
+              method: "POST",
+              headers: authHeaders,
+              body: JSON.stringify({
+                authToken: session.authToken,
+                baseUrl: session.baseUrl,
+                appName: session.appName,
+                courseId: course.id,
+              }),
+            });
+            if (!res.ok) return { id: course.id, count: 0 };
+            const data = await res.json();
+            const groups: any[] = data.groups ?? [];
+            const count = groups.reduce(
+              (sum: number, g: any) => sum + g.assignments.filter((a: any) => a.missing).length,
+              0,
+            );
+            return { id: course.id, count };
+          } catch {
+            return { id: course.id, count: 0 };
+          }
+        }),
+      ).then((results) => {
+        const missingMap = new Map(results.map((r) => [r.id, r.count]));
+        setCourses((prev) =>
+          prev.map((c) => ({ ...c, missingCount: missingMap.get(c.id) ?? c.missingCount })),
+        );
+      });
+
       if (historyRes.ok) {
         const historyData = await historyRes.json();
         setGpaHistory(historyData.snapshots ?? []);
