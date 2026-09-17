@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { extractUid } from "@/lib/authToken";
+import { extractUid } from "@vela/auth";
 import { syncICCoursesToDB, getCachedCourses } from "@/lib/syncIC";
 
 /**

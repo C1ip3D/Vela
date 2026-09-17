@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { extractUid } from "@/lib/authToken";
-import prisma from "@/lib/db";
+import { extractUid } from "@vela/auth";
+import { prisma } from "@vela/db";
 
 export async function PATCH(
   req: NextRequest,

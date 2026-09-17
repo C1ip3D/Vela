@@ -1,5 +1,5 @@
 {
-  "name": "mobile",
+  "name": "@vela/mobile",
   "version": "1.0.0",
   "main": "expo-router/entry",
   "scripts": {
@@ -13,6 +13,9 @@
   "dependencies": {
     "@babel/plugin-transform-react-jsx": "^7.28.6",
     "@react-native-async-storage/async-storage": "2.2.0",
+    "@vela/domain": "*",
+    "@vela/ic-client": "*",
+    "@vela/types": "*",
     "axios": "^1.14.0",
     "babel-preset-expo": "~54.0.10",
     "clsx": "^2.1.1",

@@ -1,39 +1,19 @@
 {
-  "name": "vela",
+  "name": "vela-monorepo",
   "version": "0.1.0",
   "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
-    "lint": "eslint"
-  },
-  "dependencies": {
-    "@google/generative-ai": "^0.24.1",
-    "@prisma/adapter-pg": "^7.7.0",
-    "@prisma/client": "^7.4.2",
-    "@types/pg": "^8.20.0",
-    "@vercel/analytics": "^2.0.1",
-    "@vercel/speed-insights": "^2.0.0",
-    "clsx": "^2.1.1",
-    "firebase": "^12.10.0",
-    "lucide-react": "^0.577.0",
-    "next": "16.1.6",
-    "pg": "^8.20.0",
-    "prisma": "^7.4.2",
-    "react": "19.2.3",
-    "react-dom": "19.2.3",
-    "recharts": "^3.8.0",
-    "tailwind-merge": "^3.5.0"
-  },
-  "devDependencies": {
-    "@tailwindcss/postcss": "^4",
-    "@types/node": "^20",
-    "@types/react": "^19",
-    "@types/react-dom": "^19",
-    "eslint": "^9",
-    "eslint-config-next": "16.1.6",
-    "tailwindcss": "^4",
-    "typescript": "^5"
+    "dev": "npm run dev -w @vela/web",
+    "build": "npm run build -w @vela/web",
+    "start": "npm run start -w @vela/web",
+    "lint": "npm run lint -w @vela/web",
+    "mobile": "npm run start -w @vela/mobile",
+    "db:generate": "npm run generate -w @vela/db",
+    "db:migrate": "npm run migrate -w @vela/db",
+    "db:studio": "npm run studio -w @vela/db"
   }
 }
