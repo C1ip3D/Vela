@@ -47,7 +47,6 @@ model User {
   canvasRefresh  String?
   tokenExpiresAt DateTime?
   telegramChatId String?
-  expoPushToken  String?
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
 
@@ -87,6 +86,7 @@ model Enrollment {
   letterGrade    String?
   enrolledAt     DateTime
   isActive       Boolean  @default(true)
+  finalWeight    Float?   // user-set final exam weight (0–1); null = use DUSD 15% default
 
   user   User   @relation(fields: [userId], references: [id])
   course Course @relation(fields: [courseId], references: [id])

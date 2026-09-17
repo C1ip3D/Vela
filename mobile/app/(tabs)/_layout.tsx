@@ -1,6 +1,6 @@
 import { Tabs } from "expo-router";
 import { TouchableOpacity, Alert } from "react-native";
-import { LayoutDashboard, Compass, LogOut } from "lucide-react-native";
+import { LayoutDashboard, Compass, GraduationCap, LogOut } from "lucide-react-native";
 import { useAuth } from "@/contexts/AuthContext";
 import { router } from "expo-router";
 
@@ -60,6 +60,15 @@ export default function TabLayout() {
           title: "Kepler",
           tabBarIcon: ({ color, size }) => (
             <Compass size={size} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="finals/index"
+        options={{
+          title: "Finals",
+          tabBarIcon: ({ color, size }) => (
+            <GraduationCap size={size} color={color} />
           ),
         }}
       />

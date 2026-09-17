@@ -1,5 +1,4 @@
 import prisma from "@/lib/db";
-import { sendPushNotification } from "@/lib/pushNotifications";
 
 export interface SyncableAssignment {
   key: string;
@@ -26,7 +25,7 @@ export interface SyncableCourse {
 /**
  * Upserts the Firebase user, then upserts courses + enrollments from an IC fetch.
  * Records a GradeHistory snapshot only when grade actually changes.
- * Detects newly-graded assignments and fires push notifications.
+ * Detects newly-graded assignments and logs them to the advisor feed.
  */
 export async function syncICCoursesToDB(
   firebaseUid: string,
@@ -120,39 +119,22 @@ export async function syncICCoursesToDB(
           },
         });
 
-        // Fire push notification for meaningful grade changes
-        if (user.expoPushToken) {
-          if (prevHistory === null) {
-            await sendPushNotification(
-              user.expoPushToken,
-              `📊 New grade in ${c.name}`,
-              `You received ${c.currentGrade.toFixed(2)}% in ${c.name}`,
-              { courseId: c.id }
-            );
-          } else if (Math.abs(prevHistory.percentageGrade - c.currentGrade) >= 1) {
-            const direction = c.currentGrade > prevHistory.percentageGrade ? "📈" : "📉";
-            await sendPushNotification(
-              user.expoPushToken,
-              `${direction} Grade updated in ${c.name}`,
-              `Your grade changed to ${c.currentGrade.toFixed(2)}% (was ${prevHistory.percentageGrade.toFixed(2)}%)`,
-              { courseId: c.id }
-            );
-
-            await prisma.advisorLog.create({
-              data: {
-                userId: user.id,
-                logType: "GRADE_ALERT",
-                severity: c.currentGrade < prevHistory.percentageGrade ? "WARNING" : "INFO",
-                title: `Grade updated in ${c.name}`,
-                body: {
-                  courseName: c.name,
-                  newGrade: c.currentGrade,
-                  prevGrade: prevHistory.percentageGrade,
-                },
-                triggerData: { courseId: c.id },
+        // Log meaningful grade changes to the advisor feed
+        if (prevHistory !== null && Math.abs(prevHistory.percentageGrade - c.currentGrade) >= 1) {
+          await prisma.advisorLog.create({
+            data: {
+              userId: user.id,
+              logType: "GRADE_ALERT",
+              severity: c.currentGrade < prevHistory.percentageGrade ? "WARNING" : "INFO",
+              title: `Grade updated in ${c.name}`,
+              body: {
+                courseName: c.name,
+                newGrade: c.currentGrade,
+                prevGrade: prevHistory.percentageGrade,
               },
-            });
-          }
+              triggerData: { courseId: c.id },
+            },
+          });
         }
       }
     }
@@ -195,21 +177,10 @@ export async function syncICCoursesToDB(
           },
         });
 
-        // Notify when an assignment transitions from ungraded to graded
+        // Log to the advisor feed when an assignment transitions from ungraded to graded
         const wasUngraded = prev === null || prev.score === null;
         const isNowGraded = a.score !== null;
-        if (wasUngraded && isNowGraded && user.expoPushToken) {
-          const scoreStr =
-            a.maxScore != null
-              ? `${a.score}/${a.maxScore}`
-              : `${a.score}`;
-          await sendPushNotification(
-            user.expoPushToken,
-            `📝 New score in ${c.name}`,
-            `${a.name}: ${scoreStr}`,
-            { courseId: c.id }
-          );
-
+        if (wasUngraded && isNowGraded) {
           await prisma.advisorLog.create({
             data: {
               userId: user.id,
