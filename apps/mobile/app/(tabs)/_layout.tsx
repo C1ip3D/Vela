@@ -1,8 +1,9 @@
 import { Tabs } from "expo-router";
 import { TouchableOpacity, Alert } from "react-native";
-import { LayoutDashboard, GraduationCap, LogOut } from "lucide-react-native";
+import { LayoutDashboard, LogOut } from "lucide-react-native";
 import { useAuth } from "@/contexts/AuthContext";
 import { router } from "expo-router";
+import { IcReconnectGate } from "@/components/auth/IcReconnectGate";
 
 export default function TabLayout() {
   const { signOut } = useAuth();
@@ -22,6 +23,7 @@ export default function TabLayout() {
   };
 
   return (
+    <IcReconnectGate>
     <Tabs
       screenOptions={{
         headerShown: false,
@@ -55,15 +57,6 @@ export default function TabLayout() {
         options={{ href: null }}
       />
       <Tabs.Screen
-        name="finals/index"
-        options={{
-          title: "Finals",
-          tabBarIcon: ({ color, size }) => (
-            <GraduationCap size={size} color={color} />
-          ),
-        }}
-      />
-      <Tabs.Screen
         name="settings/index"
         options={{
           title: "Sign Out",
@@ -84,5 +77,6 @@ export default function TabLayout() {
         options={{ href: null }}
       />
     </Tabs>
+    </IcReconnectGate>
   );
 }

@@ -6,7 +6,7 @@ import {
   parseLegacyAssignments,
   parsePrismAssignments,
 } from "./parsers";
-import type { ICAssignmentGroup, ICCourse, ICPeriod, IcSession } from "./types";
+import type { ICAssignmentGroup, ICCourse, IcSession } from "./types";
 
 /**
  * Fetches the student's active courses and current grades from Infinite
@@ -204,62 +204,6 @@ export async function fetchAssignments(session: IcSession, courseId: string): Pr
   }
 
   return filterToCurrentSemester(groups);
-}
-
-function parseSchedule(data: any): ICPeriod[] {
-  const periods: ICPeriod[] = [];
-  const items: any[] = Array.isArray(data) ? data : (data?.data ?? data?.periods ?? data?.schedule ?? []);
-
-  for (const item of items) {
-    const periodNumber = String(item?.period ?? item?.periodNumber ?? item?.periodName ?? "");
-    if (!periodNumber) continue;
-    periods.push({
-      periodNumber,
-      courseName: item?.courseName ?? item?.name ?? item?.course ?? "Unknown",
-      teacher: item?.teacherDisplay ?? item?.teacher ?? item?.teacherName ?? null,
-      room: item?.roomName ?? item?.room ?? item?.roomNumber ?? null,
-      startTime: item?.startTime ?? item?.start ?? null,
-      endTime: item?.endTime ?? item?.end ?? null,
-    });
-  }
-
-  return periods.sort((a, b) => (parseInt(a.periodNumber) || 0) - (parseInt(b.periodNumber) || 0));
-}
-
-/** Fetches the student's daily schedule, falling back to period numbers derived from courses. */
-export async function fetchSchedule(session: IcSession): Promise<ICPeriod[]> {
-  const q = icAppQuery(session);
-
-  try {
-    const res = await icFetch(session, `/prism/api/portal/schedule${q}`);
-    if (res.ok) {
-      const parsed = parseSchedule(await res.json());
-      if (parsed.length > 0) return parsed;
-    }
-  } catch {}
-
-  if (session.personId) {
-    try {
-      const res = await icFetch(session, `/api/portal/students/${session.personId}/schedule${q}`);
-      if (res.ok) {
-        const parsed = parseSchedule(await res.json());
-        if (parsed.length > 0) return parsed;
-      }
-    } catch {}
-  }
-
-  const courses = await fetchCourses(session);
-  return courses
-    .filter((c) => c.period != null)
-    .map((c) => ({
-      periodNumber: c.period!,
-      courseName: c.name,
-      teacher: c.teacher,
-      room: null,
-      startTime: null,
-      endTime: null,
-    }))
-    .sort((a, b) => (parseInt(a.periodNumber) || 0) - (parseInt(b.periodNumber) || 0));
 }
 
 function extractPersonFromData(data: any): { personId: string; displayName: string } | null {

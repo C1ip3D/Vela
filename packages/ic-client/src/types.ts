@@ -47,12 +47,3 @@ export interface ICAssignmentGroup {
   score: number | null;
   assignments: ICDetailAssignment[];
 }
-
-export interface ICPeriod {
-  periodNumber: string;
-  courseName: string;
-  teacher: string | null;
-  room: string | null;
-  startTime: string | null;
-  endTime: string | null;
-}

@@ -1,3 +1,5 @@
+import { isFailedIcRedirectUrl, containsIcFailureMarkers } from "./loginSignals";
+
 const USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/121.0.0.0 Safari/537.36";
 
 export interface IcLoginResult {
@@ -34,6 +36,13 @@ function getSetCookies(res: Response): string[] {
 /**
  * Logs into an Infinite Campus district portal via its undocumented
  * verify.jsp endpoint and returns the resulting session cookie jar.
+ *
+ * Used by apps/web's /api/ic/auth route only — browsers need a
+ * server-side proxy to avoid CORS. apps/mobile establishes its IC
+ * session via a WebView against IC's real login page instead (see
+ * apps/mobile/components/auth/IcLoginWebView.tsx), reusing the
+ * isFailedIcRedirectUrl/containsIcFailureMarkers signals from
+ * ./loginSignals to detect success/failure the same way.
  *
  * IC authentication flow:
  *   1. GET  <base>/portal/students/<appName>.jsp   — establishes a tenancy session
@@ -85,18 +94,14 @@ export async function loginToIc(
     throw new IcLoginError(`Could not reach Infinite Campus: ${msg}`, 502);
   }
 
-  const location = (icRes.headers.get("location") ?? "").toLowerCase();
-  const isFailedRedirect =
-    location.includes("error") || location.includes("failed") || location.includes("verify.jsp") ||
-    location.includes("login") || location.includes("noappname");
-
-  if (isFailedRedirect) {
+  const location = icRes.headers.get("location") ?? "";
+  if (isFailedIcRedirectUrl(location)) {
     throw new IcLoginError("Invalid username, password, or district setting.", 401);
   }
 
   if (icRes.status === 200) {
     const text = await icRes.text();
-    if (text.includes("username and/or password") || text.includes("error in the application") || text.includes("signinForm")) {
+    if (containsIcFailureMarkers(text)) {
       throw new IcLoginError("Invalid username or password.", 401);
     }
   }

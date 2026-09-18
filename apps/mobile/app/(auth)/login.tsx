@@ -2,7 +2,6 @@ import React, { useState, useEffect, useRef } from "react";
 import {
   View,
   Text,
-  TextInput,
   TouchableOpacity,
   ScrollView,
   ActivityIndicator,
@@ -11,13 +10,15 @@ import {
   Image,
   Animated,
   Dimensions,
+  Modal,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { router } from "expo-router";
-import { Eye, EyeOff, ArrowRight } from "lucide-react-native";
+import { ArrowRight } from "lucide-react-native";
 import { useAuth } from "@/contexts/AuthContext";
-import { useIC } from "@/contexts/InfiniteCampusContext";
+import { useIC, type ICSession } from "@/contexts/InfiniteCampusContext";
 import { DistrictSearch, District } from "@/components/forms/DistrictSearch";
+import { IcLoginWebView, type IcLoginResult } from "@/components/auth/IcLoginWebView";
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
 
@@ -122,38 +123,28 @@ function Star({ x, y, size, delay }: { x: number; y: number; size: number; delay
 
 export default function LoginScreen() {
   const { signIn, signUp, user } = useAuth();
-  const { login: icLogin, isChecking: icChecking, loginError: icError } = useIC();
+  const { completeLogin, isChecking: icChecking, loginError: icError } = useIC();
 
   const [selectedDistrict, setSelectedDistrict] = useState<District | null>(null);
-  const [icUsername, setIcUsername] = useState("");
-  const [icPassword, setIcPassword] = useState("");
-  const [showIcPassword, setShowIcPassword] = useState(false);
+  const [showWebView, setShowWebView] = useState(false);
 
   useEffect(() => {
     if (user) router.replace("/(tabs)/dashboard");
   }, [user]);
 
-  const handleLogin = async () => {
-    if (!selectedDistrict || !icUsername.trim() || !icPassword.trim()) return;
-    const url = selectedDistrict.district_baseurl.replace(/\/$/, "");
-
-    const ok = await icLogin(
-      url,
-      icUsername.trim(),
-      icPassword.trim(),
-      selectedDistrict.district_app_name
-    );
-    if (!ok) return;
-
+  const finishFirebaseSignIn = async (session: ICSession, baseUrl: string) => {
     try {
-      const hostname = new URL(url).hostname;
-      const pseudoEmail = `${icUsername.toLowerCase()}@${hostname}.ic.vela.app`;
+      const hostname = new URL(baseUrl).hostname;
+      // personId (not the IC username, which Vela never sees with the
+      // WebView flow) anchors the pseudo-account — stable per student and
+      // resolved right after IC login in completeLogin().
+      const pseudoEmail = `${session.personId}@${hostname}.ic.vela.app`;
       const pseudoPassword = `VelaIC#${btoa(pseudoEmail).substring(0, 16)}`;
       try {
         await signIn(pseudoEmail, pseudoPassword);
       } catch (e: any) {
         if (e.code === "auth/invalid-credential" || e.code === "auth/user-not-found") {
-          await signUp(pseudoEmail, pseudoPassword, icUsername);
+          await signUp(pseudoEmail, pseudoPassword, session.displayName || selectedDistrict?.district_name || "Vela Student");
         } else throw e;
       }
       router.replace("/(tabs)/dashboard");
@@ -162,7 +153,17 @@ export default function LoginScreen() {
     }
   };
 
-  const canSubmit = !!selectedDistrict && !!icUsername.trim() && !!icPassword.trim();
+  const handleWebViewSuccess = async (result: IcLoginResult) => {
+    if (!selectedDistrict) return;
+    setShowWebView(false);
+    const session = await completeLogin(result, {
+      district_name: selectedDistrict.district_name,
+      district_baseurl: selectedDistrict.district_baseurl,
+      district_app_name: selectedDistrict.district_app_name,
+    });
+    if (!session) return;
+    await finishFirebaseSignIn(session, result.baseUrl);
+  };
 
   return (
     <SafeAreaView className="flex-1 bg-space-void">
@@ -214,60 +215,23 @@ export default function LoginScreen() {
               />
             </View>
 
-            {/* Credentials — shown after district selected */}
+            {/* Continue to IC's own login page — shown after district selected */}
             {selectedDistrict && (
               <View>
-                <Text className="text-sm text-star-dim uppercase tracking-wider mb-1.5">
-                  Username
+                <Text className="text-sm text-star-dim mb-4">
+                  You&apos;ll sign in directly on {selectedDistrict.district_name}&apos;s Infinite Campus page. Vela never sees your password.
                 </Text>
-                <TextInput
-                  value={icUsername}
-                  onChangeText={setIcUsername}
-                  placeholder="IC Username"
-                  placeholderTextColor="#4A5578"
-                  autoCapitalize="none"
-                  className="border border-space-border rounded-xl bg-space-mid/60 px-4 text-base text-star-bright mb-4"
-                  style={{ height: 52 }}
-                />
-
-                <Text className="text-sm text-star-dim uppercase tracking-wider mb-1.5">
-                  Password
-                </Text>
-                <View
-                  className="flex-row items-center border border-space-border rounded-xl bg-space-mid/60 px-4 mb-6"
-                  style={{ height: 52 }}
-                >
-                  <TextInput
-                    value={icPassword}
-                    onChangeText={setIcPassword}
-                    placeholder="••••••••"
-                    placeholderTextColor="#4A5578"
-                    secureTextEntry={!showIcPassword}
-                    className="flex-1 text-base text-star-bright"
-                  />
-                  <TouchableOpacity
-                    onPress={() => setShowIcPassword(!showIcPassword)}
-                    style={{ padding: 4 }}
-                  >
-                    {showIcPassword ? (
-                      <EyeOff size={18} color="#4A5578" />
-                    ) : (
-                      <Eye size={18} color="#4A5578" />
-                    )}
-                  </TouchableOpacity>
-                </View>
-
                 <TouchableOpacity
-                  onPress={handleLogin}
-                  disabled={icChecking || !canSubmit}
+                  onPress={() => setShowWebView(true)}
+                  disabled={icChecking}
                   className="flex-row items-center justify-center gap-2 rounded-xl bg-vela-400"
-                  style={{ height: 52, opacity: icChecking || !canSubmit ? 0.5 : 1 }}
+                  style={{ height: 52, opacity: icChecking ? 0.5 : 1 }}
                 >
                   {icChecking ? (
                     <ActivityIndicator color="white" size="small" />
                   ) : (
                     <>
-                      <Text className="text-lg font-semibold text-white">Sign In</Text>
+                      <Text className="text-lg font-semibold text-white">Continue to Infinite Campus</Text>
                       <ArrowRight size={16} color="white" />
                     </>
                   )}
@@ -277,6 +241,18 @@ export default function LoginScreen() {
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
+
+      {selectedDistrict && (
+        <Modal visible={showWebView} animationType="slide" onRequestClose={() => setShowWebView(false)}>
+          <IcLoginWebView
+            baseUrl={selectedDistrict.district_baseurl}
+            appName={selectedDistrict.district_app_name}
+            districtName={selectedDistrict.district_name}
+            onSuccess={handleWebViewSuccess}
+            onCancel={() => setShowWebView(false)}
+          />
+        </Modal>
+      )}
     </SafeAreaView>
   );
 }
