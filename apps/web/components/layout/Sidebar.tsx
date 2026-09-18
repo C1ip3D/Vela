@@ -5,7 +5,6 @@ import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
   BookOpen,
-  Compass,
   LogOut,
   ChevronLeft,
   ChevronRight,
@@ -17,7 +16,6 @@ import { useState } from "react";
 const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/courses", label: "Courses", icon: BookOpen },
-  { href: "/advisor", label: "Advisor", icon: Compass },
 ];
 
 export function Sidebar({ role = "STUDENT" }: { role?: string }) {
