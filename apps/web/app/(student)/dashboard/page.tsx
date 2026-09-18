@@ -7,7 +7,7 @@ import { useIC } from "@/contexts/InfiniteCampusContext";
 
 export default function DashboardPage() {
   const { isConnected } = useIC();
-  const { courses, loading, gpa, gpaHistory } = useCourses();
+  const { courses, loading, gpa } = useCourses();
 
   const totalMissing = courses.reduce((sum, c) => sum + c.missingCount, 0);
   const gradedCourses = courses.filter((c) => c.currentGrade != null);
@@ -51,7 +51,6 @@ export default function DashboardPage() {
             gpa={gpa.unweighted}
             termGpa={gpa.weighted}
             termLabel="Weighted GPA"
-            history={gpaHistory}
           />
         </div>
 
@@ -61,18 +60,15 @@ export default function DashboardPage() {
             {
               label: "Enrolled Courses",
               value: courses.length.toString(),
-              icon: "◈",
             },
             {
               label: "Missing Assignments",
               value: totalMissing.toString(),
               warn: totalMissing > 0,
-              icon: "△",
             },
             {
               label: "AVG Grade",
               value: avgGrade != null ? avgGrade.toFixed(2) + "%" : "N/A",
-              icon: "✦",
             },
           ].map((stat, i) => (
             <div
@@ -80,14 +76,9 @@ export default function DashboardPage() {
               className="animate-fade-in rounded-xl border border-[#1C2A45]/60 bg-[#101828]/50 backdrop-blur-sm p-4 hover:border-[#253A5E]/80 transition-all duration-300 group"
               style={{ animationDelay: `${180 + i * 100}ms` }}
             >
-              <div className="flex items-center justify-between mb-1">
-                <p className="text-xs text-[#8B98B8] uppercase tracking-[0.15em]">
-                  {stat.label}
-                </p>
-                <span className="text-[#4A5578] text-sm group-hover:text-[#818CF8] transition-colors">
-                  {stat.icon}
-                </span>
-              </div>
+              <p className="mb-1 text-xs text-[#8B98B8] uppercase tracking-[0.15em]">
+                {stat.label}
+              </p>
               <p
                 className={`font-mono text-3xl font-bold ${stat.warn ? "text-amber-400" : "text-[#E8ECFF]"}`}
               >

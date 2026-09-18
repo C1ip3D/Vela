@@ -1,15 +1,13 @@
 import { Card } from "@/components/ui/Card";
-import { TrendChart } from "@/components/charts/TrendChart";
 import { formatGpa } from "@/lib/utils";
 
 interface Props {
   gpa: number;
   termGpa: number;
   termLabel: string;
-  history: Array<{ date: string; gpa: number; term: number }>;
 }
 
-export function GpaHeroCard({ gpa, termGpa, termLabel, history }: Props) {
+export function GpaHeroCard({ gpa, termGpa, termLabel }: Props) {
   return (
     <Card className="relative overflow-hidden bg-gradient-to-br from-[#0C1220]/90 via-[#101828]/80 to-[#162032]/70 border-[#253A5E]/50">
       {/* Nebula glow accent */}
@@ -49,33 +47,25 @@ export function GpaHeroCard({ gpa, termGpa, termLabel, history }: Props) {
         </svg>
       </div>
 
-      <div className="relative grid grid-cols-1 gap-6 md:grid-cols-2">
-        {/* GPA numbers */}
-        <div className="space-y-4">
-          <div>
-            <p className="mb-1 text-xs uppercase tracking-[0.2em] text-[#8B98B8]">
-              Unweighted GPA
-            </p>
-            <p className="font-mono text-6xl font-bold bg-gradient-to-r from-[#A5B4FC] to-[#818CF8] bg-clip-text text-transparent">
-              {formatGpa(gpa)}
-            </p>
-          </div>
-          <div className="h-px bg-gradient-to-r from-[#1C2A45] via-[#253A5E] to-transparent" />
-          <div>
-            <p className="mb-1 text-xs uppercase tracking-[0.2em] text-[#8B98B8]">
-              {termLabel}
-            </p>
-            <div className="flex items-end gap-3">
-              <p className="font-mono text-4xl font-semibold text-[#E8ECFF]">
-                {formatGpa(termGpa)}
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {/* Trend chart */}
+      <div className="relative space-y-4">
         <div>
-          <TrendChart data={history} />
+          <p className="mb-1 text-xs uppercase tracking-[0.2em] text-[#8B98B8]">
+            Unweighted GPA
+          </p>
+          <p className="font-mono text-6xl font-bold bg-gradient-to-r from-[#A5B4FC] to-[#818CF8] bg-clip-text text-transparent">
+            {formatGpa(gpa)}
+          </p>
+        </div>
+        <div className="h-px bg-gradient-to-r from-[#1C2A45] via-[#253A5E] to-transparent" />
+        <div>
+          <p className="mb-1 text-xs uppercase tracking-[0.2em] text-[#8B98B8]">
+            {termLabel}
+          </p>
+          <div className="flex items-end gap-3">
+            <p className="font-mono text-4xl font-semibold text-[#E8ECFF]">
+              {formatGpa(termGpa)}
+            </p>
+          </div>
         </div>
       </div>
     </Card>

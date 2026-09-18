@@ -39,16 +39,9 @@ function stripDesignation(name: string): string {
   return name.replace(/\s*\((HP|P|H)\)\s*$/i, "").trim();
 }
 
-export interface GpaHistoryPoint {
-  date: string;
-  gpa: number;
-  term: number;
-}
-
 export function useCourses() {
   const { session, isConnected } = useIC();
   const [courses, setCourses] = useState<NormalizedCourse[]>([]);
-  const [gpaHistory, setGpaHistory] = useState<GpaHistoryPoint[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -69,18 +62,15 @@ export function useCourses() {
         ...(idToken && { Authorization: `Bearer ${idToken}` }),
       };
 
-      const [coursesRes, historyRes] = await Promise.all([
-        fetch("/api/ic/courses", {
-          method: "POST",
-          headers: authHeaders,
-          body: JSON.stringify({
-            authToken: session.authToken,
-            baseUrl: session.baseUrl,
-            appName: session.appName,
-          }),
+      const coursesRes = await fetch("/api/ic/courses", {
+        method: "POST",
+        headers: authHeaders,
+        body: JSON.stringify({
+          authToken: session.authToken,
+          baseUrl: session.baseUrl,
+          appName: session.appName,
         }),
-        fetch("/api/ic/gpa-history", { headers: authHeaders }),
-      ]);
+      });
 
       const data = await coursesRes.json();
 
@@ -142,11 +132,6 @@ export function useCourses() {
           prev.map((c) => ({ ...c, missingCount: missingMap.get(c.id) ?? c.missingCount })),
         );
       });
-
-      if (historyRes.ok) {
-        const historyData = await historyRes.json();
-        setGpaHistory(historyData.snapshots ?? []);
-      }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Unknown error";
       setError(msg);
@@ -169,7 +154,6 @@ export function useCourses() {
     loading,
     error,
     gpa,
-    gpaHistory,
     refetch: fetchCourses,
   };
 }
