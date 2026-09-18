@@ -7,6 +7,7 @@
     "packages/*"
   ],
   "scripts": {
+    "postinstall": "node scripts/link-next-for-eslint.js",
     "dev": "npm run dev -w @vela/web",
     "build": "npm run build -w @vela/web",
     "start": "npm run start -w @vela/web",

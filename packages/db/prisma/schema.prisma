@@ -36,52 +36,73 @@ enum DataSource {
   INFINITE_CAMPUS
 }
 
-model User {
-  id             String    @id @default(cuid())
-  canvasUserId   String    @unique
-  email          String    @unique
-  displayName    String
-  avatarUrl      String?
-  role           UserRole  @default(STUDENT)
-  canvasToken    String?
-  canvasRefresh  String?
-  tokenExpiresAt DateTime?
-  telegramChatId String?
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
+// One Infinite Campus district instance (e.g. "dublinusd.infinitecampus.org").
+// IC course/section IDs are only unique *within* a district, so every
+// district-scoped identifier (Course.icCourseId) is scoped through this
+// model rather than assumed globally unique — two students at different
+// districts can otherwise get colliding course IDs that silently corrupt
+// each other's enrollments and grade history.
+model District {
+  id        String   @id @default(cuid())
+  hostname  String   @unique
+  name      String?
+  createdAt DateTime @default(now())
 
+  users   User[]
+  courses Course[]
+}
+
+model User {
+  id          String   @id @default(cuid())
+  firebaseUid String   @unique
+  email       String   @unique
+  displayName String
+  avatarUrl   String?
+  role        UserRole @default(STUDENT)
+  districtId  String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  district         District?         @relation(fields: [districtId], references: [id])
   enrollments      Enrollment[]
   gradeHistory     GradeHistory[]
   gpaSnapshots     GpaSnapshot[]
   advisorLogs      AdvisorLog[]
   assignmentGrades AssignmentGrade[]
+
+  @@index([districtId])
 }
 
 model Course {
-  id             String     @id @default(cuid())
-  canvasCourseId String     @unique
-  name           String
-  courseCode     String
-  term           String
-  courseType     CourseType @default(STANDARD)
-  creditHours    Float      @default(1.0)
-  apBoost        Float      @default(0.0)
-  isActive       Boolean    @default(true)
-  source         DataSource @default(INFINITE_CAMPUS)
-  externalId     String?
-  teacher        String?
-  createdAt      DateTime   @default(now())
-  updatedAt      DateTime   @updatedAt
+  id          String     @id @default(cuid())
+  districtId  String
+  icCourseId  String
+  name        String
+  courseCode  String
+  term        String
+  courseType  CourseType @default(STANDARD)
+  creditHours Float      @default(1.0)
+  apBoost     Float      @default(0.0)
+  isActive    Boolean    @default(true)
+  source      DataSource @default(INFINITE_CAMPUS)
+  teacher     String?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
 
+  district         District          @relation(fields: [districtId], references: [id])
   enrollments      Enrollment[]
   assignmentGrades AssignmentGrade[]
+
+  // IC section IDs repeat across districts, so uniqueness must be scoped to
+  // the district, not global — see District model doc comment.
+  @@unique([districtId, icCourseId])
 }
 
 model Enrollment {
   id             String   @id @default(cuid())
   userId         String
   courseId       String
-  canvasEnrollId String   @unique
+  icEnrollmentId String   @unique
   currentGrade   Float?
   letterGrade    String?
   enrolledAt     DateTime

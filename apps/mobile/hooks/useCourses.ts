@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useIC } from "@/contexts/InfiniteCampusContext";
 import { api } from "@/lib/api";
+import { calculateGpa, percentageToLetter } from "@vela/domain";
 
 export interface NormalizedCourse {
   id: string;
@@ -15,52 +16,22 @@ export interface NormalizedCourse {
   period?: string | null;
 }
 
-function scoreToLetter(score: number): string {
-  if (score >= 97) return "A+";
-  if (score >= 93) return "A";
-  if (score >= 90) return "A-";
-  if (score >= 87) return "B+";
-  if (score >= 83) return "B";
-  if (score >= 80) return "B-";
-  if (score >= 77) return "C+";
-  if (score >= 73) return "C";
-  if (score >= 70) return "C-";
-  if (score >= 67) return "D+";
-  if (score >= 63) return "D";
-  if (score >= 60) return "D-";
-  return "F";
-}
-
-function letterToGpaPoints(letter: string): number {
-  const map: Record<string, number> = {
-    "A+": 4, A: 4, "A-": 4,
-    "B+": 3, B: 3, "B-": 3,
-    "C+": 2, C: 2, "C-": 2,
-    "D+": 1, D: 1, "D-": 1,
-    F: 0,
-  };
-  return map[letter] ?? 0;
-}
+const scoreToLetter = percentageToLetter;
 
 function computeGpa(courses: NormalizedCourse[]) {
   const graded = courses.filter((c) => c.currentGrade != null);
   if (graded.length === 0) return { weighted: 0, unweighted: 0 };
 
-  let totalU = 0;
-  let totalW = 0;
-  for (const c of graded) {
-    const letter = c.letterGrade || scoreToLetter(c.currentGrade!);
-    const base = letterToGpaPoints(letter);
-    totalU += base;
-    const boost =
-      c.courseType === "AP" || c.courseType === "HONORS" ? 1 : 0;
-    totalW += base + boost;
-  }
-
-  return {
-    unweighted: parseFloat((totalU / graded.length).toFixed(2)),
-    weighted: parseFloat((totalW / graded.length).toFixed(2)),
-  };
+  const result = calculateGpa(
+    graded.map((c) => ({
+      courseId: c.id,
+      courseName: c.name,
+      percentage: c.currentGrade!,
+      courseType: c.courseType,
+      creditHours: 1,
+    }))
+  );
+  return { weighted: result.weighted, unweighted: result.unweighted };
 }
 
 export function useCourses() {

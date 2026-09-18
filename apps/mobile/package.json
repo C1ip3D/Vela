@@ -8,7 +8,7 @@
     "ios": "expo run:ios",
     "web": "expo start --web",
     "bundle:ios": "expo export:embed --platform ios --entry-file node_modules/expo-router/entry.js --bundle-output ios/main.jsbundle --assets-dest ios --dev false",
-    "test": "jest"
+    "test": "jest --passWithNoTests"
   },
   "dependencies": {
     "@babel/plugin-transform-react-jsx": "^7.28.6",

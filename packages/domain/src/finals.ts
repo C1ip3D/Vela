@@ -52,9 +52,7 @@ export function rankCourses(courses: FinalsInput[]): FinalsRanked[] {
 
   for (const course of courses) {
     const finalGroup = detectFinalGroup(course.groups);
-    const nonFinalGroups = finalGroup
-      ? course.groups.filter((g) => g.id !== finalGroup.id)
-      : course.groups;
+    const nonFinalGroups = finalGroup ? course.groups.filter((g) => g.id !== finalGroup.id) : course.groups;
 
     // Only include categories that IC has scored; null-score categories are excluded
     // from both the numerator and denominator (consistent with how IC computes grades).
@@ -88,12 +86,9 @@ export function rankCourses(courses: FinalsInput[]): FinalsRanked[] {
     // Otherwise estimate: scored non-final groups represent (1 - finalWeightPct)
     // of the total grade, so final = totalWeight × finalWeightPct / (1 - finalWeightPct).
     const finalAbsoluteWeight =
-      finalGroup && finalGroup.weight > 0
-        ? finalGroup.weight
-        : totalWeight * finalWeightPct / (1 - finalWeightPct);
+      finalGroup && finalGroup.weight > 0 ? finalGroup.weight : (totalWeight * finalWeightPct) / (1 - finalWeightPct);
 
-    const maxAchievableGrade =
-      (weightedSum + finalAbsoluteWeight * 100) / (totalWeight + finalAbsoluteWeight);
+    const maxAchievableGrade = (weightedSum + finalAbsoluteWeight * 100) / (totalWeight + finalAbsoluteWeight);
 
     const maxGradeImprovement = maxAchievableGrade - currentGrade;
 

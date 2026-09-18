@@ -1,50 +1,8 @@
-// Ported from app/api/ic/courses/route.ts and app/api/ic/assignments/route.ts
+import type { ICAssignment, ICAssignmentGroup, ICCourse } from "./types";
 
-// ── Types ─────────────────────────────────────────────────────────────────────
-
-export interface ICAssignment {
-  key: string;
-  name: string;
-  score: number | null;
-  maxScore: number | null;
-  dueDate?: string;
-}
-
-export interface ICCourse {
-  id: string;
-  name: string;
-  courseCode: string;
-  term: string;
-  courseType: string;
-  currentGrade: number | null;
-  letterGrade: string | null;
-  missingCount: number;
-  teacher: string | null;
-  period: string | null;
-  assignments: ICAssignment[];
-}
-
-export interface ICDetailAssignment {
-  id: string;
-  name: string;
-  pointsPossible: number;
-  score: number | null;
-  grade: string | null;
-  submittedAt: string | null;
-  missing: boolean;
-  late: boolean;
-  dueAt: string | null;
-}
-
-export interface ICAssignmentGroup {
-  id: string;
-  name: string;
-  weight: number;
-  score: number | null;
-  assignments: ICDetailAssignment[];
-}
-
-// ── Course parsing ────────────────────────────────────────────────────────────
+// Infinite Campus's undocumented APIs return differently-shaped JSON per
+// district and IC version. These parsers hunt through the response
+// recursively rather than assuming one fixed shape.
 
 function detectCourseType(name: string): string {
   const u = name.toUpperCase();
@@ -61,12 +19,10 @@ function extractCoursesRecursive(obj: any, found: any[] = []): any[] {
     (typeof obj.name === "string" && (obj.teacherDisplay || obj.roomID || obj.sectionID));
   if (isCourse) {
     found.push(obj);
+  } else if (Array.isArray(obj)) {
+    for (const item of obj) extractCoursesRecursive(item, found);
   } else {
-    if (Array.isArray(obj)) {
-      for (const item of obj) extractCoursesRecursive(item, found);
-    } else {
-      for (const key of Object.keys(obj)) extractCoursesRecursive(obj[key], found);
-    }
+    for (const key of Object.keys(obj)) extractCoursesRecursive(obj[key], found);
   }
   return found;
 }
@@ -75,6 +31,7 @@ function extractTerm(): string {
   const now = new Date();
   const year = now.getFullYear();
   const month = now.getMonth() + 1;
+  // Academic year: Aug–Jul
   const startYear = month >= 8 ? year : year - 1;
   return `${startYear}-${startYear + 1}`;
 }
@@ -155,7 +112,7 @@ export function parseCoursesResilient(data: any): ICCourse[] {
         period: cs.sectionNumber ?? cs.period ?? null,
         assignments,
       });
-    } else if (existing) {
+    } else {
       existing.missingCount += missingCount;
       if (!existing.currentGrade && currentGrade) {
         existing.currentGrade = currentGrade;
@@ -183,7 +140,7 @@ function currentSemesterStart(): Date {
 
 export function filterToCurrentSemester(groups: ICAssignmentGroup[]): ICAssignmentGroup[] {
   const cutoff = currentSemesterStart();
-  const result = groups
+  return groups
     .map((g) => ({
       ...g,
       assignments: g.assignments.filter((a) => {
@@ -192,11 +149,6 @@ export function filterToCurrentSemester(groups: ICAssignmentGroup[]): ICAssignme
       }),
     }))
     .filter((g) => g.assignments.length > 0);
-  if (result.length < groups.length) {
-    const sampleDates = groups.flatMap(g => g.assignments.map(a => a.dueAt)).filter(Boolean).slice(0, 5);
-    console.log(`[filterToCurrentSemester] filtered ${groups.length}→${result.length} groups, cutoff=${cutoff.toISOString()}, sample dueAts:`, sampleDates);
-  }
-  return result;
 }
 
 export function parsePrismAssignments(data: any): ICAssignmentGroup[] {

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { extractUid } from "@vela/auth";
+import type { FinalsRanked as RankedCourse } from "@vela/domain";
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY ?? "");
 
@@ -13,18 +14,6 @@ export interface StudyOrderItem {
 export interface FinalsAdvisorResponse {
   studyOrder: StudyOrderItem[];
   summary: string | null;
-}
-
-interface RankedCourse {
-  id: string;
-  name: string;
-  courseType: string;
-  currentGrade: number;
-  maxAchievableGrade: number;
-  maxGradeImprovement: number;
-  finalWeightPct: number;
-  gpaMultiplier: number;
-  priority: number;
 }
 
 interface TimeBudget {
@@ -94,7 +83,7 @@ async function callGemini(
 }
 
 export async function POST(req: NextRequest) {
-  const uid = extractUid(req.headers.get("authorization"));
+  const uid = await extractUid(req.headers.get("authorization"));
   if (!uid) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }

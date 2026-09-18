@@ -10,9 +10,9 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { GraduationCap, ChevronUp, ChevronDown, Sparkles, AlertTriangle } from "lucide-react-native";
 import { useIC } from "@/contexts/InfiniteCampusContext";
 import { api } from "@/lib/api";
-import { rankCourses, FinalsRanked, FinalsInput, DUSD_DEFAULT_FINAL_WEIGHT } from "@/lib/engines/finals";
+import { rankCourses, FinalsRanked, FinalsInput, DUSD_DEFAULT_FINAL_WEIGHT, percentageToLetter } from "@vela/domain";
 import { Bone, Spinner } from "@/components/ui/Skeleton";
-import { percentageToLetter, gradeColor } from "@/lib/utils";
+import { gradeColor } from "@/lib/utils";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 

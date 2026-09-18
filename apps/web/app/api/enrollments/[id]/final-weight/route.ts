@@ -6,7 +6,7 @@ export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const uid = extractUid(req.headers.get("authorization"));
+  const uid = await extractUid(req.headers.get("authorization"));
   if (!uid) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
@@ -25,7 +25,7 @@ export async function PATCH(
   }
 
   // Verify the enrollment belongs to the requesting user
-  const user = await prisma.user.findUnique({ where: { canvasUserId: uid }, select: { id: true } });
+  const user = await prisma.user.findUnique({ where: { firebaseUid: uid }, select: { id: true } });
   if (!user) {
     return NextResponse.json({ error: "User not found" }, { status: 404 });
   }

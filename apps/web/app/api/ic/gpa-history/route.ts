@@ -3,12 +3,12 @@ import { extractUid } from "@vela/auth";
 import { prisma } from "@vela/db";
 
 export async function GET(req: NextRequest) {
-  const uid = extractUid(req.headers.get("authorization"));
+  const uid = await extractUid(req.headers.get("authorization"));
   if (!uid) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const user = await prisma.user.findUnique({ where: { canvasUserId: uid } });
+  const user = await prisma.user.findUnique({ where: { firebaseUid: uid } });
   if (!user) {
     return NextResponse.json({ snapshots: [] });
   }

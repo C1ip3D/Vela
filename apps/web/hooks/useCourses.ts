@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useIC } from "@/contexts/InfiniteCampusContext";
 import { auth } from "@/lib/firebase";
+import { calculateGpa, percentageToLetter } from "@vela/domain";
 
 export interface NormalizedCourse {
   id: string;
@@ -16,44 +17,22 @@ export interface NormalizedCourse {
   period?: string | null;
 }
 
-function scoreToLetter(score: number): string {
-  if (score >= 89.5) return "A";
-  if (score >= 79.5) return "B";
-  if (score >= 69.5) return "C";
-  if (score >= 59.5) return "D";
-  return "F";
-}
-
-function letterToGpaPoints(letter: string): number {
-  const map: Record<string, number> = {
-    A: 4.0,
-    B: 3.0,
-    C: 2.0,
-    D: 1.0,
-    F: 0.0,
-  };
-  return map[letter] ?? 0.0;
-}
+const scoreToLetter = percentageToLetter;
 
 function computeGpa(courses: NormalizedCourse[]) {
   const graded = courses.filter((c) => c.currentGrade != null);
   if (graded.length === 0) return { weighted: 0, unweighted: 0 };
 
-  let totalU = 0;
-  let totalW = 0;
-  for (const c of graded) {
-    const letter = c.letterGrade || scoreToLetter(c.currentGrade!);
-    const base = letterToGpaPoints(letter);
-    totalU += base;
-    const boost =
-      c.courseType === "AP" || c.courseType === "HONORS" ? 1 : 0;
-    totalW += base + boost;
-  }
-
-  return {
-    unweighted: parseFloat((totalU / graded.length).toFixed(2)),
-    weighted: parseFloat((totalW / graded.length).toFixed(2)),
-  };
+  const result = calculateGpa(
+    graded.map((c) => ({
+      courseId: c.id,
+      courseName: c.name,
+      percentage: c.currentGrade!,
+      courseType: c.courseType,
+      creditHours: 1,
+    }))
+  );
+  return { weighted: result.weighted, unweighted: result.unweighted };
 }
 
 function stripDesignation(name: string): string {

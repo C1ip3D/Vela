@@ -1,4 +1,5 @@
 import { prisma } from "@vela/db";
+import { calculateGpa, percentageToLetter, letterToGpaPoints } from "@vela/domain";
 
 export interface SyncableAssignment {
   key: string;
@@ -23,27 +24,52 @@ export interface SyncableCourse {
 }
 
 /**
+ * Derives a stable district hostname from an IC base URL, e.g.
+ * "https://dublinusd.infinitecampus.org/campus" -> "dublinusd.infinitecampus.org".
+ */
+export function districtHostnameFromBaseUrl(baseUrl: string): string {
+  try {
+    return new URL(baseUrl).hostname;
+  } catch {
+    return baseUrl.replace(/^https?:\/\//, "").split("/")[0];
+  }
+}
+
+/**
  * Upserts the Firebase user, then upserts courses + enrollments from an IC fetch.
  * Records a GradeHistory snapshot only when grade actually changes.
  * Detects newly-graded assignments and logs them to the advisor feed.
+ *
+ * IC course/section IDs are only unique within a district's IC instance, so
+ * every course upsert is scoped to a District row (see prisma schema) rather
+ * than assumed globally unique.
  */
 export async function syncICCoursesToDB(
   firebaseUid: string,
   email: string,
   displayName: string,
+  districtHostname: string,
   courses: SyncableCourse[]
 ) {
-  // 1. Upsert the user (keyed on Firebase UID stored in canvasUserId)
+  const district = await prisma.district.upsert({
+    where: { hostname: districtHostname },
+    create: { hostname: districtHostname },
+    update: {},
+  });
+
+  // 1. Upsert the user (keyed on Firebase UID)
   const user = await prisma.user.upsert({
-    where: { canvasUserId: firebaseUid },
+    where: { firebaseUid },
     create: {
-      canvasUserId: firebaseUid,
+      firebaseUid,
       email,
       displayName,
+      districtId: district.id,
     },
     update: {
       email,
       displayName,
+      districtId: district.id,
       updatedAt: new Date(),
     },
   });
@@ -55,10 +81,10 @@ export async function syncICCoursesToDB(
     const courseType = normalizeCourseType(c.courseType);
 
     const course = await prisma.course.upsert({
-      where: { canvasCourseId: c.id },
+      where: { districtId_icCourseId: { districtId: district.id, icCourseId: c.id } },
       create: {
-        canvasCourseId: c.id,
-        externalId: c.id,
+        districtId: district.id,
+        icCourseId: c.id,
         name: c.name,
         courseCode: c.courseCode,
         term: c.term,
@@ -76,11 +102,11 @@ export async function syncICCoursesToDB(
       },
     });
 
-    const enrollId = `${user.id}_${course.id}`;
+    const icEnrollmentId = `${user.id}_${course.id}`;
     await prisma.enrollment.upsert({
-      where: { canvasEnrollId: enrollId },
+      where: { icEnrollmentId },
       create: {
-        canvasEnrollId: enrollId,
+        icEnrollmentId,
         userId: user.id,
         courseId: course.id,
         currentGrade: c.currentGrade,
@@ -112,7 +138,7 @@ export async function syncICCoursesToDB(
             userId: user.id,
             courseId: course.id,
             percentageGrade: c.currentGrade,
-            gpaPoints: gradeToGpaPoints(c.letterGrade ?? ""),
+            gpaPoints: letterToGpaPoints(c.letterGrade || percentageToLetter(c.currentGrade)),
             letterGrade: c.letterGrade ?? "",
             missingCount: c.missingCount,
             recordedAt: now,
@@ -204,7 +230,15 @@ export async function syncICCoursesToDB(
   // 5. Save a GPA snapshot when GPA changes meaningfully
   const gradedForGpa = courses.filter((c) => c.currentGrade != null);
   if (gradedForGpa.length > 0) {
-    const computed = computeGpaFromSyncable(gradedForGpa);
+    const computed = calculateGpa(
+      gradedForGpa.map((c) => ({
+        courseId: c.id,
+        courseName: c.name,
+        percentage: c.currentGrade!,
+        courseType: c.courseType,
+        creditHours: 1,
+      }))
+    );
     const lastSnap = await prisma.gpaSnapshot.findFirst({
       where: { userId: user.id },
       orderBy: { recordedAt: "desc" },
@@ -251,7 +285,7 @@ export async function getCachedCourses(
   firebaseUid: string
 ): Promise<{ courses: SyncableCourse[]; isStale: boolean } | null> {
   const user = await prisma.user.findUnique({
-    where: { canvasUserId: firebaseUid },
+    where: { firebaseUid },
     include: {
       enrollments: {
         where: { isActive: true },
@@ -281,7 +315,7 @@ export async function getCachedCourses(
 
   return {
     courses: user.enrollments.map((e) => ({
-      id: e.course.externalId ?? e.course.canvasCourseId,
+      id: e.course.icCourseId,
       name: e.course.name,
       courseCode: e.course.courseCode,
       term: e.course.term,
@@ -303,38 +337,4 @@ function normalizeCourseType(type: string): "STANDARD" | "ADVANCED" | "HONORS" |
     case "DUAL_ENROLLMENT": return "DUAL_ENROLLMENT";
     default: return "STANDARD";
   }
-}
-
-function syncScoreToLetter(score: number): string {
-  if (score >= 89.5) return "A";
-  if (score >= 79.5) return "B";
-  if (score >= 69.5) return "C";
-  if (score >= 59.5) return "D";
-  return "F";
-}
-
-function computeGpaFromSyncable(courses: SyncableCourse[]): { unweighted: number; weighted: number } {
-  let totalU = 0, totalW = 0;
-  for (const c of courses) {
-    const letter = c.letterGrade ?? syncScoreToLetter(c.currentGrade!);
-    const base = gradeToGpaPoints(letter);
-    totalU += base;
-    const boost = c.courseType === "AP" || c.courseType === "HONORS" ? 1 : 0;
-    totalW += base + boost;
-  }
-  return {
-    unweighted: parseFloat((totalU / courses.length).toFixed(2)),
-    weighted: parseFloat((totalW / courses.length).toFixed(2)),
-  };
-}
-
-function gradeToGpaPoints(letter: string): number {
-  const map: Record<string, number> = {
-    "A+": 4, A: 4, "A-": 4,
-    "B+": 3, B: 3, "B-": 3,
-    "C+": 2, C: 2, "C-": 2,
-    "D+": 1, D: 1, "D-": 1,
-    F: 0,
-  };
-  return map[letter] ?? 0;
 }

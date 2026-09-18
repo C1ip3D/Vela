@@ -1,4 +1,4 @@
-import { percentageToLetter, letterToGpaPoints } from "@/lib/utils";
+import { letterToGpaPoints, percentageToLetter } from "./grading";
 
 export interface CourseGradeInput {
   courseId: string;
@@ -23,8 +23,7 @@ export interface GpaResult {
 }
 
 export function calculateGpa(courses: CourseGradeInput[]): GpaResult {
-  if (courses.length === 0)
-    return { weighted: 0, unweighted: 0, breakdown: [] };
+  if (courses.length === 0) return { weighted: 0, unweighted: 0, breakdown: [] };
 
   let totalWeightedPoints = 0;
   let totalUnweightedPoints = 0;
@@ -51,14 +50,8 @@ export function calculateGpa(courses: CourseGradeInput[]): GpaResult {
   });
 
   return {
-    weighted:
-      totalCredits > 0
-        ? Math.round((totalWeightedPoints / totalCredits) * 100) / 100
-        : 0,
-    unweighted:
-      totalCredits > 0
-        ? Math.round((totalUnweightedPoints / totalCredits) * 100) / 100
-        : 0,
+    weighted: totalCredits > 0 ? Math.round((totalWeightedPoints / totalCredits) * 100) / 100 : 0,
+    unweighted: totalCredits > 0 ? Math.round((totalUnweightedPoints / totalCredits) * 100) / 100 : 0,
     breakdown,
   };
 }

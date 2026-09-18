@@ -1,15 +1,12 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import * as SecureStore from "expo-secure-store";
 import { onAuthStateChanged } from "firebase/auth";
+import { fetchPersonInfo } from "@vela/ic-client";
 import { auth } from "@/lib/firebase";
 import { api } from "@/lib/api";
+import { getStoredIcSession, saveStoredIcSession, clearStoredIcSession, toIcSession, type StoredIcSession } from "@/lib/icSession";
 
-export interface ICSession {
-  authToken: string;
-  baseUrl: string;
-  appName?: string;
-  displayName: string | null;
-}
+export type ICSession = StoredIcSession;
 
 interface ICCredentials {
   districtUrl: string;
@@ -29,7 +26,6 @@ interface ICContextType {
   loginError: string | null;
 }
 
-const IC_SESSION_KEY = "vela_ic_session";
 const IC_CREDS_KEY = "vela_ic_creds";
 
 const ICContext = createContext<ICContextType>({} as ICContextType);
@@ -45,15 +41,7 @@ export function InfiniteCampusProvider({ children }: { children: ReactNode }) {
   const [loginError, setLoginError] = useState<string | null>(null);
 
   useEffect(() => {
-    SecureStore.getItemAsync(IC_SESSION_KEY).then((raw) => {
-      if (raw) {
-        try {
-          setSession(JSON.parse(raw));
-        } catch {
-          SecureStore.deleteItemAsync(IC_SESSION_KEY);
-        }
-      }
-    }).finally(() => {
+    getStoredIcSession().then(setSession).finally(() => {
       setIsInitializing(false);
     });
   }, []);
@@ -64,7 +52,7 @@ export function InfiniteCampusProvider({ children }: { children: ReactNode }) {
     const unsub = onAuthStateChanged(auth, (user) => {
       if (!user) {
         setSession(null);
-        SecureStore.deleteItemAsync(IC_SESSION_KEY);
+        clearStoredIcSession();
         SecureStore.deleteItemAsync(IC_CREDS_KEY);
       }
     });
@@ -74,9 +62,9 @@ export function InfiniteCampusProvider({ children }: { children: ReactNode }) {
   const persist = async (s: ICSession | null) => {
     setSession(s);
     if (s) {
-      await SecureStore.setItemAsync(IC_SESSION_KEY, JSON.stringify(s));
+      await saveStoredIcSession(s);
     } else {
-      await SecureStore.deleteItemAsync(IC_SESSION_KEY);
+      await clearStoredIcSession();
     }
   };
 
@@ -93,12 +81,23 @@ export function InfiniteCampusProvider({ children }: { children: ReactNode }) {
       appName,
     });
     const data = res.data;
-    return {
+    const partial: ICSession = {
       authToken: data.authToken,
       baseUrl: data.baseUrl,
       appName: data.appName,
       displayName: data.displayName ?? null,
     };
+
+    // Resolve personId now (some IC assignment/schedule endpoints require it);
+    // best-effort — login still succeeds without it.
+    try {
+      const person = await fetchPersonInfo(toIcSession(partial));
+      if (person) {
+        return { ...partial, personId: person.personId, displayName: partial.displayName ?? person.displayName };
+      }
+    } catch {}
+
+    return partial;
   };
 
   const login = async (

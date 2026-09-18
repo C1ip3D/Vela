@@ -16,7 +16,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams } from "expo-router";
 import { AlertTriangle } from "lucide-react-native";
 import { useCourses } from "@/hooks/useCourses";
-import { percentageToLetter } from "@/lib/utils";
+import { percentageToLetter } from "@vela/domain";
 import { Bone } from "@/components/ui/Skeleton";
 
 interface Assignment {
