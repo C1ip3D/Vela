@@ -7,23 +7,15 @@
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
     "scheme": "vela",
-    "newArchEnabled": true,
-    "splash": {
-      "image": "./assets/splash-icon.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#03060D"
-    },
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "com.avaneesh.vela",
-      "jsEngine": "jsc"
+      "bundleIdentifier": "com.avaneesh.vela"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
       "package": "com.avaneesh.vela"
     },
@@ -35,10 +27,19 @@
       "expo-secure-store",
       "expo-font",
       [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "resizeMode": "contain",
+          "backgroundColor": "#03060D"
+        }
+      ],
+      [
         "expo-build-properties",
         {
           "ios": {
-            "deploymentTarget": "15.1"
+            "deploymentTarget": "16.4",
+            "enableSceneSupport": true
           }
         }
       ]
