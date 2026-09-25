@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { fetchAssignments, type IcSession } from "@vela/ic-client";
+import { fetchAssignments, isValidIcDistrictHost, type IcSession } from "@vela/ic-client";
 
 /**
  * POST /api/ic/assignments
@@ -23,6 +23,19 @@ export async function POST(req: NextRequest) {
       { error: "authToken, baseUrl, and courseId are required" },
       { status: 400 }
     );
+  }
+
+  let host: string;
+  try {
+    host = new URL(baseUrl).hostname;
+  } catch {
+    return NextResponse.json({ error: "Invalid baseUrl" }, { status: 400 });
+  }
+  // Without this, a caller could point fetchAssignments at an arbitrary
+  // server — this route allows unauthenticated callers through, so it's
+  // reachable without any auth token.
+  if (!isValidIcDistrictHost(host)) {
+    return NextResponse.json({ error: "baseUrl is not a recognized Infinite Campus district." }, { status: 400 });
   }
 
   const session: IcSession = { cookies: authToken, baseUrl, appName: appName ?? "" };

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyAuthHeader } from "@vela/auth";
-import { fetchCourses, type IcSession } from "@vela/ic-client";
+import { fetchCourses, isValidIcDistrictHost, type IcSession } from "@vela/ic-client";
 import { syncICCoursesToDB, getCachedCourses, districtHostnameFromBaseUrl } from "@/lib/syncIC";
 
 /**
@@ -14,16 +14,29 @@ import { syncICCoursesToDB, getCachedCourses, districtHostnameFromBaseUrl } from
  * Body: { authToken: string, baseUrl: string, appName?: string }
  */
 export async function POST(req: NextRequest) {
-  let body: { authToken?: string; baseUrl?: string; appName?: string };
+  let body: { authToken?: string; baseUrl?: string; appName?: string; personId?: string };
   try {
     body = await req.json();
   } catch {
     return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
   }
 
-  const { authToken, baseUrl, appName } = body;
+  const { authToken, baseUrl, appName, personId } = body;
   if (!authToken || !baseUrl) {
     return NextResponse.json({ error: "authToken and baseUrl are required" }, { status: 400 });
+  }
+
+  let host: string;
+  try {
+    host = new URL(baseUrl).hostname;
+  } catch {
+    return NextResponse.json({ error: "Invalid baseUrl" }, { status: 400 });
+  }
+  // Without this, a caller could point fetchCourses at an arbitrary server
+  // — this route allows unauthenticated callers through, so it's reachable
+  // without any auth token.
+  if (!isValidIcDistrictHost(host)) {
+    return NextResponse.json({ error: "baseUrl is not a recognized Infinite Campus district." }, { status: 400 });
   }
 
   const claims = await verifyAuthHeader(req.headers.get("authorization"));
@@ -35,7 +48,7 @@ export async function POST(req: NextRequest) {
     try {
       const courses = await fetchCourses(session);
       if (courses.length > 0) {
-        await syncICCoursesToDB(claims.uid, claims.email ?? "", claims.displayName ?? claims.email ?? "", districtHostname, courses);
+        await syncICCoursesToDB(claims.uid, claims.email ?? "", claims.displayName ?? claims.email ?? "", districtHostname, courses, personId);
       }
     } catch (e) {
       console.error("[IC Courses] Background sync error:", e);
@@ -65,7 +78,7 @@ export async function POST(req: NextRequest) {
   }
 
   if (claims && courses.length > 0) {
-    await syncICCoursesToDB(claims.uid, claims.email ?? "", claims.displayName ?? claims.email ?? "", districtHostname, courses).catch(
+    await syncICCoursesToDB(claims.uid, claims.email ?? "", claims.displayName ?? claims.email ?? "", districtHostname, courses, personId).catch(
       (e: unknown) => console.error("[IC Courses] DB sync error:", e)
     );
   }

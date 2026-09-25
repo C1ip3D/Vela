@@ -60,6 +60,13 @@ model User {
   avatarUrl   String?
   role        UserRole @default(STUDENT)
   districtId  String?
+  // The student's stable Infinite Campus person ID — the canonical identity
+  // anchor across web and mobile (unlike IC username, which mobile's WebView
+  // login flow never learns). Only unique *within* a district, same
+  // rationale as Course.icCourseId. Nullable because it's backfilled
+  // opportunistically on login for accounts created before this field
+  // existed, not guaranteed present on every row.
+  icPersonId  String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
@@ -70,6 +77,7 @@ model User {
   advisorLogs      AdvisorLog[]
   assignmentGrades AssignmentGrade[]
 
+  @@unique([districtId, icPersonId])
   @@index([districtId])
 }
 

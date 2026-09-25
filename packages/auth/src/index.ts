@@ -1,5 +1,7 @@
 import { createRemoteJWKSet, jwtVerify } from "jose";
 
+export * from "./admin";
+
 // Verifies Firebase ID tokens against Google's public signing keys — the
 // same mechanism firebase-admin's verifyIdToken() uses internally — without
 // requiring a service-account key. See:

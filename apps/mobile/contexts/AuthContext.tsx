@@ -2,18 +2,15 @@ import { createContext, useContext, useEffect, useState, ReactNode } from "react
 import {
   User,
   onAuthStateChanged,
-  signInWithEmailAndPassword,
-  createUserWithEmailAndPassword,
+  signInWithCustomToken,
   signOut as firebaseSignOut,
-  updateProfile,
 } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 
 interface AuthContextType {
   user: User | null;
   loading: boolean;
-  signIn: (email: string, password: string) => Promise<void>;
-  signUp: (email: string, password: string, displayName: string) => Promise<void>;
+  signInWithFirebaseCustomToken: (token: string) => Promise<void>;
   signOut: () => Promise<void>;
 }
 
@@ -35,13 +32,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return unsubscribe;
   }, []);
 
-  const signIn = async (email: string, password: string) => {
-    await signInWithEmailAndPassword(auth, email, password);
-  };
-
-  const signUp = async (email: string, password: string, displayName: string) => {
-    const cred = await createUserWithEmailAndPassword(auth, email, password);
-    await updateProfile(cred.user, { displayName });
+  const signInWithFirebaseCustomToken = async (token: string) => {
+    await signInWithCustomToken(auth, token);
   };
 
   const signOut = async () => {
@@ -49,7 +41,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, signIn, signUp, signOut }}>
+    <AuthContext.Provider value={{ user, loading, signInWithFirebaseCustomToken, signOut }}>
       {children}
     </AuthContext.Provider>
   );

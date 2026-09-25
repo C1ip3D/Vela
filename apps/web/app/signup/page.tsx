@@ -1,6 +1,7 @@
 "use client";
 import React, { useState, useEffect, useRef } from "react";
 import { useIC } from "@/contexts/InfiniteCampusContext";
+import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "next/navigation";
 import { VelaLogo } from "@/components/ui/VelaLogo";
 import {
@@ -39,6 +40,7 @@ const STARS = [
 
 export default function SignupPage() {
   const { login: icLogin, isChecking: icChecking, loginError: icError } = useIC();
+  const { signInWithFirebaseCustomToken } = useAuth();
   const router = useRouter();
 
   // IC District Search
@@ -86,25 +88,14 @@ export default function SignupPage() {
     if (!selectedDistrict || !icUsername.trim() || !icPassword.trim()) return;
     const url = selectedDistrict.district_baseurl.replace(/\/$/, "");
 
-    await icLogin(url, icUsername.trim(), icPassword.trim(), selectedDistrict.district_app_name);
-    if (icError) return;
+    const result = await icLogin(url, icUsername.trim(), icPassword.trim(), selectedDistrict.district_app_name);
+    if (!result.success || !result.firebaseCustomToken) return;
 
     try {
-      const hostname = new URL(url).hostname;
-      const pseudoEmail = `${icUsername.toLowerCase()}@${hostname}.ic.vela.app`;
-      const pseudoPassword = `VelaIC#${btoa(pseudoEmail).substring(0, 16)}`;
-      const { createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile } = await import("firebase/auth");
-      const { auth } = await import("@/lib/firebase");
-      try {
-        const cred = await createUserWithEmailAndPassword(auth, pseudoEmail, pseudoPassword);
-        await updateProfile(cred.user, { displayName: icUsername });
-      } catch (e: any) {
-        if (e.code === "auth/email-already-in-use") {
-          await signInWithEmailAndPassword(auth, pseudoEmail, pseudoPassword);
-        } else throw e;
-      }
+      await signInWithFirebaseCustomToken(result.firebaseCustomToken);
     } catch (e) {
-      console.error("Firebase shadow account creation failed:", e);
+      console.error("Firebase sign-in failed:", e);
+      return;
     }
 
     router.push("/dashboard");

@@ -69,6 +69,7 @@ export function useCourses() {
           authToken: session.authToken,
           baseUrl: session.baseUrl,
           appName: session.appName,
+          personId: session.personId,
         }),
       });
 

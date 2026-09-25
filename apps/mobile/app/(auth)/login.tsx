@@ -16,9 +16,11 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { ArrowRight } from "lucide-react-native";
 import { useAuth } from "@/contexts/AuthContext";
-import { useIC, type ICSession } from "@/contexts/InfiniteCampusContext";
+import { useIC } from "@/contexts/InfiniteCampusContext";
 import { DistrictSearch, District } from "@/components/forms/DistrictSearch";
 import { IcLoginWebView, type IcLoginResult } from "@/components/auth/IcLoginWebView";
+import { api } from "@/lib/api";
+import type { StoredIcDistrict } from "@/lib/icSession";
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
 
@@ -122,47 +124,41 @@ function Star({ x, y, size, delay }: { x: number; y: number; size: number; delay
 }
 
 export default function LoginScreen() {
-  const { signIn, signUp, user } = useAuth();
+  const { signInWithFirebaseCustomToken, user } = useAuth();
   const { completeLogin, isChecking: icChecking, loginError: icError } = useIC();
 
   const [selectedDistrict, setSelectedDistrict] = useState<District | null>(null);
   const [showWebView, setShowWebView] = useState(false);
+  const [mintError, setMintError] = useState<string | null>(null);
 
   useEffect(() => {
     if (user) router.replace("/(tabs)/dashboard");
   }, [user]);
 
-  const finishFirebaseSignIn = async (session: ICSession, baseUrl: string) => {
+  const handleWebViewSuccess = async (result: IcLoginResult, district: StoredIcDistrict) => {
+    setMintError(null);
     try {
-      const hostname = new URL(baseUrl).hostname;
-      // personId (not the IC username, which Vela never sees with the
-      // WebView flow) anchors the pseudo-account — stable per student and
-      // resolved right after IC login in completeLogin().
-      const pseudoEmail = `${session.personId}@${hostname}.ic.vela.app`;
-      const pseudoPassword = `VelaIC#${btoa(pseudoEmail).substring(0, 16)}`;
-      try {
-        await signIn(pseudoEmail, pseudoPassword);
-      } catch (e: any) {
-        if (e.code === "auth/invalid-credential" || e.code === "auth/user-not-found") {
-          await signUp(pseudoEmail, pseudoPassword, session.displayName || selectedDistrict?.district_name || "Vela Student");
-        } else throw e;
-      }
+      // The Vela backend never observed this WebView login, so before
+      // minting a Firebase token it re-verifies these cookies against IC's
+      // real server (see apps/web/app/api/ic/mint-token) — this call is
+      // what stands in for the account-takeover check that a plain
+      // client-side "it worked" signal can't provide.
+      const { data } = await api.post("/api/ic/mint-token", {
+        cookies: result.cookies,
+        baseUrl: result.baseUrl,
+        appName: result.appName,
+      });
+      await signInWithFirebaseCustomToken(data.firebaseCustomToken);
+      const session = await completeLogin(result, district, {
+        personId: data.personId,
+        displayName: data.displayName ?? null,
+      });
+      if (!session) return;
       router.replace("/(tabs)/dashboard");
     } catch (e) {
-      console.error("Shadow account error:", e);
+      console.error("Sign-in error:", e);
+      setMintError("Signed into Infinite Campus, but couldn't complete sign-in. Please try again.");
     }
-  };
-
-  const handleWebViewSuccess = async (result: IcLoginResult) => {
-    if (!selectedDistrict) return;
-    setShowWebView(false);
-    const session = await completeLogin(result, {
-      district_name: selectedDistrict.district_name,
-      district_baseurl: selectedDistrict.district_baseurl,
-      district_app_name: selectedDistrict.district_app_name,
-    });
-    if (!session) return;
-    await finishFirebaseSignIn(session, result.baseUrl);
   };
 
   return (
@@ -200,9 +196,9 @@ export default function LoginScreen() {
           <View style={{ width: "100%", maxWidth: 480 }} className="rounded-3xl border border-space-border bg-space-surface/60 p-8">
 
             {/* Error */}
-            {icError ? (
+            {(icError || mintError) ? (
               <View className="mb-5 rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3">
-                <Text className="text-base text-red-400">{icError}</Text>
+                <Text className="text-base text-red-400">{icError || mintError}</Text>
               </View>
             ) : null}
 
@@ -248,7 +244,14 @@ export default function LoginScreen() {
             baseUrl={selectedDistrict.district_baseurl}
             appName={selectedDistrict.district_app_name}
             districtName={selectedDistrict.district_name}
-            onSuccess={handleWebViewSuccess}
+            onSuccess={(result) => {
+              setShowWebView(false);
+              handleWebViewSuccess(result, {
+                district_name: selectedDistrict.district_name,
+                district_baseurl: selectedDistrict.district_baseurl,
+                district_app_name: selectedDistrict.district_app_name,
+              });
+            }}
             onCancel={() => setShowWebView(false)}
           />
         </Modal>

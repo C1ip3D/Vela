@@ -49,7 +49,8 @@ export async function syncICCoursesToDB(
   email: string,
   displayName: string,
   districtHostname: string,
-  courses: SyncableCourse[]
+  courses: SyncableCourse[],
+  icPersonId?: string | null
 ) {
   const district = await prisma.district.upsert({
     where: { hostname: districtHostname },
@@ -57,7 +58,9 @@ export async function syncICCoursesToDB(
     update: {},
   });
 
-  // 1. Upsert the user (keyed on Firebase UID)
+  // 1. Upsert the user (keyed on Firebase UID). icPersonId is included on
+  // every sync (not just at creation) so any row missing it self-heals —
+  // belt-and-suspenders alongside the immediate backfill in /api/ic/auth.
   const user = await prisma.user.upsert({
     where: { firebaseUid },
     create: {
@@ -65,11 +68,13 @@ export async function syncICCoursesToDB(
       email,
       displayName,
       districtId: district.id,
+      icPersonId: icPersonId ?? undefined,
     },
     update: {
       email,
       displayName,
       districtId: district.id,
+      icPersonId: icPersonId ?? undefined,
       updatedAt: new Date(),
     },
   });
@@ -104,7 +109,11 @@ export async function syncICCoursesToDB(
 
     const icEnrollmentId = `${user.id}_${course.id}`;
     await prisma.enrollment.upsert({
-      where: { icEnrollmentId },
+      // userId is redundant with icEnrollmentId's construction (it's already
+      // scoped by user.id), but explicit here so the ownership guard (see
+      // packages/db/ownershipGuard.ts) can verify this query the same way
+      // it verifies every other user-owned-model query.
+      where: { icEnrollmentId, userId: user.id },
       create: {
         icEnrollmentId,
         userId: user.id,

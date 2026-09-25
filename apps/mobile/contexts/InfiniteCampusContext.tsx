@@ -30,8 +30,15 @@ interface ICContextType {
   isChecking: boolean;
   // Called once the mobile WebView login screen has established an IC
   // session on the user's behalf (see components/auth/IcLoginWebView.tsx).
-  // Vela never sees the user's raw IC password with this flow.
-  completeLogin: (result: WebViewLoginResult, district: StoredIcDistrict) => Promise<ICSession | null>;
+  // Vela never sees the user's raw IC password with this flow. `resolvedPerson`
+  // lets a caller that already resolved personId/displayName server-side
+  // (see app/(auth)/login.tsx's call to /api/ic/mint-token) skip this
+  // function's own fetchPersonInfo call rather than redundantly repeating it.
+  completeLogin: (
+    result: WebViewLoginResult,
+    district: StoredIcDistrict,
+    resolvedPerson?: { personId: string; displayName: string | null }
+  ) => Promise<ICSession | null>;
   logout: () => void;
   // Best-effort: confirms the existing session is still valid. Cannot
   // silently establish a *new* session (no password is stored to replay),
@@ -88,7 +95,8 @@ export function InfiniteCampusProvider({ children }: { children: ReactNode }) {
 
   const completeLogin = async (
     result: WebViewLoginResult,
-    district: StoredIcDistrict
+    district: StoredIcDistrict,
+    resolvedPerson?: { personId: string; displayName: string | null }
   ): Promise<ICSession | null> => {
     setIsChecking(true);
     setLoginError(null);
@@ -103,8 +111,10 @@ export function InfiniteCampusProvider({ children }: { children: ReactNode }) {
       // personId is required here (not best-effort like it used to be):
       // with the WebView flow Vela never learns the user's IC username, so
       // personId + district hostname is the only stable identity anchor
-      // left to derive the Firebase pseudo-account from.
-      const person = await fetchPersonInfo(toIcSession(partial));
+      // left to derive the Firebase account from. Reuse the caller's
+      // already-resolved person (from /api/ic/mint-token) when given,
+      // rather than making IC's server answer the same question twice.
+      const person = resolvedPerson ?? (await fetchPersonInfo(toIcSession(partial)));
       if (!person) {
         throw new Error("Signed in, but couldn't verify your student profile. Please try again.");
       }

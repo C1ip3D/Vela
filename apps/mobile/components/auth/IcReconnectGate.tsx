@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { View, Text, TouchableOpacity, Modal } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { router } from "expo-router";
@@ -15,12 +15,17 @@ export function IcReconnectGate({ children }: { children: React.ReactNode }) {
   const { isConnected, isInitializing, lastDistrict, completeLogin } = useIC();
   const [showWebView, setShowWebView] = useState(false);
 
+  useEffect(() => {
+    if (!isInitializing && !isConnected && !lastDistrict) {
+      router.replace("/(auth)/login");
+    }
+  }, [isInitializing, isConnected, lastDistrict]);
+
   if (isInitializing || isConnected) {
     return <>{children}</>;
   }
 
   if (!lastDistrict) {
-    router.replace("/(auth)/login");
     return null;
   }
 

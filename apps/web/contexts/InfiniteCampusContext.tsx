@@ -5,6 +5,7 @@ export interface ICSession {
   authToken: string;
   baseUrl: string;
   appName?: string;
+  personId?: string;
   displayName: string | null;
 }
 
@@ -15,12 +16,21 @@ interface ICCredentials {
   appName?: string;
 }
 
+export interface ICLoginResult {
+  success: boolean;
+  /**
+   * Short-lived, single-use-at-login value from /api/ic/auth — deliberately
+   * NOT part of ICSession/localStorage; it has no reason to sit on disk.
+   */
+  firebaseCustomToken?: string;
+}
+
 interface ICContextType {
   session: ICSession | null;
   isConnected: boolean;
   isChecking: boolean;
   isInitializing: boolean;
-  login: (districtUrl: string, username: string, password: string, appName?: string) => Promise<boolean>;
+  login: (districtUrl: string, username: string, password: string, appName?: string) => Promise<ICLoginResult>;
   reauth: () => Promise<ICSession | null>;
   logout: () => void;
   loginError: string | null;
@@ -48,9 +58,9 @@ export function InfiniteCampusProvider({ children }: { children: ReactNode }) {
         const credsRaw = localStorage.getItem(IC_CREDS_KEY);
         if (credsRaw) {
           const creds: ICCredentials = JSON.parse(credsRaw);
-          const newSession = await doLogin(creds.districtUrl, creds.username, creds.password, creds.appName);
-          if (newSession) {
-            persist(newSession);
+          const result = await doLogin(creds.districtUrl, creds.username, creds.password, creds.appName);
+          if (result) {
+            persist(result.session);
             return;
           }
         }
@@ -71,7 +81,7 @@ export function InfiniteCampusProvider({ children }: { children: ReactNode }) {
     username: string,
     password: string,
     appName?: string
-  ): Promise<ICSession | null> => {
+  ): Promise<{ session: ICSession; firebaseCustomToken?: string } | null> => {
     const res = await fetch("/api/ic/auth", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -80,10 +90,14 @@ export function InfiniteCampusProvider({ children }: { children: ReactNode }) {
     if (!res.ok) return null;
     const data = await res.json();
     return {
-      authToken: data.authToken,
-      baseUrl: data.baseUrl,
-      appName: data.appName,
-      displayName: data.displayName ?? null,
+      session: {
+        authToken: data.authToken,
+        baseUrl: data.baseUrl,
+        appName: data.appName,
+        personId: data.personId ?? undefined,
+        displayName: data.displayName ?? null,
+      },
+      firebaseCustomToken: data.firebaseCustomToken ?? undefined,
     };
   };
 
@@ -101,22 +115,22 @@ export function InfiniteCampusProvider({ children }: { children: ReactNode }) {
     username: string,
     password: string,
     appName?: string
-  ): Promise<boolean> => {
+  ): Promise<ICLoginResult> => {
     setIsChecking(true);
     setLoginError(null);
     try {
-      const newSession = await doLogin(districtUrl, username, password, appName);
-      if (!newSession) {
+      const result = await doLogin(districtUrl, username, password, appName);
+      if (!result) {
         setLoginError("Login failed. Check your credentials.");
-        return false;
+        return { success: false };
       }
-      persist(newSession);
+      persist(result.session);
       // Save credentials for future auto-reauth
       localStorage.setItem(IC_CREDS_KEY, JSON.stringify({ districtUrl, username, password, appName }));
-      return true;
+      return { success: true, firebaseCustomToken: result.firebaseCustomToken };
     } catch (err: unknown) {
       setLoginError(err instanceof Error ? err.message : "Network error");
-      return false;
+      return { success: false };
     } finally {
       setIsChecking(false);
     }
@@ -127,10 +141,10 @@ export function InfiniteCampusProvider({ children }: { children: ReactNode }) {
       const raw = localStorage.getItem(IC_CREDS_KEY);
       if (!raw) return null;
       const creds: ICCredentials = JSON.parse(raw);
-      const newSession = await doLogin(creds.districtUrl, creds.username, creds.password, creds.appName);
-      if (!newSession) return null;
-      persist(newSession);
-      return newSession;
+      const result = await doLogin(creds.districtUrl, creds.username, creds.password, creds.appName);
+      if (!result) return null;
+      persist(result.session);
+      return result.session;
     } catch {
       return null;
     }

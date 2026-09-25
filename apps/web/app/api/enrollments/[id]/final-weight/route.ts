@@ -38,7 +38,9 @@ export async function PATCH(
   }
 
   const updated = await prisma.enrollment.update({
-    where: { id: enrollmentId },
+    // userId here makes this update self-defending even if the preceding
+    // ownership check above is ever refactored away.
+    where: { id: enrollmentId, userId: user.id },
     data: { finalWeight },
     select: { id: true, finalWeight: true },
   });

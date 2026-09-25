@@ -44,3 +44,6 @@ next-env.d.ts
 
 .claude
 .vscode
+
+# expo dev cache (can appear at repo root when `expo start` runs from there)
+.expo/
