@@ -62,14 +62,15 @@ async function isKnownIcDistrictHost(
   }
   if (!response.ok) return false;
 
-  let json: { data?: IcDistrictSearchResult[] };
+  let json: { data?: unknown };
   try {
     json = await response.json();
   } catch {
     return false;
   }
+  if (!Array.isArray(json.data)) return false;
 
-  return (json.data ?? []).some((d) =>
+  return (json.data as IcDistrictSearchResult[]).some((d) =>
     [d.district_baseurl, d.staff_login_url, d.student_login_url, d.parent_login_url].some(
       (url) => hostnameOf(url) === target
     )
