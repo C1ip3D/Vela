@@ -40,6 +40,8 @@ export function useAssignments(courseId: string | undefined) {
         baseUrl: s.baseUrl,
         appName: s.appName,
         courseId,
+        districtName: s.districtName,
+        stateCode: s.stateCode,
       });
       return res.data.groups ?? [];
     };

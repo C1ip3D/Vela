@@ -55,6 +55,8 @@ export function useCourses() {
         authToken: s!.authToken,
         baseUrl: s!.baseUrl,
         appName: s!.appName,
+        districtName: s!.districtName,
+        stateCode: s!.stateCode,
       });
       return res.data;
     };

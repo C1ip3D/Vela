@@ -28,6 +28,12 @@ export interface StoredIcSession {
   appName: string;
   personId?: string;
   displayName: string | null;
+  // Kept alongside the session so a later /api/ic/courses or
+  // /api/ic/assignments call can re-verify baseUrl against IC's
+  // district-search API without asking the user to search again — see
+  // packages/ic-client/src/hostValidation.ts's verifyIcDistrictHost.
+  districtName?: string;
+  stateCode?: string;
 }
 
 export async function getStoredIcSession(): Promise<StoredIcSession | null> {

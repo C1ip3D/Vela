@@ -118,7 +118,13 @@ export function InfiniteCampusProvider({ children }: { children: ReactNode }) {
       if (!person) {
         throw new Error("Signed in, but couldn't verify your student profile. Please try again.");
       }
-      const newSession: ICSession = { ...partial, personId: person.personId, displayName: person.displayName ?? null };
+      const newSession: ICSession = {
+        ...partial,
+        personId: person.personId,
+        displayName: person.displayName ?? null,
+        districtName: district.district_name,
+        stateCode: district.state_code,
+      };
 
       await persist(newSession);
       await saveLastIcDistrict(district);

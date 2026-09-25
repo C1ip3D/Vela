@@ -47,3 +47,10 @@ next-env.d.ts
 
 # expo dev cache (can appear at repo root when `expo start` runs from there)
 .expo/
+
+# Firebase service-account keys (raw downloads from Project Settings >
+# Service Accounts) — encode into FIREBASE_SERVICE_ACCOUNT_KEY_BASE64 in
+# .env instead of committing the file itself.
+*firebase*adminsdk*.json
+*Firebase*Admin*SDK*.json
+serviceAccountKey.json
