@@ -88,7 +88,14 @@ export default function SignupPage() {
     if (!selectedDistrict || !icUsername.trim() || !icPassword.trim()) return;
     const url = selectedDistrict.district_baseurl.replace(/\/$/, "");
 
-    const result = await icLogin(url, icUsername.trim(), icPassword.trim(), selectedDistrict.district_app_name);
+    const result = await icLogin(
+      url,
+      icUsername.trim(),
+      icPassword.trim(),
+      selectedDistrict.district_app_name,
+      selectedDistrict.district_name,
+      selectedDistrict.state_code
+    );
     if (!result.success || !result.firebaseCustomToken) return;
 
     try {

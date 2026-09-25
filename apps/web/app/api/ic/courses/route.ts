@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyAuthHeader } from "@vela/auth";
-import { fetchCourses, isValidIcDistrictHost, type IcSession } from "@vela/ic-client";
+import { fetchCourses, verifyIcDistrictHost, type IcSession } from "@vela/ic-client";
 import { syncICCoursesToDB, getCachedCourses, districtHostnameFromBaseUrl } from "@/lib/syncIC";
 
 /**
@@ -11,17 +11,27 @@ import { syncICCoursesToDB, getCachedCourses, districtHostnameFromBaseUrl } from
  * syncs them to the DB. Serves from the DB cache when available, refreshing
  * in the background if the cache is stale.
  *
- * Body: { authToken: string, baseUrl: string, appName?: string }
+ * Body: { authToken: string, baseUrl: string, appName?: string, districtName?: string, stateCode?: string }
+ * - districtName/stateCode: as returned by /api/ic/districts for this
+ *   district — required to verify a baseUrl on a custom (non
+ *   *.infinitecampus.org) domain against IC's own district-search API.
  */
 export async function POST(req: NextRequest) {
-  let body: { authToken?: string; baseUrl?: string; appName?: string; personId?: string };
+  let body: {
+    authToken?: string;
+    baseUrl?: string;
+    appName?: string;
+    personId?: string;
+    districtName?: string;
+    stateCode?: string;
+  };
   try {
     body = await req.json();
   } catch {
     return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
   }
 
-  const { authToken, baseUrl, appName, personId } = body;
+  const { authToken, baseUrl, appName, personId, districtName, stateCode } = body;
   if (!authToken || !baseUrl) {
     return NextResponse.json({ error: "authToken and baseUrl are required" }, { status: 400 });
   }
@@ -35,7 +45,7 @@ export async function POST(req: NextRequest) {
   // Without this, a caller could point fetchCourses at an arbitrary server
   // — this route allows unauthenticated callers through, so it's reachable
   // without any auth token.
-  if (!isValidIcDistrictHost(host)) {
+  if (!(await verifyIcDistrictHost(host, districtName, stateCode))) {
     return NextResponse.json({ error: "baseUrl is not a recognized Infinite Campus district." }, { status: 400 });
   }
 

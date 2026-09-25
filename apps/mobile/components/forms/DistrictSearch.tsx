@@ -23,6 +23,7 @@ export interface District {
   district_name: string;
   district_baseurl: string;
   district_app_name: string;
+  state_code: string;
 }
 
 interface DistrictSearchProps {

@@ -16,6 +16,10 @@ export interface StoredIcDistrict {
   district_name: string;
   district_baseurl: string;
   district_app_name: string;
+  // Threaded through to /api/ic/mint-token so it can verify a
+  // custom-domain district (not under *.infinitecampus.org) against IC's
+  // own district-search API — see verifyIcDistrictHost.
+  state_code: string;
 }
 
 export interface StoredIcSession {

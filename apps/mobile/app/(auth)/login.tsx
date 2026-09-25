@@ -147,6 +147,8 @@ export default function LoginScreen() {
         cookies: result.cookies,
         baseUrl: result.baseUrl,
         appName: result.appName,
+        districtName: district.district_name,
+        stateCode: district.state_code,
       });
       await signInWithFirebaseCustomToken(data.firebaseCustomToken);
       const session = await completeLogin(result, district, {
@@ -250,6 +252,7 @@ export default function LoginScreen() {
                 district_name: selectedDistrict.district_name,
                 district_baseurl: selectedDistrict.district_baseurl,
                 district_app_name: selectedDistrict.district_app_name,
+                state_code: selectedDistrict.state_code,
               });
             }}
             onCancel={() => setShowWebView(false)}

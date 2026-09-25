@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { IcLoginError, loginToIc, fetchPersonInfo, isValidIcDistrictHost } from "@vela/ic-client";
+import { IcLoginError, loginToIc, fetchPersonInfo, verifyIcDistrictHost } from "@vela/ic-client";
 import { mintCustomTokenForIcIdentity } from "@vela/auth";
 import { prisma } from "@vela/db";
 import { districtHostnameFromBaseUrl } from "@/lib/syncIC";
@@ -12,19 +12,29 @@ import { districtHostnameFromBaseUrl } from "@/lib/syncIC";
  * Firebase custom token for the resulting identity. Raw passwords are
  * NEVER stored.
  *
- * Body: { districtUrl: string, username: string, password: string, appName?: string }
+ * Body: { districtUrl: string, username: string, password: string, appName?: string, districtName: string, stateCode: string }
  * - districtUrl: base URL of the district IC instance
  *   e.g. "https://dublinusd.infinitecampus.org/campus"
+ * - districtName/stateCode: as returned by /api/ic/districts for this
+ *   district — required to verify a districtUrl on a custom (non
+ *   *.infinitecampus.org) domain against IC's own district-search API.
  */
 export async function POST(req: NextRequest) {
-  let body: { districtUrl?: string; username?: string; password?: string; appName?: string };
+  let body: {
+    districtUrl?: string;
+    username?: string;
+    password?: string;
+    appName?: string;
+    districtName?: string;
+    stateCode?: string;
+  };
   try {
     body = await req.json();
   } catch {
     return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
   }
 
-  const { districtUrl, username, password, appName } = body;
+  const { districtUrl, username, password, appName, districtName, stateCode } = body;
   if (!districtUrl || !username || !password) {
     return NextResponse.json(
       { error: "districtUrl, username, and password are required" },
@@ -41,7 +51,7 @@ export async function POST(req: NextRequest) {
   // Without this, a caller could point loginToIc/fetchPersonInfo at an
   // arbitrary server and get a Firebase custom token minted for a response
   // that was never actually verified against real IC infrastructure.
-  if (!isValidIcDistrictHost(districtHost)) {
+  if (!(await verifyIcDistrictHost(districtHost, districtName, stateCode))) {
     return NextResponse.json({ error: "districtUrl is not a recognized Infinite Campus district." }, { status: 400 });
   }
 

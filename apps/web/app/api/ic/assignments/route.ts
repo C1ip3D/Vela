@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { fetchAssignments, isValidIcDistrictHost, type IcSession } from "@vela/ic-client";
+import { fetchAssignments, verifyIcDistrictHost, type IcSession } from "@vela/ic-client";
 
 /**
  * POST /api/ic/assignments
@@ -7,17 +7,27 @@ import { fetchAssignments, isValidIcDistrictHost, type IcSession } from "@vela/i
  * Fetches detailed assignments for a specific course from Infinite Campus,
  * via @vela/ic-client (the same client apps/mobile uses directly).
  *
- * Body: { authToken: string, baseUrl: string, courseId: string, appName?: string }
+ * Body: { authToken: string, baseUrl: string, courseId: string, appName?: string, districtName?: string, stateCode?: string }
+ * - districtName/stateCode: as returned by /api/ic/districts for this
+ *   district — required to verify a baseUrl on a custom (non
+ *   *.infinitecampus.org) domain against IC's own district-search API.
  */
 export async function POST(req: NextRequest) {
-  let body: { authToken?: string; baseUrl?: string; appName?: string; courseId?: string };
+  let body: {
+    authToken?: string;
+    baseUrl?: string;
+    appName?: string;
+    courseId?: string;
+    districtName?: string;
+    stateCode?: string;
+  };
   try {
     body = await req.json();
   } catch {
     return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
   }
 
-  const { authToken, baseUrl, appName, courseId } = body;
+  const { authToken, baseUrl, appName, courseId, districtName, stateCode } = body;
   if (!authToken || !baseUrl || !courseId) {
     return NextResponse.json(
       { error: "authToken, baseUrl, and courseId are required" },
@@ -34,7 +44,7 @@ export async function POST(req: NextRequest) {
   // Without this, a caller could point fetchAssignments at an arbitrary
   // server — this route allows unauthenticated callers through, so it's
   // reachable without any auth token.
-  if (!isValidIcDistrictHost(host)) {
+  if (!(await verifyIcDistrictHost(host, districtName, stateCode))) {
     return NextResponse.json({ error: "baseUrl is not a recognized Infinite Campus district." }, { status: 400 });
   }
 

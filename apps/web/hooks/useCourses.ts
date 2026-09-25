@@ -70,6 +70,8 @@ export function useCourses() {
           baseUrl: session.baseUrl,
           appName: session.appName,
           personId: session.personId,
+          districtName: session.districtName,
+          stateCode: session.stateCode,
         }),
       });
 
@@ -113,6 +115,8 @@ export function useCourses() {
                 baseUrl: session.baseUrl,
                 appName: session.appName,
                 courseId: course.id,
+                districtName: session.districtName,
+                stateCode: session.stateCode,
               }),
             });
             if (!res.ok) return { id: course.id, count: 0 };

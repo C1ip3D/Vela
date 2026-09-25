@@ -7,6 +7,12 @@ export interface ICSession {
   appName?: string;
   personId?: string;
   displayName: string | null;
+  // Kept alongside the session so a later /api/ic/courses or
+  // /api/ic/assignments call can re-verify baseUrl against IC's
+  // district-search API without asking the user to search again — see
+  // packages/ic-client/src/hostValidation.ts's verifyIcDistrictHost.
+  districtName?: string;
+  stateCode?: string;
 }
 
 interface ICCredentials {
@@ -14,6 +20,8 @@ interface ICCredentials {
   username: string;
   password: string;
   appName?: string;
+  districtName?: string;
+  stateCode?: string;
 }
 
 export interface ICLoginResult {
@@ -30,7 +38,14 @@ interface ICContextType {
   isConnected: boolean;
   isChecking: boolean;
   isInitializing: boolean;
-  login: (districtUrl: string, username: string, password: string, appName?: string) => Promise<ICLoginResult>;
+  login: (
+    districtUrl: string,
+    username: string,
+    password: string,
+    appName?: string,
+    districtName?: string,
+    stateCode?: string
+  ) => Promise<ICLoginResult>;
   reauth: () => Promise<ICSession | null>;
   logout: () => void;
   loginError: string | null;
@@ -58,7 +73,7 @@ export function InfiniteCampusProvider({ children }: { children: ReactNode }) {
         const credsRaw = localStorage.getItem(IC_CREDS_KEY);
         if (credsRaw) {
           const creds: ICCredentials = JSON.parse(credsRaw);
-          const result = await doLogin(creds.districtUrl, creds.username, creds.password, creds.appName);
+          const result = await doLogin(creds.districtUrl, creds.username, creds.password, creds.appName, creds.districtName, creds.stateCode);
           if (result) {
             persist(result.session);
             return;
@@ -80,12 +95,14 @@ export function InfiniteCampusProvider({ children }: { children: ReactNode }) {
     districtUrl: string,
     username: string,
     password: string,
-    appName?: string
+    appName?: string,
+    districtName?: string,
+    stateCode?: string
   ): Promise<{ session: ICSession; firebaseCustomToken?: string } | null> => {
     const res = await fetch("/api/ic/auth", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ districtUrl, username, password, appName }),
+      body: JSON.stringify({ districtUrl, username, password, appName, districtName, stateCode }),
     });
     if (!res.ok) return null;
     const data = await res.json();
@@ -96,6 +113,8 @@ export function InfiniteCampusProvider({ children }: { children: ReactNode }) {
         appName: data.appName,
         personId: data.personId ?? undefined,
         displayName: data.displayName ?? null,
+        districtName,
+        stateCode,
       },
       firebaseCustomToken: data.firebaseCustomToken ?? undefined,
     };
@@ -114,19 +133,24 @@ export function InfiniteCampusProvider({ children }: { children: ReactNode }) {
     districtUrl: string,
     username: string,
     password: string,
-    appName?: string
+    appName?: string,
+    districtName?: string,
+    stateCode?: string
   ): Promise<ICLoginResult> => {
     setIsChecking(true);
     setLoginError(null);
     try {
-      const result = await doLogin(districtUrl, username, password, appName);
+      const result = await doLogin(districtUrl, username, password, appName, districtName, stateCode);
       if (!result) {
         setLoginError("Login failed. Check your credentials.");
         return { success: false };
       }
       persist(result.session);
       // Save credentials for future auto-reauth
-      localStorage.setItem(IC_CREDS_KEY, JSON.stringify({ districtUrl, username, password, appName }));
+      localStorage.setItem(
+        IC_CREDS_KEY,
+        JSON.stringify({ districtUrl, username, password, appName, districtName, stateCode })
+      );
       return { success: true, firebaseCustomToken: result.firebaseCustomToken };
     } catch (err: unknown) {
       setLoginError(err instanceof Error ? err.message : "Network error");
@@ -141,7 +165,7 @@ export function InfiniteCampusProvider({ children }: { children: ReactNode }) {
       const raw = localStorage.getItem(IC_CREDS_KEY);
       if (!raw) return null;
       const creds: ICCredentials = JSON.parse(raw);
-      const result = await doLogin(creds.districtUrl, creds.username, creds.password, creds.appName);
+      const result = await doLogin(creds.districtUrl, creds.username, creds.password, creds.appName, creds.districtName, creds.stateCode);
       if (!result) return null;
       persist(result.session);
       return result.session;
