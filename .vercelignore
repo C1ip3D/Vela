@@ -1,0 +1,20 @@
+# Only apps/web is deployed. apps/mobile's package.json stays (npm
+# workspaces install needs it), but its native build output doesn't.
+apps/mobile/ios
+apps/mobile/android
+apps/mobile/.expo
+.expo
+
+# Local build caches — Vercel builds fresh.
+.next
+apps/web/.next
+
+# Env comes from the Vercel project's settings, never from local files.
+.env
+.env.*
+**/.env
+**/.env.*
+
+.DS_Store
+.vscode
+.claude

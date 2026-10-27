@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useIC } from "@/contexts/InfiniteCampusContext";
 import { api } from "@/lib/api";
+import { fetchCourses as fetchIcCourses, withIcReauth } from "@/lib/icApi";
 import { calculateGpa, percentageToLetter } from "@vela/domain";
 
 export interface NormalizedCourse {
@@ -50,36 +51,28 @@ export function useCourses() {
     setLoading(true);
     setError(null);
 
-    const doFetch = async (s: typeof currentSession) => {
-      const res = await api.post("/api/ic/courses", {
-        authToken: s!.authToken,
-        baseUrl: s!.baseUrl,
-        appName: s!.appName,
-        districtName: s!.districtName,
-        stateCode: s!.stateCode,
-      });
-      return res.data;
-    };
-
     try {
-      let data: any;
-      try {
-        data = await doFetch(currentSession);
-      } catch (err: any) {
-        // Auto-reauth on 401 then retry once with the fresh session
-        if (err?.response?.status === 401) {
-          const newSession = await reauth();
-          if (newSession) {
-            data = await doFetch(newSession);
-          } else {
-            throw err;
-          }
-        } else {
-          throw err;
-        }
-      }
+      // Straight from IC on the device, so grades load without the backend.
+      let usedSession = currentSession;
+      const icCourses = await withIcReauth(currentSession, reauth, (s) => {
+        usedSession = s;
+        return fetchIcCourses(s);
+      });
 
-      const normalized: NormalizedCourse[] = (data.courses as any[]).map((c) => ({
+      // Best-effort: let the backend snapshot grades into the DB (history,
+      // advisor feed). Failure here never affects what the app shows.
+      api
+        .post("/api/ic/courses", {
+          authToken: usedSession.authToken,
+          baseUrl: usedSession.baseUrl,
+          appName: usedSession.appName,
+          personId: usedSession.personId,
+          districtName: usedSession.districtName,
+          stateCode: usedSession.stateCode,
+        })
+        .catch(() => {});
+
+      const normalized: NormalizedCourse[] = icCourses.map((c) => ({
         id: c.id,
         name: c.name,
         courseCode: c.courseCode,

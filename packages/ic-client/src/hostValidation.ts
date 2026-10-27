@@ -14,11 +14,39 @@ export function isValidIcDistrictHost(hostname: string): boolean {
   return lower === IC_HOST_APEX || lower.endsWith(IC_HOST_SUFFIX);
 }
 
-interface IcDistrictSearchResult {
+export interface IcDistrictSearchResult {
+  district_name?: string;
   district_baseurl?: string;
+  district_app_name?: string;
+  state_code?: string;
   staff_login_url?: string;
   student_login_url?: string;
   parent_login_url?: string;
+}
+
+/**
+ * Searches Infinite Campus's public district directory. Callable from the
+ * server and straight from the mobile app (no CORS in React Native). Throws
+ * on a network error or non-OK response; a non-array `data` field yields [].
+ */
+export async function searchIcDistricts(
+  query: string,
+  stateCode: string
+): Promise<IcDistrictSearchResult[]> {
+  const response = await fetch(
+    `${IC_DISTRICT_SEARCH_URL}?query=${encodeURIComponent(query)}&state=${encodeURIComponent(stateCode)}`,
+    {
+      headers: {
+        Accept: "application/json",
+        "User-Agent": "Mozilla/5.0 (Vela Academic Navigator)",
+      },
+    }
+  );
+  if (!response.ok) {
+    throw new Error(`Infinite Campus district search responded with status: ${response.status}`);
+  }
+  const json: { data?: unknown } = await response.json();
+  return Array.isArray(json.data) ? (json.data as IcDistrictSearchResult[]) : [];
 }
 
 function hostnameOf(url: string | undefined): string | null {
@@ -46,31 +74,14 @@ async function isKnownIcDistrictHost(
 ): Promise<boolean> {
   const target = hostname.toLowerCase();
 
-  let response: Response;
+  let results: IcDistrictSearchResult[];
   try {
-    response = await fetch(
-      `${IC_DISTRICT_SEARCH_URL}?query=${encodeURIComponent(districtName)}&state=${encodeURIComponent(stateCode)}`,
-      {
-        headers: {
-          Accept: "application/json",
-          "User-Agent": "Mozilla/5.0 (Vela Academic Navigator)",
-        },
-      }
-    );
+    results = await searchIcDistricts(districtName, stateCode);
   } catch {
     return false;
   }
-  if (!response.ok) return false;
 
-  let json: { data?: unknown };
-  try {
-    json = await response.json();
-  } catch {
-    return false;
-  }
-  if (!Array.isArray(json.data)) return false;
-
-  return (json.data as IcDistrictSearchResult[]).some((d) =>
+  return results.some((d) =>
     [d.district_baseurl, d.staff_login_url, d.student_login_url, d.parent_login_url].some(
       (url) => hostnameOf(url) === target
     )

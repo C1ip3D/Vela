@@ -1,10 +1,10 @@
 import * as SecureStore from "expo-secure-store";
 import type { IcSession } from "@vela/ic-client";
 
-// Single source of truth for the persisted IC session — both the
-// web-backend-proxied calls (courses, sync) and the direct-to-IC calls
-// (assignments) read from this one stored session, keyed the
-// same way InfiniteCampusContext already persists it.
+// Single source of truth for the persisted IC session — the direct-to-IC
+// calls (lib/icApi.ts) and the backend calls (mint-token, best-effort DB
+// sync) all read from this one stored session, keyed the same way
+// InfiniteCampusContext already persists it.
 const IC_SESSION_KEY = "vela_ic_session";
 // The district (not credentials — the WebView login flow never gives Vela
 // the raw password to store) selected on last successful login, so a

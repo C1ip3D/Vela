@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useIC } from "@/contexts/InfiniteCampusContext";
-import { api } from "@/lib/api";
+import { fetchAssignments, withIcReauth } from "@/lib/icApi";
 
 // Module-level cache — persists across navigations within the same app session
 const cache = new Map<string, any[]>();
@@ -34,17 +34,6 @@ export function useAssignments(courseId: string | undefined) {
 
     let cancelled = false;
 
-    const fetchGroups = async (s: typeof session) => {
-      const res = await api.post("/api/ic/assignments", {
-        authToken: s.authToken,
-        baseUrl: s.baseUrl,
-        appName: s.appName,
-        courseId,
-        districtName: s.districtName,
-        stateCode: s.stateCode,
-      });
-      return res.data.groups ?? [];
-    };
 
     (async () => {
       if (nowCached) {
@@ -55,21 +44,8 @@ export function useAssignments(courseId: string | undefined) {
       setError(null);
 
       try {
-        let groups: any[];
-        try {
-          groups = await fetchGroups(session);
-        } catch (err: any) {
-          if (err?.response?.status === 401) {
-            const newSession = await reauth();
-            if (newSession) {
-              groups = await fetchGroups(newSession);
-            } else {
-              throw err;
-            }
-          } else {
-            throw err;
-          }
-        }
+        // Straight from IC on the device — no backend round-trip.
+        const groups: any[] = await withIcReauth(session, reauth, (s) => fetchAssignments(courseId, s));
 
         if (cancelled) return;
         cache.set(courseId, groups);

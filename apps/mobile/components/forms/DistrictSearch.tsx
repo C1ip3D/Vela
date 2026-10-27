@@ -10,7 +10,7 @@ import {
   Modal,
 } from "react-native";
 import { Search, MapPin } from "lucide-react-native";
-import { api } from "@/lib/api";
+import { searchDistricts } from "@/lib/icApi";
 
 const US_STATES = [
   "AL","AK","AZ","AR","CA","CO","CT","DE","FL","GA","HI","ID","IL","IN","IA",
@@ -59,10 +59,8 @@ export function DistrictSearch({
     searchTimeout.current = setTimeout(async () => {
       setIsSearching(true);
       try {
-        const res = await api.get(
-          `/api/ic/districts?query=${encodeURIComponent(districtQuery)}&state=${icStateCode}`
-        );
-        setDistricts(res.data?.data || []);
+        // Straight to IC's public district directory — no backend needed.
+        setDistricts((await searchDistricts(districtQuery, icStateCode)) as District[]);
         setShowDropdown(true);
       } catch {
         // silent
