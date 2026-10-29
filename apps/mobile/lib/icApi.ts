@@ -1,4 +1,6 @@
 import {
+  buildIcHeaders,
+  icAppQuery,
   fetchAssignments as fetchAssignmentsShared,
   fetchCourses as fetchCoursesShared,
   searchIcDistricts,
@@ -32,12 +34,58 @@ export async function searchDistricts(query: string, stateCode: string): Promise
   return searchIcDistricts(query, stateCode);
 }
 
-async function isIcReachable(baseUrl: string): Promise<boolean> {
+const IC_PROBE_TIMEOUT_MS = 8000;
+
+/** Resolves to `fallback` instead of hanging when `promise` takes longer than `ms`. */
+export function withTimeout<T>(promise: Promise<T>, ms: number, fallback: T): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<T>((resolve) => setTimeout(() => resolve(fallback), ms)),
+  ]);
+}
+
+async function fetchWithTimeout(url: string, init: RequestInit = {}): Promise<Response> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), IC_PROBE_TIMEOUT_MS);
   try {
-    await fetch(baseUrl, { method: "HEAD" });
+    return await fetch(url, { ...init, signal: controller.signal });
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+export async function isIcReachable(baseUrl: string): Promise<boolean> {
+  try {
+    await fetchWithTimeout(baseUrl, { method: "HEAD" });
     return true;
   } catch {
     return false;
+  }
+}
+
+export type IcAuthState = "valid" | "expired" | "unknown";
+
+/**
+ * Asks IC directly whether this session's cookies are still logged in, so a
+ * 5xx, timeout or rate limit ("unknown") is never mistaken for an expired
+ * session and used as a reason to log the user out.
+ */
+export async function probeIcAuth(session: StoredIcSession): Promise<IcAuthState> {
+  const ic = toIcSession(session);
+  try {
+    const res = await fetchWithTimeout(`${ic.baseUrl}/prism/api/portal/person${icAppQuery(ic)}`, {
+      headers: buildIcHeaders(ic),
+    });
+    if (res.status === 401 || res.status === 403) return "expired";
+    // IC usually answers an expired session by redirecting to its HTML
+    // login page (which fetch follows) rather than with a 401.
+    if (/\/portal\/students\/|login/i.test(res.url) && !/\/prism\/api\//i.test(res.url)) return "expired";
+    if (res.ok) {
+      return (res.headers.get("content-type") ?? "").includes("json") ? "valid" : "expired";
+    }
+    return "unknown";
+  } catch {
+    return "unknown";
   }
 }
 

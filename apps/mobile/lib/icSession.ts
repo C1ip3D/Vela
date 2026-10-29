@@ -72,6 +72,41 @@ export async function clearLastIcDistrict(): Promise<void> {
   await SecureStore.deleteItemAsync(IC_LAST_DISTRICT_KEY);
 }
 
+// Opt-in ("Stay signed in" on the login WebView): the IC username/password
+// the user typed into IC's own login page, kept only in this device's
+// Keychain so an expired IC session can be re-established silently (see
+// components/auth/SilentIcLogin.tsx). Never sent to the Vela backend.
+const IC_CREDENTIALS_KEY = "vela_ic_credentials";
+
+export interface StoredIcCredentials {
+  username: string;
+  password: string;
+  // The district these were saved for — never replayed against another one.
+  baseUrl: string;
+}
+
+export async function getStoredIcCredentials(): Promise<StoredIcCredentials | null> {
+  try {
+    const raw = await SecureStore.getItemAsync(IC_CREDENTIALS_KEY);
+    if (!raw) return null;
+    return JSON.parse(raw) as StoredIcCredentials;
+  } catch {
+    return null;
+  }
+}
+
+export async function saveStoredIcCredentials(credentials: StoredIcCredentials): Promise<void> {
+  await SecureStore.setItemAsync(IC_CREDENTIALS_KEY, JSON.stringify(credentials), {
+    // Readable after first unlock so a background refresh can re-login, but
+    // never migrated to another device via backup.
+    keychainAccessible: SecureStore.AFTER_FIRST_UNLOCK_THIS_DEVICE_ONLY,
+  });
+}
+
+export async function clearStoredIcCredentials(): Promise<void> {
+  await SecureStore.deleteItemAsync(IC_CREDENTIALS_KEY);
+}
+
 export function toIcSession(session: StoredIcSession): IcSession {
   return {
     cookies: session.authToken,
