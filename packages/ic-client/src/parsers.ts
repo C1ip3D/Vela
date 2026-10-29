@@ -1,4 +1,4 @@
-import type { ICAssignment, ICAssignmentGroup, ICCourse } from "./types";
+import type { ICAssignment, ICAssignmentGroup, ICCourse, ICResponsiveOffering, ICResponsiveSession } from "./types";
 
 // Infinite Campus's undocumented APIs return differently-shaped JSON per
 // district and IC version. These parsers hunt through the response
@@ -340,4 +340,72 @@ export function extractAssignmentsFromGrades(data: any, courseId: string): ICAss
     }
   }
   return [];
+}
+
+function numberOrNull(v: any): number | null {
+  const n = typeof v === "number" ? v : parseFloat(v);
+  return Number.isFinite(n) ? n : null;
+}
+
+function nonEmptyString(v: any): string | null {
+  return typeof v === "string" && v.trim() ? v.trim() : null;
+}
+
+/** IC sends "2026-10-29T00:00:00.000-07"; keep the district-local calendar day. */
+function icDateOnly(v: any): string | null {
+  const s = nonEmptyString(v);
+  return s && /^\d{4}-\d{2}-\d{2}/.test(s) ? s.slice(0, 10) : null;
+}
+
+function parseResponsiveOffering(raw: any): ICResponsiveOffering | null {
+  if (raw?.responsiveOfferingID == null) return null;
+  const maxStudents = numberOrNull(raw.maxStudents);
+  const currentStudents = numberOrNull(raw.currentStudents);
+  return {
+    id: String(raw.responsiveOfferingID),
+    name: nonEmptyString(raw.responsiveOfferingName) ?? "Untitled",
+    description: nonEmptyString(raw.description),
+    teacher: nonEmptyString(raw.teacherDisplay),
+    room: nonEmptyString(raw.roomName),
+    maxStudents,
+    currentStudents,
+    seatsLeft:
+      maxStudents != null && currentStudents != null ? Math.max(0, maxStudents - currentStudents) : null,
+    // IC's own portal treats a non-zero rosterID as "the student is enrolled here".
+    isSelected: !!raw.rosterID,
+    teacherAssigned: !!raw.teacherRequest,
+    teacherReason: nonEmptyString(raw.reason),
+  };
+}
+
+/**
+ * Parses /resources/prism/portal/responsiveSchedule. Like IC's portal, drops
+ * sessions with no offerings and sorts offerings by name; sessions come back
+ * in date order.
+ */
+export function parseResponsiveSessions(data: any): ICResponsiveSession[] {
+  const list: any[] = Array.isArray(data) ? data : Array.isArray(data?.data) ? data.data : [];
+  const sessions: ICResponsiveSession[] = [];
+
+  for (const raw of list) {
+    if (raw?.responsiveSessionID == null) continue;
+    const rawOfferings: any[] = Array.isArray(raw.offerings) ? raw.offerings : [];
+    const offerings = rawOfferings
+      .map(parseResponsiveOffering)
+      .filter((o): o is ICResponsiveOffering => o !== null)
+      .sort((a, b) => a.name.toLowerCase().localeCompare(b.name.toLowerCase()));
+    if (offerings.length === 0) continue;
+
+    sessions.push({
+      id: String(raw.responsiveSessionID),
+      name: nonEmptyString(raw.sessionName) ?? "Flex period",
+      startDate: icDateOnly(raw.startDate),
+      endDate: icDateOnly(raw.endDate),
+      isOpen: !!raw.sessionOpen,
+      offerings,
+      selectedOffering: offerings.find((o) => o.isSelected) ?? null,
+    });
+  }
+
+  return sessions.sort((a, b) => (a.startDate ?? "").localeCompare(b.startDate ?? ""));
 }

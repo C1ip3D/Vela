@@ -5,8 +5,9 @@ import {
   parseCoursesResilient,
   parseLegacyAssignments,
   parsePrismAssignments,
+  parseResponsiveSessions,
 } from "./parsers";
-import type { ICAssignmentGroup, ICCourse, IcSession } from "./types";
+import type { ICAssignmentGroup, ICCourse, ICResponsiveSession, IcSession } from "./types";
 
 /**
  * Fetches the student's active courses and current grades from Infinite
@@ -275,4 +276,71 @@ export async function fetchPersonInfo(session: IcSession): Promise<{ personId: s
   } catch {}
 
   return null;
+}
+
+/**
+ * Fetches the student's Responsive Scheduling (flex period) sessions, with
+ * every offering, its seats left, and which one the student is in. Read-only:
+ * IC's portal signs up via POST /resources/prism/portal/responsiveSchedule/update,
+ * which this deliberately never calls.
+ */
+export async function fetchResponsiveSchedule(session: IcSession): Promise<ICResponsiveSession[]> {
+  const q = icAppQuery(session);
+  const aq = session.appName ? `&appName=${encodeURIComponent(session.appName)}` : "";
+
+  // The endpoint is keyed by enrollment (calendar + schedule structure), so
+  // look those up first. An expired session fails here and is reported as such.
+  let students: any[];
+  try {
+    const res = await icFetch(session, `/api/portal/students${q}`);
+    if (!res.ok) throw new Error(String(res.status));
+    const data = await res.json();
+    students = Array.isArray(data) ? data : (data?.data ?? []);
+  } catch {
+    throw new Error("Session expired or unable to fetch the responsive schedule. Please log in again.");
+  }
+
+  const enrollments = students.flatMap((s: any) =>
+    (Array.isArray(s?.enrollments) ? s.enrollments : []).map((e: any) => ({
+      personID: e?.personID ?? s?.personID,
+      calendarID: e?.calendarID,
+      structureID: e?.structureID,
+    }))
+  ).filter((e) => e.personID != null && e.calendarID != null && e.structureID != null);
+
+  // Several enrollments can share a calendar + structure; ask IC once per pair.
+  const uniqueEnrollments = [
+    ...new Map(enrollments.map((e) => [`${e.personID}|${e.calendarID}|${e.structureID}`, e])).values(),
+  ];
+
+  const byId = new Map<string, ICResponsiveSession>();
+  let unreachable = 0;
+  for (const e of uniqueEnrollments) {
+    try {
+      const res = await icFetch(
+        session,
+        `/resources/prism/portal/responsiveSchedule?calendarID=${e.calendarID}&personID=${e.personID}&structureID=${e.structureID}${aq}`
+      );
+      if (res.status === 401 || res.status === 403) {
+        unreachable++;
+        continue;
+      }
+      // A school without Responsive Scheduling enabled answers with an
+      // error; that just means no flex periods for this enrollment.
+      if (!res.ok) continue;
+      for (const s of parseResponsiveSessions(await res.json())) byId.set(s.id, s);
+    } catch {
+      // Network failure, or IC redirected an expired session to its HTML login page.
+      unreachable++;
+    }
+  }
+
+  // Report expiry (so callers can re-login) rather than "no flex periods"
+  // when not a single enrollment could actually be read.
+  if (uniqueEnrollments.length > 0 && unreachable === uniqueEnrollments.length) {
+    throw new Error("Session expired or unable to fetch the responsive schedule. Please log in again.");
+  }
+
+  const sessions = [...byId.values()];
+  return sessions.sort((a, b) => (a.startDate ?? "").localeCompare(b.startDate ?? ""));
 }

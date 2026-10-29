@@ -47,3 +47,33 @@ export interface ICAssignmentGroup {
   score: number | null;
   assignments: ICDetailAssignment[];
 }
+
+export interface ICResponsiveOffering {
+  id: string;
+  name: string;
+  description: string | null;
+  teacher: string | null;
+  room: string | null;
+  maxStudents: number | null;
+  currentStudents: number | null;
+  /** null when IC didn't report capacity. Never negative. */
+  seatsLeft: number | null;
+  /** The student is currently scheduled into this offering. */
+  isSelected: boolean;
+  /** A teacher placed the student here, so the student can't switch out. */
+  teacherAssigned: boolean;
+  teacherReason: string | null;
+}
+
+/** One flex period (e.g. "Thursday ACCESS") and the offerings students can pick from. */
+export interface ICResponsiveSession {
+  id: string;
+  name: string;
+  /** YYYY-MM-DD, in the district's local time. */
+  startDate: string | null;
+  endDate: string | null;
+  /** Students can still sign up or switch. */
+  isOpen: boolean;
+  offerings: ICResponsiveOffering[];
+  selectedOffering: ICResponsiveOffering | null;
+}

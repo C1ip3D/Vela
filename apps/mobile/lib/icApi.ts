@@ -3,12 +3,19 @@ import {
   icAppQuery,
   fetchAssignments as fetchAssignmentsShared,
   fetchCourses as fetchCoursesShared,
+  fetchResponsiveSchedule as fetchResponsiveScheduleShared,
   searchIcDistricts,
 } from "@vela/ic-client";
-import type { ICAssignmentGroup, ICCourse, IcDistrictSearchResult } from "@vela/ic-client";
+import type {
+  ICAssignmentGroup,
+  ICCourse,
+  IcDistrictSearchResult,
+  ICResponsiveOffering,
+  ICResponsiveSession,
+} from "@vela/ic-client";
 import { getStoredIcSession, toIcSession, type StoredIcSession } from "./icSession";
 
-export type { ICCourse, ICAssignmentGroup, IcDistrictSearchResult };
+export type { ICCourse, ICAssignmentGroup, IcDistrictSearchResult, ICResponsiveOffering, ICResponsiveSession };
 
 // All of these call Infinite Campus straight from the device — no Vela
 // backend involved, so grades keep loading even when the backend is down.
@@ -28,6 +35,10 @@ export async function fetchAssignments(
   session?: StoredIcSession
 ): Promise<ICAssignmentGroup[]> {
   return fetchAssignmentsShared(await requireSession(session), courseId);
+}
+
+export async function fetchResponsiveSchedule(session?: StoredIcSession): Promise<ICResponsiveSession[]> {
+  return fetchResponsiveScheduleShared(await requireSession(session));
 }
 
 export async function searchDistricts(query: string, stateCode: string): Promise<IcDistrictSearchResult[]> {
