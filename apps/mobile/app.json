@@ -9,7 +9,8 @@
     "scheme": "vela",
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "com.avaneesh.vela"
+      "bundleIdentifier": "com.avaneesh.vela",
+      "appleTeamId": "R2257TJB25"
     },
     "android": {
       "adaptiveIcon": {
