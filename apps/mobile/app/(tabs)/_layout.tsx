@@ -1,6 +1,6 @@
 import { Tabs } from "expo-router";
 import { TouchableOpacity, Alert } from "react-native";
-import { LayoutDashboard, LogOut } from "lucide-react-native";
+import { CalendarCheck, LayoutDashboard, LogOut } from "lucide-react-native";
 import { useAuth } from "@/contexts/AuthContext";
 import { router } from "expo-router";
 import { IcReconnectGate } from "@/components/auth/IcReconnectGate";
@@ -49,6 +49,15 @@ export default function TabLayout() {
           title: "Dashboard",
           tabBarIcon: ({ color, size }) => (
             <LayoutDashboard size={size} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="schedule/index"
+        options={{
+          title: "Flex",
+          tabBarIcon: ({ color, size }) => (
+            <CalendarCheck size={size} color={color} />
           ),
         }}
       />
