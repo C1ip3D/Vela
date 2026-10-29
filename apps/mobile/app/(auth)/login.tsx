@@ -216,9 +216,6 @@ export default function LoginScreen() {
             {/* Continue to IC's own login page — shown after district selected */}
             {selectedDistrict && (
               <View>
-                <Text className="text-sm text-star-dim mb-4">
-                  You&apos;ll sign in directly on {selectedDistrict.district_name}&apos;s Infinite Campus page. Vela never sees your password.
-                </Text>
                 <TouchableOpacity
                   onPress={() => setShowWebView(true)}
                   disabled={icChecking}
