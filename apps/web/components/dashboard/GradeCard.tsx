@@ -2,7 +2,7 @@
 import Link from "next/link";
 import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
-import { gradeColor } from "@/lib/utils";
+import { gradeColorForPercent } from "@/lib/utils";
 import { AlertTriangle, Sparkles, Minus } from "lucide-react";
 
 interface Props {
@@ -23,7 +23,7 @@ export function GradeCard({ id, name, courseCode, courseType, currentGrade, lett
   const isCritical = hasGrade && (missingCount >= 3 || grade < 70);
   const isWarning = hasGrade && (missingCount >= 1 || grade < 80);
 
-  const gradeTextColor = hasGrade ? "text-emerald-400" : "text-[#4A5578]";
+  const gradeTextColor = hasGrade ? gradeColorForPercent(grade) : "text-[#4A5578]";
 
   return (
     <Link href={`/courses/${id}`}>
