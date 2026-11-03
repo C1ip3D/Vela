@@ -4,6 +4,7 @@ import {
   fetchAssignments as fetchAssignmentsShared,
   fetchCourses as fetchCoursesShared,
   fetchResponsiveSchedule as fetchResponsiveScheduleShared,
+  selectResponsiveOffering as selectResponsiveOfferingShared,
   searchIcDistricts,
 } from "@vela/ic-client";
 import type {
@@ -39,6 +40,13 @@ export async function fetchAssignments(
 
 export async function fetchResponsiveSchedule(session?: StoredIcSession): Promise<ICResponsiveSession[]> {
   return fetchResponsiveScheduleShared(await requireSession(session));
+}
+
+export async function selectResponsiveOffering(
+  target: { personId: string; calendarId: string; responsiveSessionId: string; offeringId: string },
+  session?: StoredIcSession
+): Promise<void> {
+  return selectResponsiveOfferingShared(await requireSession(session), target);
 }
 
 export async function searchDistricts(query: string, stateCode: string): Promise<IcDistrictSearchResult[]> {

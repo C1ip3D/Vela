@@ -74,6 +74,9 @@ export interface ICResponsiveSession {
   endDate: string | null;
   /** Students can still sign up or switch. */
   isOpen: boolean;
+  /** Needed to sign up; filled in from the enrollment the session was fetched for. */
+  personId?: string;
+  calendarId?: string;
   offerings: ICResponsiveOffering[];
   selectedOffering: ICResponsiveOffering | null;
 }

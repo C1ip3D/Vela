@@ -55,7 +55,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="schedule/index"
         options={{
-          title: "Flex",
+          title: "Schedule",
           tabBarIcon: ({ color, size }) => (
             <CalendarCheck size={size} color={color} />
           ),
