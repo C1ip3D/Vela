@@ -219,15 +219,15 @@ export default function LoginScreen() {
                 <TouchableOpacity
                   onPress={() => setShowWebView(true)}
                   disabled={icChecking}
-                  className="flex-row items-center justify-center gap-2 rounded-xl bg-vela-400"
+                  className="flex-row items-center justify-center gap-2 rounded-xl bg-accent"
                   style={{ height: 52, opacity: icChecking ? 0.5 : 1 }}
                 >
                   {icChecking ? (
-                    <ActivityIndicator color="white" size="small" />
+                    <ActivityIndicator color="#0C1220" size="small" />
                   ) : (
                     <>
-                      <Text className="text-lg font-semibold text-white">Continue to Infinite Campus</Text>
-                      <ArrowRight size={16} color="white" />
+                      <Text className="text-lg font-semibold text-accent-ink">Continue to Infinite Campus</Text>
+                      <ArrowRight size={16} color="#0C1220" />
                     </>
                   )}
                 </TouchableOpacity>
