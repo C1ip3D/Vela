@@ -41,11 +41,22 @@ const config: Config = {
           teal: "#14B8A6",
           rose: "#F43F5E",
         },
+        accent: {
+          DEFAULT: "#E879F9",
+          soft: "#F0ABFC",
+          ink: "#0C1220",
+        },
         track: {
           weighted: "#818CF8",
           unweighted: "#A5B4FC",
           term: "#34D399",
         },
+      },
+      borderColor: {
+        DEFAULT: "currentColor",
+      },
+      backdropBlur: {
+        sm: "8px",
       },
       fontFamily: {
         ui: ["Inter", "system-ui", "sans-serif"],

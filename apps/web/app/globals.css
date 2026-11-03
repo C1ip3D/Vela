@@ -1,9 +1,12 @@
-@import "tailwindcss";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
-@theme {
-  --color-accent: #E879F9;
-  --color-accent-soft: #F0ABFC;
-  --color-accent-ink: #0C1220;
+@layer base {
+  input::placeholder,
+  textarea::placeholder {
+    color: color-mix(in oklab, currentColor 50%, transparent);
+  }
 }
 
 html {
