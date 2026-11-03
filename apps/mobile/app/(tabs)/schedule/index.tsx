@@ -134,6 +134,13 @@ function OfferingRow({ offering, action }: { offering: ICResponsiveOffering; act
     <TouchableOpacity
       onPress={action?.onPress}
       disabled={!action || action.disabled}
+      accessibilityRole={action ? "button" : undefined}
+      accessibilityLabel={`${offering.name}, ${seatsLabel(offering)}`}
+      // The parent is a single VoiceOver element, so the nested chevron isn't reachable; expose it as an action.
+      accessibilityActions={hasMore ? [{ name: "toggle", label: open ? "Hide description" : "Show description" }] : undefined}
+      onAccessibilityAction={(e) => {
+        if (e.nativeEvent.actionName === "toggle") setOpen((v) => !v);
+      }}
       activeOpacity={0.6}
       className="rounded-xl px-3.5 py-3 mb-2"
       style={{
@@ -161,7 +168,14 @@ function OfferingRow({ offering, action }: { offering: ICResponsiveOffering; act
             </Text>
           </View>
           {hasMore ? (
-            <TouchableOpacity onPress={() => setOpen((v) => !v)} hitSlop={12} activeOpacity={0.6} className="mt-1.5">
+            <TouchableOpacity
+              onPress={() => setOpen((v) => !v)}
+              hitSlop={14}
+              activeOpacity={0.6}
+              className="mt-1.5"
+              accessibilityRole="button"
+              accessibilityLabel={open ? "Hide description" : "Show description"}
+            >
               {open ? <ChevronUp size={16} color="#8B98B8" /> : <ChevronDown size={16} color="#8B98B8" />}
             </TouchableOpacity>
           ) : null}
@@ -340,7 +354,13 @@ function SessionCard({
               style={{ flex: 1, color: "#E8ECF8", fontSize: 16, paddingVertical: 0 }}
             />
             {query ? (
-              <TouchableOpacity onPress={() => setQuery("")} hitSlop={10} activeOpacity={0.6}>
+              <TouchableOpacity
+                onPress={() => setQuery("")}
+                hitSlop={14}
+                activeOpacity={0.6}
+                accessibilityRole="button"
+                accessibilityLabel="Clear search"
+              >
                 <X size={15} color="#8B98B8" />
               </TouchableOpacity>
             ) : null}
@@ -397,7 +417,7 @@ export default function ScheduleScreen() {
   const selected = sessions.find((s) => s.id === pickedId) ?? sessions[0];
 
   return (
-    <SafeAreaView className="flex-1 bg-space-void">
+    <SafeAreaView edges={["top"]} className="flex-1 bg-space-void">
       {loading && !hasLoaded.current ? (
         <View className="flex-1 items-center justify-center">
           <Spinner size={40} />

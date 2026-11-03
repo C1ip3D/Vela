@@ -31,7 +31,7 @@ export default function CoursesScreen() {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-space-void">
+    <SafeAreaView edges={["top"]} className="flex-1 bg-space-void">
       {/* Header */}
       <View className="px-5 pt-5 pb-4" style={{ borderBottomWidth: 1, borderBottomColor: "#1C2A45" }}>
         <Text className="text-2xl font-bold text-star-bright">My Grades</Text>

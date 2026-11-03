@@ -3,7 +3,7 @@ import { View, Text, ScrollView, TouchableOpacity } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { useCourses } from "@/hooks/useCourses";
-import { gradeColor } from "@/lib/utils";
+import { gradeColorForPercent } from "@/lib/utils";
 import { AlertTriangle, BookOpen, Star } from "lucide-react-native";
 import { Spinner } from "@/components/ui/Skeleton";
 import { SectionLabel } from "@/components/ui/SectionLabel";
@@ -23,8 +23,7 @@ function LoadingDashboard() {
 // ── Grade progress bar ────────────────────────────────────────────────────────
 
 function GradeBar({ grade }: { grade: number }) {
-  const color =
-    grade >= 90 ? "#34D399" : grade >= 80 ? "#818CF8" : grade >= 70 ? "#F59E0B" : "#F43F5E";
+  const color = gradeColorForPercent(grade);
   return (
     <View className="h-1 rounded-full bg-space-border mt-2.5 overflow-hidden">
       <View
@@ -45,6 +44,10 @@ function GradeCard({ course }: { course: any }) {
       className="border border-space-border rounded-2xl bg-space-surface/50 mb-4"
       style={{ padding: 22 }}
       activeOpacity={0.65}
+      accessibilityRole="button"
+      accessibilityLabel={`${course.name.replace(/\s*\(.*?\)\s*$/, "")}, ${
+        grade != null ? `${grade.toFixed(2)} percent` : "no grade"
+      }${course.missingCount > 0 ? `, ${course.missingCount} missing` : ""}`}
     >
       <View style={{ flexDirection: "row", alignItems: "center" }}>
         {/* Left: name + code/term + missing */}
@@ -56,7 +59,7 @@ function GradeCard({ course }: { course: any }) {
             {course.name.replace(/\s*\(.*?\)\s*$/, "")}
           </Text>
           {course.teacher ? (
-            <Text style={{ fontSize: 13, color: "#4A5578" }}>
+            <Text style={{ fontSize: 14, color: "#8B98B8" }}>
               {course.teacher}
             </Text>
           ) : null}
@@ -71,7 +74,7 @@ function GradeCard({ course }: { course: any }) {
         {/* Right: percentage vertically centered */}
         <Text
           style={{
-            color: "#34D399",
+            color: grade != null ? gradeColorForPercent(grade) : "#8B98B8",
             fontSize: 28,
             fontWeight: "700",
             fontVariant: ["tabular-nums"],
@@ -87,7 +90,7 @@ function GradeCard({ course }: { course: any }) {
 // ── Screen ────────────────────────────────────────────────────────────────────
 
 export default function DashboardScreen() {
-  const { courses, loading, gpa } = useCourses();
+  const { courses, loading, gpa, error, refetch } = useCourses();
   const skipAnim = useRef(!loading).current;
   const totalMissing = courses.reduce((sum, c) => sum + c.missingCount, 0);
   const avgGrade =
@@ -97,7 +100,7 @@ export default function DashboardScreen() {
       : null;
 
   return (
-    <SafeAreaView className="flex-1 bg-space-void">
+    <SafeAreaView edges={["top"]} className="flex-1 bg-space-void">
       {loading ? (
         <LoadingDashboard />
       ) : (
@@ -179,7 +182,24 @@ export default function DashboardScreen() {
           <SectionLabel title="Current Courses" />
           </FadeSlide>
 
-          {courses.length === 0 ? (
+          {courses.length === 0 && error ? (
+            <View className="rounded-2xl border border-space-border bg-space-surface/30 p-8 items-center mt-1">
+              <AlertTriangle size={32} color="#F59E0B" />
+              <Text className="text-sm text-star-dim mt-3 text-center leading-6">
+                Couldn't load your courses.{"\n"}{error}
+              </Text>
+              <TouchableOpacity
+                onPress={() => refetch()}
+                accessibilityRole="button"
+                accessibilityLabel="Retry loading courses"
+                activeOpacity={0.7}
+                className="mt-4 rounded-xl border border-space-border px-5 justify-center"
+                style={{ minHeight: 44 }}
+              >
+                <Text style={{ fontSize: 16, color: "#A5B4FC" }}>Try again</Text>
+              </TouchableOpacity>
+            </View>
+          ) : courses.length === 0 ? (
             <FadeSlide delay={360} skip={skipAnim}>
             <View className="rounded-2xl border border-space-border bg-space-surface/30 p-10 items-center mt-1">
               <BookOpen size={36} color="#4A5578" />
