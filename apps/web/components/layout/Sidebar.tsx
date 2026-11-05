@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
   BookOpen,
+  CalendarDays,
   LogOut,
   ChevronLeft,
   ChevronRight,
@@ -16,6 +17,7 @@ import { useState } from "react";
 const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/courses", label: "Courses", icon: BookOpen },
+  { href: "/schedule", label: "Schedule", icon: CalendarDays },
 ];
 
 export function Sidebar({ role = "STUDENT" }: { role?: string }) {

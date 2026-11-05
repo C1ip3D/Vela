@@ -1,5 +1,5 @@
 import { Tabs } from "expo-router";
-import { CalendarCheck, LayoutDashboard, Settings } from "lucide-react-native";
+import { CalendarCheck, CalendarDays, LayoutDashboard, Settings } from "lucide-react-native";
 import { IcReconnectGate } from "@/components/auth/IcReconnectGate";
 
 export default function TabLayout() {
@@ -30,6 +30,15 @@ export default function TabLayout() {
           title: "Dashboard",
           tabBarIcon: ({ color, size }) => (
             <LayoutDashboard size={size} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="timetable/index"
+        options={{
+          title: "Timetable",
+          tabBarIcon: ({ color, size }) => (
+            <CalendarDays size={size} color={color} />
           ),
         }}
       />

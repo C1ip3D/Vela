@@ -36,6 +36,11 @@ enum DataSource {
   INFINITE_CAMPUS
 }
 
+enum ScheduleSource {
+  INFINITE_CAMPUS
+  MANUAL
+}
+
 // One Infinite Campus district instance (e.g. "dublinusd.infinitecampus.org").
 // IC course/section IDs are only unique *within* a district, so every
 // district-scoped identifier (Course.icCourseId) is scoped through this
@@ -76,6 +81,8 @@ model User {
   gpaSnapshots     GpaSnapshot[]
   advisorLogs      AdvisorLog[]
   assignmentGrades AssignmentGrade[]
+  scheduleEntries  ScheduleEntry[]
+  bellPeriods      BellPeriod[]
 
   @@unique([districtId, icPersonId])
   @@index([districtId])
@@ -115,7 +122,7 @@ model Enrollment {
   letterGrade    String?
   enrolledAt     DateTime
   isActive       Boolean  @default(true)
-  finalWeight    Float?   // user-set final exam weight (0–1); null = use DUSD 15% default
+  finalWeight    Float? // user-set final exam weight (0–1); null = use DUSD 15% default
 
   user   User   @relation(fields: [userId], references: [id])
   course Course @relation(fields: [courseId], references: [id])
@@ -186,4 +193,42 @@ model AssignmentGrade {
 
   @@unique([userId, courseId, assignmentKey])
   @@index([userId, courseId])
+}
+
+// One class meeting pattern for a student: a section in a period on a day type
+// (IC's "periodScheduleName", e.g. "Mon", "Tues/Fri", "Odd/Wed"). Replaced
+// wholesale on each IC sync, so rows aren't individually stable.
+model ScheduleEntry {
+  id         String         @id @default(cuid())
+  userId     String
+  sectionId  String
+  courseName String
+  teacher    String?
+  room       String?
+  period     String
+  dayType    String
+  termName   String?
+  startDate  String?
+  endDate    String?
+  source     ScheduleSource @default(INFINITE_CAMPUS)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+// A user-entered bell time: when `period` starts/ends on a given day type.
+// IC's roster payload carries no clock times, so these are always user-edited.
+model BellPeriod {
+  id      String @id @default(cuid())
+  userId  String
+  dayType String
+  period  String
+  start   String // 24h "HH:MM"
+  end     String // 24h "HH:MM"
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, dayType, period])
+  @@index([userId])
 }
