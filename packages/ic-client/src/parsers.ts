@@ -1,3 +1,4 @@
+import type { ScheduleEntry } from "@vela/types";
 import type { ICAssignment, ICAssignmentGroup, ICCourse, ICResponsiveOffering, ICResponsiveSession } from "./types";
 
 // Infinite Campus's undocumented APIs return differently-shaped JSON per
@@ -408,4 +409,59 @@ export function parseResponsiveSessions(data: any): ICResponsiveSession[] {
   }
 
   return sessions.sort((a, b) => (a.startDate ?? "").localeCompare(b.startDate ?? ""));
+}
+
+/**
+ * Parses IC's portal roster (`/resources/portal/roster`) into schedule
+ * entries, one per section + period, for the term(s) covering `today`.
+ *
+ * `dayTypeDays` maps a placement's `periodScheduleName` (lower-cased, e.g.
+ * "tues/fri") to weekdays (0 = Sunday). It is per school; unknown day types
+ * (such as a minimum-day schedule) are skipped, because the weekday rule
+ * already covers them and the bell variant for that date does the rest.
+ *
+ * `today` is "YYYY-MM-DD" in the school's timezone.
+ */
+export function parseRosterSchedule(
+  raw: unknown,
+  opts: { today: string; dayTypeDays: Record<string, number[]> }
+): ScheduleEntry[] {
+  const rosters: any[] = Array.isArray(raw) ? raw : [];
+  const years = rosters.map((r) => Number(r?.endYear)).filter((y) => Number.isFinite(y));
+  if (years.length === 0) return [];
+  const currentYear = Math.max(...years);
+
+  const byKey = new Map<string, ScheduleEntry>();
+  for (const roster of rosters) {
+    if (Number(roster?.endYear) !== currentYear) continue;
+    const placements: any[] = Array.isArray(roster?.sectionPlacements) ? roster.sectionPlacements : [];
+    for (const pl of placements) {
+      const start = String(pl?.term?.startDate ?? pl?.startDate ?? "");
+      const end = String(pl?.term?.endDate ?? pl?.endDate ?? "");
+      if (!start || !end || opts.today < start || opts.today > end) continue;
+
+      const days = opts.dayTypeDays[String(pl?.periodScheduleName ?? "").trim().toLowerCase()];
+      const period = String(pl?.periodName ?? "").trim();
+      if (!days || !period) continue;
+
+      const key = `${roster?.sectionID ?? pl?.sectionID}|${period}`;
+      const existing = byKey.get(key);
+      if (existing) {
+        existing.days = [...new Set([...(existing.days ?? []), ...days])].sort();
+        continue;
+      }
+      byKey.set(key, {
+        period,
+        courseName: String(roster?.courseName ?? pl?.courseName ?? "").trim(),
+        teacher: pl?.teacherDisplay ?? roster?.teacherDisplay ?? undefined,
+        room: pl?.roomName ?? roster?.roomName ?? undefined,
+        days: [...days],
+        term: pl?.termName ?? undefined,
+        source: "ic",
+      });
+    }
+  }
+  return [...byKey.values()].sort((a, b) =>
+    a.period.localeCompare(b.period, undefined, { numeric: true })
+  );
 }

@@ -6,7 +6,9 @@ import {
   parseLegacyAssignments,
   parsePrismAssignments,
   parseResponsiveSessions,
+  parseRosterSchedule,
 } from "./parsers";
+import type { ScheduleEntry } from "@vela/types";
 import type { ICAssignmentGroup, ICCourse, ICResponsiveSession, IcSession } from "./types";
 
 /**
@@ -387,4 +389,32 @@ export async function selectResponsiveOffering(
     console.warn("[responsiveSchedule/update] rejected", res.status, JSON.stringify(target), JSON.stringify(body));
     throw new Error(typeof body?.message === "string" && body.message ? body.message : "Infinite Campus rejected the change.");
   }
+}
+
+/**
+ * Fetches the student's class schedule (course, period, room, teacher, which
+ * weekdays it meets) from IC's portal roster, for the term(s) covering
+ * `opts.today`. IC's roster has no bell times; pair the result with a
+ * BellSchedule (see @vela/domain). Read-only.
+ *
+ * `opts.dayTypeDays` is the school's mapping from IC day-type names to
+ * weekdays (e.g. EMERALD_DAY_TYPE_DAYS in @vela/domain).
+ */
+export async function fetchSchedule(
+  session: IcSession,
+  opts: { today: string; dayTypeDays: Record<string, number[]> }
+): Promise<ScheduleEntry[]> {
+  const aq = session.appName ? `&appName=${encodeURIComponent(session.appName)}` : "";
+  let data: unknown;
+  try {
+    const res = await icFetch(session, `/resources/portal/roster?_crossSite=true${aq}`, {
+      cache: "no-store",
+    });
+    if (!res.ok) throw new Error(String(res.status));
+    data = await res.json();
+  } catch {
+    // Network failure, or IC redirected an expired session to its HTML login page.
+    throw new Error("Session expired or unable to fetch the schedule. Please log in again.");
+  }
+  return parseRosterSchedule(data, opts);
 }

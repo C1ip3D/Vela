@@ -1,0 +1,216 @@
+[
+ {
+  "sectionID": 1,
+  "courseName": "Test Calculus",
+  "roomName": "A-1",
+  "endYear": 2027,
+  "sectionPlacements": [
+   {
+    "sectionID": 1,
+    "termName": "Semester 1",
+    "periodName": "5",
+    "periodScheduleName": "Mon",
+    "teacherDisplay": "Teacher, Test",
+    "courseName": "Test Calculus",
+    "roomName": "A-1",
+    "term": {
+     "termName": "Semester 1",
+     "startDate": "2026-08-12",
+     "endDate": "2026-12-18"
+    }
+   },
+   {
+    "sectionID": 1,
+    "termName": "Semester 1",
+    "periodName": "5",
+    "periodScheduleName": "Tues/Fri",
+    "teacherDisplay": "Teacher, Test",
+    "courseName": "Test Calculus",
+    "roomName": "A-1",
+    "term": {
+     "termName": "Semester 1",
+     "startDate": "2026-08-12",
+     "endDate": "2026-12-18"
+    }
+   },
+   {
+    "sectionID": 1,
+    "termName": "Semester 1",
+    "periodName": "5",
+    "periodScheduleName": "Odd/Wed",
+    "teacherDisplay": "Teacher, Test",
+    "courseName": "Test Calculus",
+    "roomName": "A-1",
+    "term": {
+     "termName": "Semester 1",
+     "startDate": "2026-08-12",
+     "endDate": "2026-12-18"
+    }
+   },
+   {
+    "sectionID": 1,
+    "termName": "Semester 1",
+    "periodName": "5",
+    "periodScheduleName": "Min",
+    "teacherDisplay": "Teacher, Test",
+    "courseName": "Test Calculus",
+    "roomName": "A-1",
+    "term": {
+     "termName": "Semester 1",
+     "startDate": "2026-08-12",
+     "endDate": "2026-12-18"
+    }
+   },
+   {
+    "sectionID": 1,
+    "termName": "Semester 2",
+    "periodName": "5",
+    "periodScheduleName": "Mon",
+    "teacherDisplay": "Teacher, Test",
+    "courseName": "Test Calculus",
+    "roomName": "A-1",
+    "term": {
+     "termName": "Semester 2",
+     "startDate": "2027-01-11",
+     "endDate": "2027-05-27"
+    }
+   }
+  ]
+ },
+ {
+  "sectionID": 2,
+  "courseName": "Test Chemistry",
+  "roomName": "B-2",
+  "endYear": 2027,
+  "sectionPlacements": [
+   {
+    "sectionID": 2,
+    "termName": "Semester 1",
+    "periodName": "2",
+    "periodScheduleName": "Mon",
+    "teacherDisplay": "Teacher, Test",
+    "courseName": "Test Chemistry",
+    "roomName": "B-2",
+    "term": {
+     "termName": "Semester 1",
+     "startDate": "2026-08-12",
+     "endDate": "2026-12-18"
+    }
+   },
+   {
+    "sectionID": 2,
+    "termName": "Semester 1",
+    "periodName": "2",
+    "periodScheduleName": "Tues/Fri",
+    "teacherDisplay": "Teacher, Test",
+    "courseName": "Test Chemistry",
+    "roomName": "B-2",
+    "term": {
+     "termName": "Semester 1",
+     "startDate": "2026-08-12",
+     "endDate": "2026-12-18"
+    }
+   },
+   {
+    "sectionID": 2,
+    "termName": "Semester 1",
+    "periodName": "2",
+    "periodScheduleName": "Even/Thur",
+    "teacherDisplay": "Teacher, Test",
+    "courseName": "Test Chemistry",
+    "roomName": "B-2",
+    "term": {
+     "termName": "Semester 1",
+     "startDate": "2026-08-12",
+     "endDate": "2026-12-18"
+    }
+   },
+   {
+    "sectionID": 2,
+    "termName": "Semester 1",
+    "periodName": "2",
+    "periodScheduleName": "Min",
+    "teacherDisplay": "Teacher, Test",
+    "courseName": "Test Chemistry",
+    "roomName": "B-2",
+    "term": {
+     "termName": "Semester 1",
+     "startDate": "2026-08-12",
+     "endDate": "2026-12-18"
+    }
+   }
+  ]
+ },
+ {
+  "sectionID": 3,
+  "courseName": "Test Homeroom",
+  "roomName": "C-3",
+  "endYear": 2027,
+  "sectionPlacements": [
+   {
+    "sectionID": 3,
+    "termName": "Semester 1",
+    "periodName": "Access",
+    "periodScheduleName": "Mon",
+    "teacherDisplay": "Teacher, Test",
+    "courseName": "Test Homeroom",
+    "roomName": "C-3",
+    "term": {
+     "termName": "Semester 1",
+     "startDate": "2026-08-12",
+     "endDate": "2026-12-18"
+    }
+   },
+   {
+    "sectionID": 3,
+    "termName": "Semester 1",
+    "periodName": "Access",
+    "periodScheduleName": "Odd/Wed",
+    "teacherDisplay": "Teacher, Test",
+    "courseName": "Test Homeroom",
+    "roomName": "C-3",
+    "term": {
+     "termName": "Semester 1",
+     "startDate": "2026-08-12",
+     "endDate": "2026-12-18"
+    }
+   },
+   {
+    "sectionID": 3,
+    "termName": "Semester 1",
+    "periodName": "Access",
+    "periodScheduleName": "Even/Thur",
+    "teacherDisplay": "Teacher, Test",
+    "courseName": "Test Homeroom",
+    "roomName": "C-3",
+    "term": {
+     "termName": "Semester 1",
+     "startDate": "2026-08-12",
+     "endDate": "2026-12-18"
+    }
+   }
+  ]
+ },
+ {
+  "sectionID": 9,
+  "courseName": "Last Year Art",
+  "roomName": "D-4",
+  "endYear": 2026,
+  "sectionPlacements": [
+   {
+    "sectionID": 9,
+    "termName": "Semester 1",
+    "periodName": "1",
+    "periodScheduleName": "Mon",
+    "teacherDisplay": "Teacher, Test",
+    "courseName": "Last Year Art",
+    "roomName": "D-4",
+    "term": {
+     "termName": "Semester 1",
+     "startDate": "2025-08-12",
+     "endDate": "2025-12-19"
+    }
+   }
+  ]
+ }
+]
