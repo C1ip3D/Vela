@@ -4,6 +4,7 @@ import {
   fetchAssignments as fetchAssignmentsShared,
   fetchCourses as fetchCoursesShared,
   fetchResponsiveSchedule as fetchResponsiveScheduleShared,
+  fetchSchedule as fetchScheduleShared,
   selectResponsiveOffering as selectResponsiveOfferingShared,
   searchIcDistricts,
 } from "@vela/ic-client";
@@ -25,6 +26,13 @@ async function requireSession(session?: StoredIcSession) {
   const stored = session ?? (await getStoredIcSession());
   if (!stored) throw new Error("Not authenticated");
   return toIcSession(stored);
+}
+
+export async function fetchSchedule(
+  opts: { today: string; dayTypeDays: Record<string, number[]> },
+  session?: StoredIcSession
+) {
+  return fetchScheduleShared(await requireSession(session), opts);
 }
 
 export async function fetchCourses(session?: StoredIcSession): Promise<ICCourse[]> {

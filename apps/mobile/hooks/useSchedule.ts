@@ -1,11 +1,12 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { defaultsForHostname, getLocalParts } from "@vela/domain";
+import type { BellSchedule, ScheduleEntry } from "@vela/types";
 import { useIC } from "@/contexts/InfiniteCampusContext";
 import { api } from "@/lib/api";
-import { fetchSchedule as fetchIcSchedule, withIcReauth, type ICScheduleEntry } from "@/lib/icApi";
-import type { BellPeriod } from "@vela/domain";
+import { fetchSchedule as fetchIcSchedule, withIcReauth } from "@/lib/icApi";
 
-const BELLS_KEY = "vela_bell_periods";
+const CUSTOM_BELLS_KEY = "vela_custom_bells";
 const ENTRIES_KEY = "vela_schedule_entries";
 
 async function readJson<T>(key: string, fallback: T): Promise<T> {
@@ -19,36 +20,48 @@ async function readJson<T>(key: string, fallback: T): Promise<T> {
 
 export function useSchedule() {
   const { session, isConnected, isInitializing, reauth } = useIC();
-  const [entries, setEntries] = useState<ICScheduleEntry[]>([]);
-  const [bells, setBells] = useState<BellPeriod[]>([]);
+  const [entries, setEntries] = useState<ScheduleEntry[]>([]);
+  const [customBells, setCustomBells] = useState<BellSchedule[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const defaults = useMemo(() => {
+    try {
+      return defaultsForHostname(session ? new URL(session.baseUrl).hostname : null);
+    } catch {
+      return null;
+    }
+  }, [session]);
+  // The student's own bells win; otherwise their district's preset; otherwise none.
+  const bells = customBells ?? defaults?.bells ?? [];
 
   const load = useCallback(async () => {
     setError(null);
 
-    // Show the cached copy immediately; refresh from IC below.
     const [cachedEntries, cachedBells] = await Promise.all([
-      readJson<ICScheduleEntry[]>(ENTRIES_KEY, []),
-      readJson<BellPeriod[]>(BELLS_KEY, []),
+      readJson<ScheduleEntry[]>(ENTRIES_KEY, []),
+      readJson<BellSchedule[] | null>(CUSTOM_BELLS_KEY, null),
     ]);
     setEntries(cachedEntries);
-    setBells(cachedBells);
+    setCustomBells(cachedBells);
     if (cachedEntries.length > 0) setLoading(false);
 
-    // Bell times are shared with web through the backend; best-effort.
+    // Custom bells are shared with web through the backend; best-effort.
     api
       .get("/api/schedule")
       .then(({ data }) => {
-        if (Array.isArray(data?.bells) && data.bells.length > 0) {
-          setBells(data.bells);
-          AsyncStorage.setItem(BELLS_KEY, JSON.stringify(data.bells)).catch(() => {});
+        if (data?.bellsSource === "custom" && Array.isArray(data.bells)) {
+          setCustomBells(data.bells);
+          AsyncStorage.setItem(CUSTOM_BELLS_KEY, JSON.stringify(data.bells)).catch(() => {});
         }
       })
       .catch(() => {});
 
-    if (!isConnected || !session) {
+    if (!isConnected || !session || !defaults) {
       setLoading(false);
+      if (isConnected && !defaults && cachedEntries.length === 0) {
+        setError("Schedules aren't supported for your district yet.");
+      }
       return;
     }
 
@@ -57,7 +70,10 @@ export function useSchedule() {
       let usedSession = session;
       const fresh = await withIcReauth(session, reauth, (s) => {
         usedSession = s;
-        return fetchIcSchedule(s);
+        return fetchIcSchedule(
+          { today: getLocalParts(new Date(), defaults.timezone).dateKey, dayTypeDays: defaults.dayTypeDays },
+          s
+        );
       });
       if (fresh.length > 0) {
         setEntries(fresh);
@@ -74,25 +90,23 @@ export function useSchedule() {
           .catch(() => {});
       }
     } catch (e) {
-      if (cachedEntries.length === 0) {
-        setError(e instanceof Error ? e.message : "Could not load schedule");
-      }
+      if (cachedEntries.length === 0) setError(e instanceof Error ? e.message : "Could not load schedule");
     } finally {
       setLoading(false);
     }
-  }, [session, isConnected, reauth]);
+  }, [session, isConnected, reauth, defaults]);
 
   useEffect(() => {
     if (isInitializing) return;
     load();
   }, [isInitializing, load]);
 
-  const saveBells = useCallback(async (next: BellPeriod[]) => {
-    setBells(next);
-    await AsyncStorage.setItem(BELLS_KEY, JSON.stringify(next));
+  const saveBells = useCallback(async (next: BellSchedule[]) => {
+    setCustomBells(next);
+    await AsyncStorage.setItem(CUSTOM_BELLS_KEY, JSON.stringify(next));
     // Throws on failure so the editor can say it only saved locally.
     await api.put("/api/schedule/bell", { bells: next });
   }, []);
 
-  return { entries, bells, loading, error, isConnected, reload: load, saveBells };
+  return { entries, bells, usingPreset: customBells === null && !!defaults, loading, error, isConnected, reload: load, saveBells };
 }

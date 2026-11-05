@@ -2,14 +2,9 @@
 import { useState, useEffect, useCallback } from "react";
 import { useIC } from "@/contexts/InfiniteCampusContext";
 import { auth } from "@/lib/firebase";
-import type { BellPeriod, ScheduleClass } from "@vela/domain";
+import type { BellSchedule, ScheduleEntry } from "@vela/types";
 
-export interface ScheduleEntryDto extends ScheduleClass {
-  sectionId: string;
-  termName: string | null;
-  startDate: string | null;
-  endDate: string | null;
-}
+export type BellsSource = "custom" | "preset" | "none";
 
 async function authHeaders(): Promise<Record<string, string>> {
   const idToken = await auth.currentUser?.getIdToken();
@@ -21,8 +16,9 @@ async function authHeaders(): Promise<Record<string, string>> {
 
 export function useSchedule() {
   const { session, isConnected } = useIC();
-  const [entries, setEntries] = useState<ScheduleEntryDto[]>([]);
-  const [bells, setBells] = useState<BellPeriod[]>([]);
+  const [entries, setEntries] = useState<ScheduleEntry[]>([]);
+  const [bells, setBells] = useState<BellSchedule[]>([]);
+  const [bellsSource, setBellsSource] = useState<BellsSource>("none");
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -34,6 +30,7 @@ export function useSchedule() {
       const data = await res.json();
       setEntries(data.entries);
       setBells(data.bells);
+      setBellsSource(data.bellsSource);
       setError(null);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Could not load schedule");
@@ -67,7 +64,7 @@ export function useSchedule() {
   }, [session, load]);
 
   const saveBells = useCallback(
-    async (next: BellPeriod[]) => {
+    async (next: BellSchedule[]) => {
       const res = await fetch("/api/schedule/bell", {
         method: "PUT",
         headers: await authHeaders(),
@@ -75,6 +72,7 @@ export function useSchedule() {
       });
       if (!res.ok) throw new Error((await res.json().catch(() => null))?.error ?? "Could not save bell times");
       setBells(next);
+      setBellsSource("custom");
     },
     []
   );
@@ -99,5 +97,5 @@ export function useSchedule() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loading, isConnected]);
 
-  return { entries, bells, loading, syncing, error, isConnected, syncFromIC, saveBells };
+  return { entries, bells, bellsSource, loading, syncing, error, isConnected, syncFromIC, saveBells };
 }

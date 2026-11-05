@@ -1,16 +1,36 @@
 "use client";
 import { useEffect, useMemo, useState } from "react";
 import { RefreshCw, Clock } from "lucide-react";
-import { buildDay, currentAndNext, guessDayType, timeToMinutes, type BellPeriod } from "@vela/domain";
+import {
+  getCurrentAndNext,
+  getDaySlots,
+  getLocalParts,
+  parseClockTime,
+  pickBellSchedule,
+  upsertPeriodTimes,
+} from "@vela/domain";
+import type { BellPeriod, BellSchedule } from "@vela/types";
 import { useSchedule } from "@/hooks/useSchedule";
 import { cn } from "@/lib/utils";
 
+const WEEKDAYS = [
+  { day: 1, label: "Mon" },
+  { day: 2, label: "Tue" },
+  { day: 3, label: "Wed" },
+  { day: 4, label: "Thu" },
+  { day: 5, label: "Fri" },
+];
+
 const periodSort = (a: string, b: string) => a.localeCompare(b, undefined, { numeric: true });
+const fmtMin = (m: number) => {
+  const h = Math.floor(m / 60);
+  return `${((h + 11) % 12) + 1}:${String(m % 60).padStart(2, "0")} ${h < 12 ? "AM" : "PM"}`;
+};
 
 export default function SchedulePage() {
-  const { entries, bells, loading, syncing, error, isConnected, syncFromIC, saveBells } = useSchedule();
+  const { entries, bells, bellsSource, loading, syncing, error, isConnected, syncFromIC, saveBells } = useSchedule();
   const [now, setNow] = useState(() => new Date());
-  const [dayType, setDayType] = useState<string | null>(null);
+  const [picked, setPicked] = useState<number | null>(null);
   const [editing, setEditing] = useState(false);
 
   useEffect(() => {
@@ -18,25 +38,18 @@ export default function SchedulePage() {
     return () => clearInterval(t);
   }, []);
 
-  const dayTypes = useMemo(() => [...new Set(entries.map((e) => e.dayType))], [entries]);
-  const activeDayType = dayType ?? guessDayType(now, dayTypes) ?? dayTypes[0] ?? null;
+  const tz = bells[0]?.timezone;
+  const local = getLocalParts(now, tz);
+  const isSchoolDay = local.day >= 1 && local.day <= 5;
+  const day = picked ?? (isSchoolDay ? local.day : 1);
+  const viewingToday = day === local.day;
 
-  // Only show classes whose term covers today.
-  const pad = (n: number) => String(n).padStart(2, "0");
-  const today = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
-  const activeEntries = useMemo(
-    () => entries.filter((e) => (!e.startDate || e.startDate <= today) && (!e.endDate || e.endDate >= today)),
-    [entries, today]
-  );
-
+  // A date-pinned variant (finals, minimum day) only applies to its own date.
   const slots = useMemo(
-    () => (activeDayType ? buildDay(activeDayType, bells, activeEntries) : []),
-    [activeDayType, bells, activeEntries]
+    () => getDaySlots(entries, bells, day, viewingToday ? local.dateKey : undefined),
+    [entries, bells, day, viewingToday, local.dateKey]
   );
-  const nowMin = now.getHours() * 60 + now.getMinutes();
-  // Only highlight a live period when the viewed day type is today's.
-  const isToday = activeDayType !== null && activeDayType === guessDayType(now, dayTypes);
-  const current = isToday ? currentAndNext(slots, nowMin).current : null;
+  const status = viewingToday ? getCurrentAndNext(slots, local.minutes) : null;
 
   if (loading) {
     return (
@@ -56,7 +69,7 @@ export default function SchedulePage() {
           <p className="text-lg text-[#E8ECFF]">
             {isConnected ? (syncing ? "Loading your schedule…" : "No schedule found yet") : "Connect Infinite Campus to load your schedule"}
           </p>
-          {error && <p className="text-sm text-rose-400">{error}</p>}
+          {error && <p role="alert" className="text-sm text-rose-400">{error}</p>}
           {isConnected && !syncing && (
             <button onClick={syncFromIC} className="rounded-lg border border-[#818CF8]/30 bg-[#818CF8]/10 px-4 py-2 text-sm text-[#A5B4FC] hover:bg-[#818CF8]/20">
               Sync from Infinite Campus
@@ -67,24 +80,28 @@ export default function SchedulePage() {
     );
   }
 
+  // Classes meeting this weekday, with times when a bell schedule covers the period.
+  const dayEntries = entries
+    .filter((e) => !e.days?.length || e.days.includes(day))
+    .sort((a, b) => periodSort(a.period, b.period));
+  const slotFor = (period: string) => slots.find((s) => s.period === period);
+
   return (
     <div className="flex-1 p-6">
       <div className="mx-auto flex max-w-3xl flex-col gap-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex flex-wrap gap-2">
-            {dayTypes.map((d) => (
+          <div className="flex gap-2">
+            {WEEKDAYS.map(({ day: d, label }) => (
               <button
                 key={d}
-                onClick={() => setDayType(d)}
-                aria-pressed={d === activeDayType}
+                onClick={() => setPicked(d)}
+                aria-pressed={d === day}
                 className={cn(
                   "rounded-lg border px-3 py-1.5 text-sm transition-colors",
-                  d === activeDayType
-                    ? "border-[#818CF8]/30 bg-[#818CF8]/10 text-[#A5B4FC]"
-                    : "border-[#1C2A45]/60 text-[#8B98B8] hover:text-[#D4DAF0]"
+                  d === day ? "border-[#818CF8]/30 bg-[#818CF8]/10 text-[#A5B4FC]" : "border-[#1C2A45]/60 text-[#8B98B8] hover:text-[#D4DAF0]"
                 )}
               >
-                {d}
+                {label}
               </button>
             ))}
           </div>
@@ -102,45 +119,55 @@ export default function SchedulePage() {
 
         {error && <p role="alert" className="text-sm text-rose-400">{error}</p>}
 
-        {editing && activeDayType && (
+        {status && status.state !== "no-school" && (
+          <p className="text-sm text-[#8B98B8]">
+            {status.state === "in-class" && `In ${status.current!.entry.courseName} · ${status.minutesRemaining} min left`}
+            {(status.state === "before" || status.state === "passing") && `Next: ${status.next!.entry.courseName} in ${status.minutesRemaining} min`}
+            {status.state === "after" && "School's out for today"}
+          </p>
+        )}
+        {viewingToday && !isSchoolDay && <p className="text-sm text-[#8B98B8]">No school today.</p>}
+        {bells.length === 0 && (
+          <p className="text-sm text-amber-400">Add your bell times to see when each class meets.</p>
+        )}
+
+        {editing && (
           <BellEditor
-            key={activeDayType}
-            dayType={activeDayType}
-            periods={[...new Set(activeEntries.filter((e) => e.dayType === activeDayType).map((e) => e.period))].sort(periodSort)}
+            key={day}
+            day={day}
+            periods={[...new Set(dayEntries.map((e) => e.period))].sort(periodSort)}
             bells={bells}
+            usingPreset={bellsSource === "preset"}
             onSave={saveBells}
           />
         )}
 
         <div className="flex flex-col gap-3">
-          {activeEntries
-            .filter((e) => e.dayType === activeDayType)
-            .sort((a, b) => periodSort(a.period, b.period))
-            .map((e) => {
-              const slot = slots.find((s) => s.period === e.period);
-              const isNow = current?.period === e.period && current.cls?.courseName === e.courseName;
-              return (
-                <div
-                  key={`${e.sectionId}-${e.period}`}
-                  className={cn(
-                    "flex items-center justify-between rounded-xl border px-6 py-5 backdrop-blur-sm",
-                    isNow ? "border-[#818CF8]/40 bg-[#818CF8]/10" : "border-[#1C2A45]/60 bg-[#101828]/50"
-                  )}
-                >
-                  <div className="min-w-0">
-                    <p className="truncate text-lg font-medium text-[#E8ECFF]">{e.courseName}</p>
-                    <p className="text-sm text-[#4A5578]">
-                      Period {e.period}
-                      {e.room ? ` · Room ${e.room}` : ""}
-                      {e.teacher ? ` · ${e.teacher}` : ""}
-                    </p>
-                  </div>
-                  <span className="shrink-0 font-mono text-sm text-[#8B98B8]">
-                    {slot ? `${slot.start}–${slot.end}` : "Set bell time"}
-                  </span>
+          {dayEntries.map((e) => {
+            const slot = slotFor(e.period);
+            const isNow = status?.current?.entry === e;
+            return (
+              <div
+                key={`${e.period}-${e.courseName}`}
+                className={cn(
+                  "flex items-center justify-between rounded-xl border px-6 py-5 backdrop-blur-sm",
+                  isNow ? "border-[#818CF8]/40 bg-[#818CF8]/10" : "border-[#1C2A45]/60 bg-[#101828]/50"
+                )}
+              >
+                <div className="min-w-0">
+                  <p className="truncate text-lg font-medium text-[#E8ECFF]">{e.courseName}</p>
+                  <p className="text-sm text-[#4A5578]">
+                    Period {e.period}
+                    {e.room ? ` · Room ${e.room}` : ""}
+                    {e.teacher ? ` · ${e.teacher}` : ""}
+                  </p>
                 </div>
-              );
-            })}
+                <span className="shrink-0 font-mono text-sm text-[#8B98B8]">
+                  {slot ? `${fmtMin(slot.startMinutes)} – ${fmtMin(slot.endMinutes)}` : "No bell time"}
+                </span>
+              </div>
+            );
+          })}
         </div>
       </div>
     </div>
@@ -148,47 +175,50 @@ export default function SchedulePage() {
 }
 
 function BellEditor({
-  dayType,
+  day,
   periods,
   bells,
+  usingPreset,
   onSave,
 }: {
-  dayType: string;
+  day: number;
   periods: string[];
-  bells: BellPeriod[];
-  onSave: (next: BellPeriod[]) => Promise<void>;
+  bells: BellSchedule[];
+  usingPreset: boolean;
+  onSave: (next: BellSchedule[]) => Promise<void>;
 }) {
-  const initial = () =>
+  const variant = pickBellSchedule(bells, day);
+  const [draft, setDraft] = useState<Record<string, { start: string; end: string }>>(() =>
     Object.fromEntries(
       periods.map((p) => {
-        const b = bells.find((x) => x.dayType === dayType && x.period === p);
-        return [p, { start: b?.start ?? "", end: b?.end ?? "" }];
+        const bp = variant?.periods.find((x) => x.period === p);
+        return [p, { start: bp?.start ?? "", end: bp?.end ?? "" }];
       })
-    );
-  const [draft, setDraft] = useState<Record<string, { start: string; end: string }>>(initial);
+    )
+  );
   const [saving, setSaving] = useState(false);
-  const [err, setErr] = useState<string | null>(null);
-  const [saved, setSaved] = useState(false);
+  const [msg, setMsg] = useState<{ text: string; ok: boolean } | null>(null);
 
   const save = async () => {
-    setErr(null);
-    setSaved(false);
-    const mine: BellPeriod[] = [];
+    setMsg(null);
+    const times: BellPeriod[] = [];
     for (const p of periods) {
-      const { start, end } = draft[p] ?? { start: "", end: "" };
+      const { start, end } = draft[p];
       if (!start && !end) continue;
-      if (!start || !end || timeToMinutes(start) >= timeToMinutes(end)) {
-        setErr(`Period ${p}: end must be after start`);
+      const s = parseClockTime(start);
+      const e = parseClockTime(end);
+      if (s === null || e === null || e <= s) {
+        setMsg({ text: `Period ${p}: end must be after start`, ok: false });
         return;
       }
-      mine.push({ dayType, period: p, start, end });
+      times.push({ period: p, start, end });
     }
     setSaving(true);
     try {
-      await onSave([...bells.filter((b) => b.dayType !== dayType), ...mine]);
-      setSaved(true);
+      await onSave(upsertPeriodTimes(bells, day, times));
+      setMsg({ text: "Saved", ok: true });
     } catch (e) {
-      setErr(e instanceof Error ? e.message : "Could not save");
+      setMsg({ text: e instanceof Error ? e.message : "Could not save", ok: false });
     } finally {
       setSaving(false);
     }
@@ -196,23 +226,26 @@ function BellEditor({
 
   return (
     <div className="rounded-xl border border-[#1C2A45]/60 bg-[#101828]/50 p-5">
-      <p className="mb-1 text-sm font-medium text-[#E8ECFF]">Bell times · {dayType}</p>
-      <p className="mb-4 text-xs text-[#4A5578]">Infinite Campus doesn&apos;t provide period times, so enter them from your school&apos;s bell schedule.</p>
+      <p className="mb-1 text-sm font-medium text-[#E8ECFF]">Bell times{variant ? ` · ${variant.name}` : ""}</p>
+      <p className="mb-4 text-xs text-[#4A5578]">
+        {usingPreset
+          ? "Prefilled from your school's published bell schedule. Edit if it's wrong; this applies to every day sharing this schedule."
+          : "Infinite Campus doesn't provide period times, so enter them from your school's bell schedule."}
+      </p>
       <div className="flex flex-col gap-2">
         {periods.map((p) => (
           <div key={p} className="flex items-center gap-3 text-sm text-[#8B98B8]">
             <span className="w-20">Period {p}</span>
-            <input type="time" aria-label={`Period ${p} start`} value={draft[p]?.start ?? ""} onChange={(e) => setDraft((d) => ({ ...d, [p]: { ...d[p], start: e.target.value } }))} className="rounded border border-[#1C2A45] bg-[#0C1220] px-2 py-1 text-[#E8ECFF]" />
+            <input type="time" aria-label={`Period ${p} start`} value={draft[p].start} onChange={(e) => setDraft((d) => ({ ...d, [p]: { ...d[p], start: e.target.value } }))} className="rounded border border-[#1C2A45] bg-[#0C1220] px-2 py-1 text-[#E8ECFF]" />
             <span>to</span>
-            <input type="time" aria-label={`Period ${p} end`} value={draft[p]?.end ?? ""} onChange={(e) => setDraft((d) => ({ ...d, [p]: { ...d[p], end: e.target.value } }))} className="rounded border border-[#1C2A45] bg-[#0C1220] px-2 py-1 text-[#E8ECFF]" />
+            <input type="time" aria-label={`Period ${p} end`} value={draft[p].end} onChange={(e) => setDraft((d) => ({ ...d, [p]: { ...d[p], end: e.target.value } }))} className="rounded border border-[#1C2A45] bg-[#0C1220] px-2 py-1 text-[#E8ECFF]" />
           </div>
         ))}
       </div>
-      {err && <p role="alert" className="mt-3 text-sm text-rose-400">{err}</p>}
+      {msg && <p role="alert" className={cn("mt-3 text-sm", msg.ok ? "text-emerald-400" : "text-rose-400")}>{msg.text}</p>}
       <button onClick={save} disabled={saving} className="mt-4 rounded-lg border border-[#818CF8]/30 bg-[#818CF8]/10 px-4 py-1.5 text-sm text-[#A5B4FC] hover:bg-[#818CF8]/20 disabled:opacity-50">
         {saving ? "Saving…" : "Save"}
       </button>
-      {saved && <span className="ml-3 text-sm text-emerald-400">Saved</span>}
     </div>
   );
 }

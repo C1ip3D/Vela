@@ -39,6 +39,7 @@ enum DataSource {
 enum ScheduleSource {
   INFINITE_CAMPUS
   MANUAL
+  UPLOAD
 }
 
 // One Infinite Campus district instance (e.g. "dublinusd.infinitecampus.org").
@@ -82,7 +83,7 @@ model User {
   advisorLogs      AdvisorLog[]
   assignmentGrades AssignmentGrade[]
   scheduleEntries  ScheduleEntry[]
-  bellPeriods      BellPeriod[]
+  bellConfig       BellConfig?
 
   @@unique([districtId, icPersonId])
   @@index([districtId])
@@ -195,21 +196,18 @@ model AssignmentGrade {
   @@index([userId, courseId])
 }
 
-// One class meeting pattern for a student: a section in a period on a day type
-// (IC's "periodScheduleName", e.g. "Mon", "Tues/Fri", "Odd/Wed"). Replaced
-// wholesale on each IC sync, so rows aren't individually stable.
+// One class on a student's timetable: a section in a period, on given weekdays
+// (0 = Sunday). Mirrors @vela/types' ScheduleEntry. IC-sourced rows are
+// replaced wholesale on each sync, so rows aren't individually stable.
 model ScheduleEntry {
   id         String         @id @default(cuid())
   userId     String
-  sectionId  String
+  period     String
   courseName String
   teacher    String?
   room       String?
-  period     String
-  dayType    String
-  termName   String?
-  startDate  String?
-  endDate    String?
+  days       Int[]
+  term       String?
   source     ScheduleSource @default(INFINITE_CAMPUS)
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -217,18 +215,12 @@ model ScheduleEntry {
   @@index([userId])
 }
 
-// A user-entered bell time: when `period` starts/ends on a given day type.
-// IC's roster payload carries no clock times, so these are always user-edited.
-model BellPeriod {
-  id      String @id @default(cuid())
-  userId  String
-  dayType String
-  period  String
-  start   String // 24h "HH:MM"
-  end     String // 24h "HH:MM"
+// A student's own bell schedules (a JSON array of @vela/types' BellSchedule).
+// Absent row = use the district preset, if one exists. IC provides no clock times.
+model BellConfig {
+  userId    String   @id
+  schedules Json
+  updatedAt DateTime @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([userId, dayType, period])
-  @@index([userId])
 }
