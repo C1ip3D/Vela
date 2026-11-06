@@ -142,3 +142,28 @@ public func upsertPeriodTimes(_ bells: [BellSchedule], day: Int, times: [BellPer
     merged.append(contentsOf: incoming)
     return bells.map { $0.id == target.id ? { var b = $0; b.periods = merged; return b }($0) : $0 }
 }
+
+// MARK: Clock text input (port of normalize/display in apps/mobile/components/schedule/BellTimesSettings.tsx)
+
+/// Accepts "1:17 PM", "1:17p" or 24-hour "13:17"; returns 24-hour "HH:mm", or nil if it isn't a valid time.
+public func normalizeClockInput(_ text: String) -> String? {
+    let t = text.trimmingCharacters(in: .whitespaces)
+    guard let re = try? NSRegularExpression(pattern: #"^(\d{1,2}):([0-5]\d)\s*([ap]m?)?$"#, options: .caseInsensitive),
+          let m = re.firstMatch(in: t, range: NSRange(t.startIndex..., in: t)),
+          let hr = Range(m.range(at: 1), in: t), let mr = Range(m.range(at: 2), in: t),
+          var h = Int(t[hr]) else { return nil }
+    if let pr = Range(m.range(at: 3), in: t) {
+        guard (1...12).contains(h) else { return nil }
+        h = h % 12 + (t[pr].lowercased().hasPrefix("p") ? 12 : 0)
+    } else if h > 23 {
+        return nil
+    }
+    return String(format: "%02d:%@", h, String(t[mr]))
+}
+
+/// "13:17" → "1:17 PM". Returns the input unchanged if it isn't "HH:mm".
+public func formatClock12(_ hhmm: String) -> String {
+    guard let minutes = parseClockTime(hhmm) else { return hhmm }
+    let h = minutes / 60
+    return "\((h + 11) % 12 + 1):\(String(format: "%02d", minutes % 60)) \(h < 12 ? "AM" : "PM")"
+}

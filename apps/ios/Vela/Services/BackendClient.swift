@@ -63,18 +63,35 @@ struct BackendClient {
 
     private var base: URL? { AppConfig.apiBaseURL }
 
-    private func post<B: Encodable>(_ path: String, body: B, bearer: String? = nil) async throws -> Data {
+    private func send<B: Encodable>(_ method: String, _ path: String, body: B?, bearer: String? = nil) async throws -> Data {
         guard let base, let url = URL(string: path, relativeTo: base) else { throw BackendError.notConfigured }
         var req = URLRequest(url: url)
-        req.httpMethod = "POST"
+        req.httpMethod = method
         req.timeoutInterval = 15
         req.setValue("application/json", forHTTPHeaderField: "Content-Type")
         if let bearer { req.setValue("Bearer \(bearer)", forHTTPHeaderField: "Authorization") }
-        req.httpBody = try JSONEncoder().encode(body)
+        if let body { req.httpBody = try JSONEncoder().encode(body) }
         let (data, resp) = try await URLSession.shared.data(for: req)
         let status = (resp as? HTTPURLResponse)?.statusCode ?? 0
         guard (200..<300).contains(status) else { throw BackendError.badStatus(status) }
         return data
+    }
+
+    private func post<B: Encodable>(_ path: String, body: B, bearer: String? = nil) async throws -> Data {
+        try await send("POST", path, body: body, bearer: bearer)
+    }
+
+    /// The student's saved bell schedules, or nil when they haven't customised any (the backend then serves a preset).
+    func customBells(idToken: String) async throws -> [BellSchedule]? {
+        struct Response: Decodable { let bellsSource: String; let bells: [BellSchedule] }
+        let data = try await send("GET", "/api/schedule", body: Optional<String>.none, bearer: idToken)
+        let r = try JSONDecoder().decode(Response.self, from: data)
+        return r.bellsSource == "custom" ? r.bells : nil
+    }
+
+    func saveBells(_ bells: [BellSchedule], idToken: String) async throws {
+        struct Body: Encodable { let bells: [BellSchedule] }
+        _ = try await send("PUT", "/api/schedule/bell", body: Body(bells: bells), bearer: idToken)
     }
 
     /// Backend re-verifies the IC cookies against the district server, then mints a Firebase custom token.

@@ -30,8 +30,9 @@ Debug builds accept a `-VelaDemo` launch argument: skips sign-in and shows fixtu
 
 - `POST /api/ic/mint-token` — `{cookies, baseUrl, appName, districtName, stateCode}` → `{firebaseCustomToken, personId, displayName}`
 - `POST /api/ic/courses` — Bearer Firebase ID token; best-effort grade snapshot
+- `GET /api/schedule` (custom `bells` only) and `PUT /api/schedule/bell` — bell times shared with web
 
-Both are the same routes the Expo app uses, so the Next.js → Hono port only has to preserve them.
+These are the same routes the Expo app uses, so the Next.js → Hono port only has to preserve them.
 
 ## Porting notes
 
@@ -40,7 +41,7 @@ Both are the same routes the Expo app uses, so the Next.js → Hono port only ha
 
 ## Not yet ported (parity gaps vs apps/mobile)
 
-- Bell-time editing (the district preset is used; custom bells are read if present)
+- "Reset to school schedule" for edited bell times (the backend has no delete route yet)
 - Responsive scheduling / flex-period picker (`Schedule` tab)
 - Silent IC re-login with saved credentials (an expired session now returns to sign-in)
 - Finals/study coach

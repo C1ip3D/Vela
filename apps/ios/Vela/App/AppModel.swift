@@ -47,6 +47,7 @@ final class AppModel {
     // Schedule
     private(set) var scheduleEntries: [ScheduleEntry] = []
     private(set) var customBells: [BellSchedule]?
+    enum BellSaveResult { case synced, localOnly }
     private(set) var scheduleState: Load = .idle
 
     private let backend = BackendClient()
@@ -221,8 +222,33 @@ final class AppModel {
 
     // MARK: Schedule
 
+    /// Saves the student's own bell times on-device, then to their Vela account (shared with web). Local save always succeeds.
+    func saveBells(_ next: [BellSchedule]) async -> BellSaveResult {
+        customBells = next
+        #if DEBUG
+        if DemoData.isEnabled { return .localOnly } // never persist demo edits
+        #endif
+        Persistence.save(next, for: Key.bells)
+        guard FirebaseSession.shared.isAvailable, let token = await FirebaseSession.shared.idToken() else { return .localOnly }
+        do {
+            try await backend.saveBells(next, idToken: token)
+            return .synced
+        } catch {
+            return .localOnly
+        }
+    }
+
+    /// Best-effort: pick up bell times the student saved from another device or web.
+    private func pullCustomBells() async {
+        guard FirebaseSession.shared.isAvailable, let token = await FirebaseSession.shared.idToken(),
+              let remote = try? await backend.customBells(idToken: token) else { return }
+        customBells = remote
+        Persistence.save(remote, for: Key.bells)
+    }
+
     func loadSchedule(force: Bool = false) async {
         guard session != nil else { return }
+        Task { await pullCustomBells() }
         if scheduleState == .loading { return }
         if !force, scheduleState == .loaded { return }
         guard let defaults = districtDefaults else {
