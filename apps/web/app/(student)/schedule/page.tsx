@@ -129,7 +129,7 @@ function entriesForDay(entries: ScheduleEntry[], day: number): ScheduleEntry[] {
     .filter((e) => !e.days?.length || e.days.includes(day))
     .sort((a, b) => periodSort(a.period, b.period))
     // IC can list the same class twice (e.g. one row per term); show it once.
-    .filter((e, i, all) => all.findIndex((x) => x.period === e.period && x.courseName === e.courseName && x.room === e.room) === i);
+    .filter((e, i, all) => all.findIndex((x) => x.period === e.period && x.courseName === e.courseName && x.room === e.room && x.teacher === e.teacher) === i);
 }
 
 function DayCards({
@@ -152,12 +152,12 @@ function DayCards({
 
   return (
     <>
-      {dayEntries.map((e) => {
+      {dayEntries.map((e, idx) => {
         const slot = slots.find((s) => s.period === e.period);
         const isNow = current?.entry === e;
         return (
           <div
-            key={`${e.period}-${e.courseName}-${e.room ?? ""}`}
+            key={`${idx}-${e.period}-${e.courseName}-${e.room ?? ""}-${e.teacher ?? ""}`}
             className={cn(
               "flex items-center justify-between rounded-xl border px-6 py-5 backdrop-blur-sm",
               isNow ? "border-[#818CF8]/40 bg-[#818CF8]/10" : "border-[#1C2A45]/60 bg-[#101828]/50"
