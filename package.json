@@ -7,11 +7,11 @@
     "packages/*"
   ],
   "scripts": {
-    "postinstall": "npm run db:generate && node scripts/link-next-for-eslint.js",
-    "dev": "npm run dev -w @vela/web",
-    "build": "npm run build -w @vela/web",
-    "start": "npm run start -w @vela/web",
-    "lint": "npm run lint -w @vela/web",
+    "postinstall": "npm run db:generate",
+    "dev": "npm run dev -w @vela/api",
+    "build": "npm run typecheck -w @vela/api",
+    "start": "npm run start -w @vela/api",
+    "lint": "npm run typecheck -w @vela/api",
     "mobile": "npm run start -w @vela/mobile",
     "db:generate": "npm run generate -w @vela/db",
     "db:migrate": "npm run migrate -w @vela/db",
