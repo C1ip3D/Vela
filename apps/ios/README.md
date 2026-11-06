@@ -36,13 +36,13 @@ python3 apps/ios/Scripts/mock_ic.py 8099        # login: student / pw123
 `-VelaMockStale` starts signed in with an expired session and saved credentials (silent re-login); add `-VelaMockBadPassword` to see it fall back to sign-in.
 Use a signed simulator build (the default Xcode build): with `CODE_SIGNING_ALLOWED=NO` the Keychain is unavailable and nothing is saved.
 
-## Backend contract (unchanged, Hono-compatible)
+## Backend contract (served by the Hono `apps/api`)
 
 - `POST /api/ic/mint-token` — `{cookies, baseUrl, appName, districtName, stateCode}` → `{firebaseCustomToken, personId, displayName}`
 - `POST /api/ic/courses` — Bearer Firebase ID token; best-effort grade snapshot
-- `GET /api/schedule` (custom `bells` only) and `PUT /api/schedule/bell` — bell times shared with web
+- `GET /api/schedule` (custom `bells` only) and `PUT /api/schedule/bell` — bell times shared with web (served by `apps/api`)
 
-These are the same routes the Expo app uses, so the Next.js → Hono port only has to preserve them.
+Same routes the Expo app uses; keep them stable and both clients keep working.
 
 ## Porting notes
 
