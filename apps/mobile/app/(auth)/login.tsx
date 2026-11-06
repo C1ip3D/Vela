@@ -145,7 +145,7 @@ export default function LoginScreen() {
     try {
       // The Vela backend never observed this WebView login, so before
       // minting a Firebase token it re-verifies these cookies against IC's
-      // real server (see apps/web/app/api/ic/mint-token) — this call is
+      // real server (see apps/api/src/routes/ic.ts) — this call is
       // what stands in for the account-takeover check that a plain
       // client-side "it worked" signal can't provide.
       const { data } = await api.post("/api/ic/mint-token", {

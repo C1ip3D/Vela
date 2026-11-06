@@ -9,7 +9,7 @@ import { getAuth, type Auth, type UserRecord } from "firebase-admin/auth";
 //
 // IMPORTANT: the service-account key must be read from a var WITHOUT the
 // NEXT_PUBLIC_ prefix. Every existing Firebase var in this repo uses that
-// prefix (see apps/web/lib/firebase.ts), and Next.js inlines anything with
+// prefix (it was shared with the old Next.js web client), and Next.js inlines anything with
 // that prefix into the client bundle — using it here would ship the
 // service-account key to every browser.
 let adminApp: App | null = null;
@@ -70,7 +70,7 @@ export interface MintCustomTokenResult {
  * Mints a Firebase custom token for a verified Infinite Campus identity.
  *
  * Callers MUST have already verified a real IC login server-side (see
- * apps/web/app/api/ic/mint-token) — this
+ * apps/api/src/routes/ic.ts) — this
  * function does no verification of its own. It only maps a
  * already-verified identity onto a Firebase uid (reusing an existing
  * account when one exists, so this is a no-op migration for anyone who

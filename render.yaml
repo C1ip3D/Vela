@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: vela-api
+    runtime: node
+    plan: free
+    buildCommand: npm ci --include=dev
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: DATABASE_URL
+        sync: false
+      - key: NEXT_PUBLIC_FIREBASE_PROJECT_ID
+        sync: false
+      - key: FIREBASE_SERVICE_ACCOUNT_KEY_BASE64
+        sync: false
