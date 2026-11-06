@@ -3,10 +3,9 @@ import Link from "next/link";
 import { useCourses } from "@/hooks/useCourses";
 import { useIC } from "@/contexts/InfiniteCampusContext";
 import { ChevronRight, AlertTriangle } from "lucide-react";
+import { gradeColorForPercent } from "@/lib/utils";
 
-function gradeColor(_grade: number): string {
-  return "text-emerald-400";
-}
+const gradeColor = gradeColorForPercent;
 
 export default function CoursesPage() {
   const { isConnected } = useIC();

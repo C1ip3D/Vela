@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useIC } from "@/contexts/InfiniteCampusContext";
 import { api } from "@/lib/api";
 import { fetchCourses as fetchIcCourses, withIcReauth } from "@/lib/icApi";
@@ -40,8 +40,14 @@ export function useCourses() {
   const [courses, setCourses] = useState<NormalizedCourse[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  // Refetch when *who* is signed in changes, not every time reauth swaps in
+  // fresh cookies for the same student (the in-flight fetch already retried
+  // with them via withIcReauth).
+  const sessionRef = useRef(session);
+  sessionRef.current = session;
+  const sessionKey = session ? `${session.baseUrl}|${session.personId ?? ""}` : null;
 
-  const fetchCourses = useCallback(async (currentSession = session) => {
+  const fetchCourses = useCallback(async (currentSession = sessionRef.current) => {
     if (!isConnected || !currentSession) {
       setCourses([]);
       setLoading(false);
@@ -95,7 +101,8 @@ export function useCourses() {
     } finally {
       setLoading(false);
     }
-  }, [session, isConnected, reauth]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sessionKey, isConnected, reauth]);
 
   useEffect(() => {
     // Wait until SecureStore has been read before deciding whether to fetch

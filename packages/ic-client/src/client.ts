@@ -28,6 +28,9 @@ export function icAppQuery(session: IcSession): string {
 }
 
 /** Fetches a path relative to the session's IC district base URL, with auth headers attached. */
-export async function icFetch(session: IcSession, path: string): Promise<Response> {
-  return fetch(`${session.baseUrl}${path}`, { headers: buildIcHeaders(session) });
+export async function icFetch(session: IcSession, path: string, init?: RequestInit): Promise<Response> {
+  return fetch(`${session.baseUrl}${path}`, {
+    ...init,
+    headers: { ...buildIcHeaders(session), ...(init?.headers as Record<string, string> | undefined) },
+  });
 }

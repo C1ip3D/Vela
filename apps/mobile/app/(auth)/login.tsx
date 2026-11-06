@@ -130,6 +130,10 @@ export default function LoginScreen() {
   const [selectedDistrict, setSelectedDistrict] = useState<District | null>(null);
   const [showWebView, setShowWebView] = useState(false);
   const [mintError, setMintError] = useState<string | null>(null);
+  // True from the moment IC login succeeds until we navigate away — covers
+  // the mint-token / Firebase sign-in / IC data bootstrap gap in which the
+  // WebView modal is already closed but nothing else on screen has changed.
+  const [isFinishing, setIsFinishing] = useState(false);
 
   useEffect(() => {
     if (user) router.replace("/(tabs)/dashboard");
@@ -137,6 +141,7 @@ export default function LoginScreen() {
 
   const handleWebViewSuccess = async (result: IcLoginResult, district: StoredIcDistrict) => {
     setMintError(null);
+    setIsFinishing(true);
     try {
       // The Vela backend never observed this WebView login, so before
       // minting a Firebase token it re-verifies these cookies against IC's
@@ -155,11 +160,15 @@ export default function LoginScreen() {
         personId: data.personId,
         displayName: data.displayName ?? null,
       });
-      if (!session) return;
+      if (!session) {
+        setIsFinishing(false);
+        return;
+      }
       router.replace("/(tabs)/dashboard");
     } catch (e) {
       console.error("Sign-in error:", e);
       setMintError("Signed into Infinite Campus, but couldn't complete sign-in. Please try again.");
+      setIsFinishing(false);
     }
   };
 
@@ -216,21 +225,18 @@ export default function LoginScreen() {
             {/* Continue to IC's own login page — shown after district selected */}
             {selectedDistrict && (
               <View>
-                <Text className="text-sm text-star-dim mb-4">
-                  You&apos;ll sign in directly on {selectedDistrict.district_name}&apos;s Infinite Campus page. Vela never sees your password.
-                </Text>
                 <TouchableOpacity
                   onPress={() => setShowWebView(true)}
-                  disabled={icChecking}
-                  className="flex-row items-center justify-center gap-2 rounded-xl bg-vela-400"
-                  style={{ height: 52, opacity: icChecking ? 0.5 : 1 }}
+                  disabled={icChecking || isFinishing}
+                  className="flex-row items-center justify-center gap-2 rounded-xl bg-accent"
+                  style={{ height: 52, opacity: icChecking || isFinishing ? 0.5 : 1 }}
                 >
-                  {icChecking ? (
-                    <ActivityIndicator color="white" size="small" />
+                  {icChecking || isFinishing ? (
+                    <ActivityIndicator color="#0C1220" size="small" />
                   ) : (
                     <>
-                      <Text className="text-lg font-semibold text-white">Continue to Infinite Campus</Text>
-                      <ArrowRight size={16} color="white" />
+                      <Text className="text-lg font-semibold text-accent-ink">Continue to Infinite Campus</Text>
+                      <ArrowRight size={16} color="#0C1220" />
                     </>
                   )}
                 </TouchableOpacity>
@@ -239,6 +245,28 @@ export default function LoginScreen() {
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
+
+      {/* Covers the form while we finish signing in, so the screen the
+          WebView modal reveals doesn't read as "sent back to login". */}
+      {isFinishing && (
+        <View
+          style={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            alignItems: "center",
+            justifyContent: "center",
+            backgroundColor: "#03060D",
+            paddingHorizontal: 28,
+          }}
+        >
+          <ActivityIndicator color="#34D399" size="large" />
+          <Text className="mt-6 text-xl font-semibold text-emerald-400">Signed in to Infinite Campus</Text>
+          <Text className="mt-2 text-center text-base text-slate-400">Loading your classes…</Text>
+        </View>
+      )}
 
       {selectedDistrict && (
         <Modal visible={showWebView} animationType="slide" onRequestClose={() => setShowWebView(false)}>

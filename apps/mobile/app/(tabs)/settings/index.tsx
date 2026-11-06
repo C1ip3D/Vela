@@ -1,7 +1,44 @@
-import { View } from "react-native";
+import { View, Text, TouchableOpacity, Alert } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { router } from "expo-router";
+import { LogOut } from "lucide-react-native";
+import { useAuth } from "@/contexts/AuthContext";
 
-// This screen is never navigated to — the tab button in _layout.tsx intercepts
-// the press and fires the sign-out alert directly without routing here.
-export default function SettingsStub() {
-  return <View />;
+export default function SettingsScreen() {
+  const { signOut } = useAuth();
+
+  const handleSignOut = () => {
+    Alert.alert("Sign Out", "Are you sure you want to sign out?", [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Sign Out",
+        style: "destructive",
+        onPress: async () => {
+          await signOut();
+          router.replace("/(auth)/login");
+        },
+      },
+    ]);
+  };
+
+  return (
+    <SafeAreaView edges={["top"]} className="flex-1 bg-space-void">
+      <View style={{ padding: 20 }}>
+        <Text className="text-star-bright" style={{ fontSize: 28, fontWeight: "600", marginBottom: 24 }}>
+          Settings
+        </Text>
+        <TouchableOpacity
+          onPress={handleSignOut}
+          activeOpacity={0.7}
+          accessibilityRole="button"
+          accessibilityLabel="Sign out"
+          className="flex-row items-center rounded-2xl border border-space-border bg-space-surface/50"
+          style={{ padding: 18, minHeight: 56, gap: 12 }}
+        >
+          <LogOut size={20} color="#F87171" />
+          <Text style={{ fontSize: 17, color: "#F87171" }}>Sign Out</Text>
+        </TouchableOpacity>
+      </View>
+    </SafeAreaView>
+  );
 }

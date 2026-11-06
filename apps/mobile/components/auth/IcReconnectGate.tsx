@@ -7,10 +7,10 @@ import { useIC } from "@/contexts/InfiniteCampusContext";
 import { IcLoginWebView, type IcLoginResult } from "./IcLoginWebView";
 
 // Shown in place of the tab screens whenever the stored IC session has
-// expired (see InfiniteCampusContext.reauth()) and can't be silently
-// refreshed — there's no password to replay with the WebView-based login,
-// so the user re-authenticates on IC's own page, but skips district search
-// since lastDistrict remembers where they last signed in.
+// expired and InfiniteCampusContext.reauth() couldn't silently replace it
+// (no saved "Stay signed in" login, it was rejected, or an SSO-only
+// district) — the user re-authenticates on IC's own page, but skips
+// district search since lastDistrict remembers where they last signed in.
 export function IcReconnectGate({ children }: { children: React.ReactNode }) {
   const { isConnected, isInitializing, lastDistrict, completeLogin } = useIC();
   const [showWebView, setShowWebView] = useState(false);

@@ -7,6 +7,10 @@ const cache = new Map<string, any[]>();
 
 export function useAssignments(courseId: string | undefined) {
   const { session, reauth } = useIC();
+  // See useCourses: key on the student, not the cookie string.
+  const sessionRef = useRef(session);
+  sessionRef.current = session;
+  const sessionKey = session ? `${session.baseUrl}|${session.personId ?? ""}` : null;
 
   const [groups, setGroups] = useState<any[]>(() => (courseId ? cache.get(courseId) : undefined) ?? []);
   const [loading, setLoading] = useState(() => !courseId || !cache.has(courseId));
@@ -27,6 +31,7 @@ export function useAssignments(courseId: string | undefined) {
     setLoading(!nowCached);
     setError(null);
 
+    const session = sessionRef.current;
     if (!session) {
       setLoading(false);
       return;
@@ -58,7 +63,7 @@ export function useAssignments(courseId: string | undefined) {
     })();
 
     return () => { cancelled = true; };
-  }, [courseId, session, reauth]);
+  }, [courseId, sessionKey, reauth]);
 
   return { groups, setGroups, loading, error, hadCacheOnMount };
 }

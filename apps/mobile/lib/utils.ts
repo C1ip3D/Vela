@@ -7,9 +7,13 @@ export function cn(...inputs: ClassValue[]) {
 
 export function gradeColor(letter: string): string {
   if (letter.startsWith("A")) return "#34D399"; // emerald-400
-  if (letter.startsWith("B")) return "#818CF8"; // vela-400
-  if (letter.startsWith("C")) return "#F59E0B"; // amber-400
-  return "#F43F5E"; // rose-500
+  if (letter.startsWith("B")) return "#A7F3D0"; // emerald-200 (lighter green)
+  if (letter.startsWith("C")) return "#FACC15"; // yellow-400
+  return "#EF4444"; // red-500 (D/F)
+}
+
+export function gradeColorForPercent(pct: number): string {
+  return gradeColor(pct >= 90 ? "A" : pct >= 80 ? "B" : pct >= 70 ? "C" : "F");
 }
 
 export function severityColor(severity: string) {

@@ -1,27 +1,8 @@
 import { Tabs } from "expo-router";
-import { TouchableOpacity, Alert } from "react-native";
-import { LayoutDashboard, LogOut } from "lucide-react-native";
-import { useAuth } from "@/contexts/AuthContext";
-import { router } from "expo-router";
+import { CalendarCheck, LayoutDashboard, Settings } from "lucide-react-native";
 import { IcReconnectGate } from "@/components/auth/IcReconnectGate";
 
 export default function TabLayout() {
-  const { signOut } = useAuth();
-
-  const handleSignOut = () => {
-    Alert.alert("Sign Out", "Are you sure you want to sign out?", [
-      { text: "Cancel", style: "cancel" },
-      {
-        text: "Sign Out",
-        style: "destructive",
-        onPress: async () => {
-          await signOut();
-          router.replace("/(auth)/login");
-        },
-      },
-    ]);
-  };
-
   return (
     <IcReconnectGate>
     <Tabs
@@ -53,22 +34,24 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
+        name="schedule/index"
+        options={{
+          title: "Schedule",
+          tabBarIcon: ({ color, size }) => (
+            <CalendarCheck size={size} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
         name="courses/index"
         options={{ href: null }}
       />
       <Tabs.Screen
         name="settings/index"
         options={{
-          title: "Sign Out",
+          title: "Settings",
           tabBarIcon: ({ color, size }) => (
-            <LogOut size={size} color={color} />
-          ),
-          tabBarButton: (props) => (
-            <TouchableOpacity
-              {...props}
-              onPress={handleSignOut}
-              activeOpacity={0.7}
-            />
+            <Settings size={size} color={color} />
           ),
         }}
       />
