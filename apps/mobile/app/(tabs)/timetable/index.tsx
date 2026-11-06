@@ -1,30 +1,26 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, ScrollView, TouchableOpacity, TextInput } from "react-native";
+import { View, Text, ScrollView, TouchableOpacity } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import {
   getCurrentAndNext,
   getDaySlots,
   getLocalParts,
-  parseClockTime,
-  pickBellSchedule,
-  upsertPeriodTimes,
 } from "@vela/domain";
-import type { BellPeriod, BellSchedule, ScheduleEntry } from "@vela/types";
+import type { BellSchedule, ScheduleEntry } from "@vela/types";
+import { entriesForDay, periodSort } from "@/lib/scheduleView";
 import { useSchedule } from "@/hooks/useSchedule";
 import { Spinner } from "@/components/ui/Skeleton";
 
 const FULL_DAY = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
-const periodSort = (a: string, b: string) => a.localeCompare(b, undefined, { numeric: true });
 const fmtMin = (m: number) => {
   const h = Math.floor(m / 60);
   return `${((h + 11) % 12) + 1}:${String(m % 60).padStart(2, "0")} ${h < 12 ? "AM" : "PM"}`;
 };
 
 export default function TimetableScreen() {
-  const { entries, bells, usingPreset, loading, error, isConnected, reload, saveBells } = useSchedule();
+  const { entries, bells, loading, error, isConnected, reload } = useSchedule();
   const [now, setNow] = useState(() => new Date());
-  const [editing, setEditing] = useState(false);
 
   useEffect(() => {
     const t = setInterval(() => setNow(new Date()), 30_000);
@@ -64,8 +60,6 @@ export default function TimetableScreen() {
     );
   }
 
-  const dayEntries = entriesForDay(entries, day);
-
   return (
     <SafeAreaView className="flex-1 bg-space-void">
       <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 40 }}>
@@ -83,49 +77,13 @@ export default function TimetableScreen() {
         ) : null}
         {!isSchoolDay ? <Text style={{ color: "#8B98B8", marginBottom: 12 }}>No school today.</Text> : null}
         {bells.length === 0 ? (
-          <Text style={{ color: "#F59E0B", marginBottom: 12 }}>Add your bell times to see when each class meets.</Text>
-        ) : null}
-
-        <View style={{ flexDirection: "row", justifyContent: "flex-end", marginBottom: 12 }}>
-          <TouchableOpacity onPress={() => setEditing((v) => !v)} accessibilityRole="button">
-            <Text style={{ color: "#A5B4FC" }}>{editing ? "Done" : "Edit bell times"}</Text>
-          </TouchableOpacity>
-        </View>
-
-        {editing ? (
-          <BellEditor
-            key={day}
-            day={day}
-            periods={[...new Set(dayEntries.map((e) => e.period))].sort(periodSort)}
-            bells={bells}
-            usingPreset={usingPreset}
-            onSave={saveBells}
-          />
+          <Text style={{ color: "#F59E0B", marginBottom: 12 }}>Add your bell times in Settings to see when each class meets.</Text>
         ) : null}
 
         <DayCards day={day} entries={entries} bells={bells} local={local} />
       </ScrollView>
     </SafeAreaView>
   );
-}
-
-function entriesForDay(entries: ScheduleEntry[], day: number): ScheduleEntry[] {
-  const sorted = entries
-    .filter((e) => !e.days?.length || e.days.includes(day))
-    .sort((a, b) => periodSort(a.period, b.period));
-  // IC lists flex periods (Access) as one row per session, each with its own
-  // teacher and room, and can repeat a class per term. Show each period+course
-  // once, dropping teacher/room when they differed (they change per session).
-  const out: ScheduleEntry[] = [];
-  for (const e of sorted) {
-    const i = out.findIndex((x) => x.period === e.period && x.courseName === e.courseName);
-    if (i === -1) {
-      out.push(e);
-    } else if (out[i].teacher !== e.teacher || out[i].room !== e.room) {
-      out[i] = { ...out[i], teacher: undefined, room: undefined };
-    }
-  }
-  return out;
 }
 
 function DayCards({
@@ -148,7 +106,7 @@ function DayCards({
   const dayEntries = entriesForDay(entries, day).sort(
     (a, b) => startOf(a) - startOf(b) || periodSort(a.period, b.period)
   );
-  if (dayEntries.length === 0) return <Text style={{ color: "#4A5578", marginBottom: 12 }}>No classes</Text>;
+  if (dayEntries.length === 0) return <Text style={{ color: "#8B98B8", marginBottom: 12 }}>No classes</Text>;
 
   return (
     <>
@@ -175,8 +133,8 @@ function DayCards({
                 {slot ? `${fmtMin(slot.startMinutes)} – ${fmtMin(slot.endMinutes)}` : "No bell time"}
               </Text>
             </View>
-            <Text style={{ fontSize: 13, color: "#4A5578", marginTop: 4 }}>
-              Period {e.period}
+            <Text style={{ fontSize: 13, color: "#8B98B8", marginTop: 4 }}>
+              {/^\d+$/.test(e.period) ? `Period ${e.period}` : e.period}
               {e.room ? ` · Room ${e.room}` : ""}
               {e.teacher ? ` · ${e.teacher}` : ""}
             </Text>
@@ -184,97 +142,5 @@ function DayCards({
         );
       })}
     </>
-  );
-}
-
-const normalize = (t: string) => (/^([01]?\d|2[0-3]):[0-5]\d$/.test(t.trim()) ? t.trim().padStart(5, "0") : null);
-
-function BellEditor({
-  day,
-  periods,
-  bells,
-  usingPreset,
-  onSave,
-}: {
-  day: number;
-  periods: string[];
-  bells: BellSchedule[];
-  usingPreset: boolean;
-  onSave: (next: BellSchedule[]) => Promise<void>;
-}) {
-  const variant = pickBellSchedule(bells, day);
-  const [draft, setDraft] = useState<Record<string, { start: string; end: string }>>(() =>
-    Object.fromEntries(
-      periods.map((p) => {
-        const bp = variant?.periods.find((x) => x.period === p);
-        return [p, { start: bp?.start ?? "", end: bp?.end ?? "" }];
-      })
-    )
-  );
-  const [msg, setMsg] = useState<{ text: string; ok: boolean } | null>(null);
-  const [saving, setSaving] = useState(false);
-
-  const set = (p: string, k: "start" | "end", v: string) => setDraft((d) => ({ ...d, [p]: { ...d[p], [k]: v } }));
-
-  const save = async () => {
-    setMsg(null);
-    const times: BellPeriod[] = [];
-    for (const p of periods) {
-      const { start, end } = draft[p];
-      if (!start.trim() && !end.trim()) continue;
-      const s = normalize(start);
-      const e = normalize(end);
-      if (!s || !e || parseClockTime(s)! >= parseClockTime(e)!) {
-        setMsg({ text: `Period ${p}: use HH:MM and make end after start`, ok: false });
-        return;
-      }
-      times.push({ period: p, start: s, end: e });
-    }
-    setSaving(true);
-    try {
-      await onSave(upsertPeriodTimes(bells, day, times));
-      setMsg({ text: "Saved", ok: true });
-    } catch {
-      setMsg({ text: "Saved on this device only (couldn't reach Vela)", ok: false });
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const input = {
-    width: 76,
-    borderWidth: 1,
-    borderColor: "#1C2A45",
-    borderRadius: 8,
-    paddingHorizontal: 8,
-    paddingVertical: 6,
-    color: "#E8ECFF",
-    backgroundColor: "#0C1220",
-    textAlign: "center" as const,
-  };
-
-  return (
-    <View style={{ padding: 16, borderRadius: 16, borderWidth: 1, borderColor: "#1C2A45", marginBottom: 16 }}>
-      <Text style={{ color: "#E8ECFF", fontWeight: "500", marginBottom: 4 }}>
-        Bell times{variant ? ` · ${variant.name}` : ""}
-      </Text>
-      <Text style={{ color: "#4A5578", fontSize: 12, marginBottom: 12 }}>
-        {usingPreset
-          ? "Prefilled from your school's published schedule. Edit if wrong; applies to every day sharing it."
-          : "Infinite Campus doesn't provide period times. Enter 24-hour HH:MM, e.g. 08:30."}
-      </Text>
-      {periods.map((p) => (
-        <View key={p} style={{ flexDirection: "row", alignItems: "center", marginBottom: 8 }}>
-          <Text style={{ width: 80, color: "#8B98B8" }}>Period {p}</Text>
-          <TextInput style={input} value={draft[p].start} onChangeText={(v) => set(p, "start", v)} placeholder="08:30" placeholderTextColor="#4A5578" keyboardType="numbers-and-punctuation" maxLength={5} accessibilityLabel={`Period ${p} start`} />
-          <Text style={{ color: "#8B98B8", marginHorizontal: 8 }}>to</Text>
-          <TextInput style={input} value={draft[p].end} onChangeText={(v) => set(p, "end", v)} placeholder="09:20" placeholderTextColor="#4A5578" keyboardType="numbers-and-punctuation" maxLength={5} accessibilityLabel={`Period ${p} end`} />
-        </View>
-      ))}
-      {msg ? <Text style={{ color: msg.ok ? "#34D399" : "#FB7185", marginTop: 4 }}>{msg.text}</Text> : null}
-      <TouchableOpacity onPress={save} disabled={saving} style={{ marginTop: 12 }} accessibilityRole="button">
-        <Text style={{ color: "#A5B4FC" }}>{saving ? "Saving…" : "Save"}</Text>
-      </TouchableOpacity>
-    </View>
   );
 }

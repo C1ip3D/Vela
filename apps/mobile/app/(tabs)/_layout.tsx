@@ -2,7 +2,12 @@ import { Tabs } from "expo-router";
 import { CalendarCheck, CalendarDays, LayoutDashboard, Settings } from "lucide-react-native";
 import { IcReconnectGate } from "@/components/auth/IcReconnectGate";
 
+const WEEKDAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+
 export default function TabLayout() {
+  // The Day tab is named after the weekday it shows (Monday on weekends).
+  const d = new Date().getDay();
+  const dayTitle = WEEKDAYS[d >= 1 && d <= 5 ? d : 1];
   return (
     <IcReconnectGate>
     <Tabs
@@ -36,7 +41,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="timetable/index"
         options={{
-          title: "Timetable",
+          title: dayTitle,
           tabBarIcon: ({ color, size }) => (
             <CalendarDays size={size} color={color} />
           ),

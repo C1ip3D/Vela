@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
+import { useFocusEffect } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { defaultsForHostname, getLocalParts } from "@vela/domain";
 import type { BellSchedule, ScheduleEntry } from "@vela/types";
@@ -100,6 +101,15 @@ export function useSchedule() {
     if (isInitializing) return;
     load();
   }, [isInitializing, load]);
+
+  // Bells edited in Settings: pick them up when this tab regains focus.
+  useFocusEffect(
+    useCallback(() => {
+      readJson<BellSchedule[] | null>(CUSTOM_BELLS_KEY, null).then((b) => {
+        if (b) setCustomBells(b);
+      });
+    }, [])
+  );
 
   const saveBells = useCallback(async (next: BellSchedule[]) => {
     setCustomBells(next);
