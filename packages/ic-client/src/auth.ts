@@ -37,7 +37,7 @@ function getSetCookies(res: Response): string[] {
  * Logs into an Infinite Campus district portal via its undocumented
  * verify.jsp endpoint and returns the resulting session cookie jar.
  *
- * Used by apps/web's /api/ic/auth route only — browsers need a
+ * No longer used by any route (the /api/ic/auth proxy was removed) — browsers need a
  * server-side proxy to avoid CORS. apps/mobile establishes its IC
  * session via a WebView against IC's real login page instead (see
  * apps/mobile/components/auth/IcLoginWebView.tsx), reusing the
