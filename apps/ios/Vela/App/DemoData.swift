@@ -6,6 +6,17 @@ import VelaKit
 enum DemoData {
     static var isEnabled: Bool { ProcessInfo.processInfo.arguments.contains("-VelaDemo") }
 
+    /// `-VelaMockIC http://localhost:8099` points the app at a local fake IC (Scripts/mock_ic.py). Add `-VelaMockStale`
+    /// to start signed in with an expired session and saved credentials, which exercises silent re-login.
+    static var mockBase: String? {
+        let a = ProcessInfo.processInfo.arguments
+        return a.firstIndex(of: "-VelaMockIC").flatMap { a.indices.contains($0 + 1) ? a[$0 + 1] : nil }
+    }
+    static var mockStale: Bool { ProcessInfo.processInfo.arguments.contains("-VelaMockStale") }
+    static let mockUser = "student"
+    /// `-VelaMockBadPassword` saves a wrong password, to exercise the "can't re-login silently" path.
+    static var mockPassword: String { ProcessInfo.processInfo.arguments.contains("-VelaMockBadPassword") ? "wrong" : "pw123" }
+
     static let session = StoredSession(
         ic: IcSession(cookies: "demo", baseUrl: "https://icampus.dublinusd.org/campus/dublinusd", appName: "dublinusd",
                       personId: "1", displayName: "Alex Student"),

@@ -85,9 +85,9 @@ struct LoginView: View {
             if let selected {
                 IcLoginSheet(
                     district: selected,
-                    onSuccess: { cookies in
+                    onSuccess: { result in
                         showWebView = false
-                        Task { await model.completeLogin(cookies: cookies, district: selected) }
+                        Task { await model.completeLogin(result, district: selected) }
                     },
                     onCancel: { showWebView = false }
                 )

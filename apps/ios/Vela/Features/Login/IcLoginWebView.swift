@@ -2,10 +2,22 @@ import SwiftUI
 import WebKit
 import VelaKit
 
+/// What a successful login hands back.
+struct IcLoginResult {
+    var cookies: String
+    /// Only set when "Stay signed in" is on and the user typed into IC's form.
+    var credentials: (username: String, password: String)?
+    /// The toggle's value. Can be true with no credentials when IC skipped its form (already signed in), which must
+    /// not be read as a reason to forget previously saved ones.
+    var remember: Bool
+}
+
 /// Observable state shared between the web view coordinator and its SwiftUI chrome.
 @MainActor
 @Observable
 final class IcLoginState {
+    /// "Stay signed in": keep what the user types into IC's own form in this device's Keychain.
+    var remember = true
     var error: String?
     var showManualFallback = false
     var isResolving = false
@@ -18,7 +30,7 @@ struct IcLoginWebView: UIViewRepresentable {
     let baseURL: String
     let appName: String
     let state: IcLoginState
-    let onSuccess: (String) -> Void
+    let onSuccess: (IcLoginResult) -> Void
 
     func makeCoordinator() -> Coordinator { Coordinator(self) }
 
@@ -26,6 +38,10 @@ struct IcLoginWebView: UIViewRepresentable {
         let config = WKWebViewConfiguration()
         // Isolated, in-memory store: nothing from a previous student's login can leak in.
         config.websiteDataStore = .nonPersistent()
+        let origin = context.coordinator.origin(context.coordinator.base)
+        config.userContentController.addUserScript(WKUserScript(
+            source: Self.credentialCaptureScript(origin: origin), injectionTime: .atDocumentStart, forMainFrameOnly: true))
+        config.userContentController.add(WeakScriptHandler(context.coordinator), name: "velaCreds")
         let web = WKWebView(frame: .zero, configuration: config)
         web.navigationDelegate = context.coordinator
         web.isOpaque = false
@@ -38,8 +54,35 @@ struct IcLoginWebView: UIViewRepresentable {
 
     func updateUIView(_ uiView: WKWebView, context: Context) {}
 
+    static func dismantleUIView(_ uiView: WKWebView, coordinator: Coordinator) {
+        uiView.configuration.userContentController.removeScriptMessageHandler(forName: "velaCreds")
+    }
+
+    /// Mirrors what the user types into IC's login form so "Stay signed in" can save it. Listens at the document level
+    /// (capture phase) so it also works when IC renders its form client-side after load. Only runs on the district's own
+    /// IC origin: never on an SSO provider's page, whose password isn't an IC one.
+    static func credentialCaptureScript(origin: String) -> String {
+        let originLiteral = (try? String(data: JSONEncoder().encode(origin), encoding: .utf8)) ?? "\"\""
+        return """
+        (function () {
+          if (window.__velaCredentialCapture) return;
+          if (location.origin.toLowerCase() !== \(originLiteral)) return;
+          window.__velaCredentialCapture = true;
+          function report() {
+            var pw = document.querySelector('input[type="password"]');
+            if (!pw || !pw.value) return;
+            var form = pw.form || document;
+            var user = form.querySelector('input[name="username"], input#username, input[type="email"], input[type="text"]');
+            if (!user || !user.value) return;
+            window.webkit.messageHandlers.velaCreds.postMessage({ username: user.value, password: pw.value });
+          }
+          ["input", "change", "submit", "click"].forEach(function (evt) { document.addEventListener(evt, report, true); });
+        })();
+        """
+    }
+
     @MainActor
-    final class Coordinator: NSObject, WKNavigationDelegate {
+    final class Coordinator: NSObject, WKNavigationDelegate, WKScriptMessageHandler {
         let parent: IcLoginWebView
         weak var web: WKWebView?
         let base: String
@@ -66,7 +109,18 @@ struct IcLoginWebView: UIViewRepresentable {
         })();
         """
 
-        private func origin(_ url: String) -> String {
+        private var captured: (username: String, password: String)?
+
+        func userContentController(_ controller: WKUserContentController, didReceive message: WKScriptMessage) {
+            guard message.name == "velaCreds", let body = message.body as? [String: Any],
+                  let u = body["username"] as? String, let p = body["password"] as? String else { return }
+            // Belt and braces with the script's own origin check.
+            let o = message.frameInfo.securityOrigin
+            let from = "\(o.protocol)://\(o.host)\(o.port > 0 ? ":\(o.port)" : "")".lowercased()
+            if from == origin(base) { captured = (u, p) }
+        }
+
+        func origin(_ url: String) -> String {
             guard let u = URL(string: url), let scheme = u.scheme, let host = u.host else { return url.lowercased() }
             return "\(scheme)://\(host)\(u.port.map { ":\($0)" } ?? "")".lowercased()
         }
@@ -159,7 +213,8 @@ struct IcLoginWebView: UIViewRepresentable {
                 if header.range(of: #"(^|;\s*)appName="#, options: .regularExpression) == nil {
                     header += "; appName=\(parent.appName)"
                 }
-                parent.onSuccess(header)
+                let remember = parent.state.remember
+                parent.onSuccess(IcLoginResult(cookies: header, credentials: remember ? captured : nil, remember: remember))
             }
         }
     }
@@ -168,17 +223,19 @@ struct IcLoginWebView: UIViewRepresentable {
 /// Full-screen sheet wrapping the IC login page with Vela chrome.
 struct IcLoginSheet: View {
     let district: District
-    let onSuccess: (String) -> Void
+    let onSuccess: (IcLoginResult) -> Void
     let onCancel: () -> Void
     @State private var state = IcLoginState()
 
     var body: some View {
         VStack(spacing: 0) {
             HStack {
-                Text(district.name)
+                Toggle("Stay signed in", isOn: $state.remember)
                     .font(.subheadline.weight(.semibold))
                     .foregroundStyle(Palette.starWhite)
-                    .lineLimit(1)
+                    .tint(Palette.vela400)
+                    .frame(maxWidth: 220)
+                    .accessibilityHint("Keeps your Infinite Campus login on this device so Vela can sign you back in")
                 Spacer()
                 Button(action: onCancel) {
                     Image(systemName: "xmark")
@@ -219,5 +276,15 @@ struct IcLoginSheet: View {
             }
         }
         .velaBackground()
+    }
+}
+
+
+/// WKUserContentController retains its handlers; this keeps the coordinator from being retained by it.
+private final class WeakScriptHandler: NSObject, WKScriptMessageHandler {
+    weak var target: WKScriptMessageHandler?
+    init(_ target: WKScriptMessageHandler) { self.target = target }
+    func userContentController(_ c: WKUserContentController, didReceive m: WKScriptMessage) {
+        target?.userContentController(c, didReceive: m)
     }
 }

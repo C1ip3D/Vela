@@ -18,6 +18,15 @@ struct StoredSession: Codable, Equatable {
     var stateCode: String?
 }
 
+/// What the student chose to keep with "Stay signed in", so an expired IC session can be replaced silently.
+/// Lives only in this device's Keychain and is only ever typed into the district's own IC login page.
+struct StoredCredentials: Codable, Equatable {
+    var username: String
+    var password: String
+    /// The district these were saved for: never replayed against another one.
+    var baseUrl: String
+}
+
 @MainActor
 @Observable
 final class AppModel {
@@ -26,6 +35,7 @@ final class AppModel {
 
     private enum Key {
         static let session = "vela_ic_session"
+        static let credentials = "vela_ic_credentials"
         static let district = "vela_ic_last_district"
         static let courses = "vela_cached_courses"
         static let schedule = "vela_schedule_entries"
@@ -38,6 +48,7 @@ final class AppModel {
     private(set) var lastDistrict: District?
     var loginError: String?
     private(set) var isFinishingLogin = false
+    private(set) var hasSavedLogin = false
 
     // Courses
     private(set) var courses: [ICCourse] = []
@@ -55,8 +66,6 @@ final class AppModel {
     private(set) var flexState: Load = .idle
 
     private let backend = BackendClient()
-    private var lastSessionCheck = Date.distantPast
-
     // MARK: Derived
 
     var districtDefaults: DistrictScheduleDefaults? {
@@ -82,6 +91,27 @@ final class AppModel {
             phase = .signedIn
             return
         }
+        if let base = DemoData.mockBase {
+            let root = base + "/campus/mock"
+            let district = District(name: "Mock District", baseURL: root, appName: "mock", stateCode: "CA")
+            lastDistrict = district
+            KeychainStore.delete(Key.session)
+            KeychainStore.delete(Key.credentials)
+            hasSavedLogin = false
+            if DemoData.mockStale {
+                let stale = StoredSession(
+                    ic: IcSession(cookies: "JSESSIONID=stale; appName=mock", baseUrl: root, appName: "mock", personId: "1", displayName: "Mock Student"),
+                    districtName: district.name, stateCode: "CA")
+                KeychainStore.save(stale, for: Key.session)
+                KeychainStore.save(StoredCredentials(username: DemoData.mockUser, password: DemoData.mockPassword, baseUrl: root), for: Key.credentials)
+                hasSavedLogin = true
+                session = stale
+                phase = .signedIn
+            } else {
+                phase = .signedOut
+            }
+            return
+        }
         #endif
         FirebaseSession.shared.configure()
         lastDistrict = Persistence.load(District.self, for: Key.district)
@@ -89,6 +119,7 @@ final class AppModel {
         scheduleEntries = Persistence.load([ScheduleEntry].self, for: Key.schedule) ?? []
         customBells = Persistence.load([BellSchedule].self, for: Key.bells)
         session = KeychainStore.load(StoredSession.self, for: Key.session)
+        hasSavedLogin = KeychainStore.load(StoredCredentials.self, for: Key.credentials) != nil
         phase = session == nil ? .signedOut : .signedIn
         if session == nil { courses = []; scheduleEntries = [] }
     }
@@ -96,13 +127,13 @@ final class AppModel {
     // MARK: Login
 
     /// Called once the login web view has produced a live IC cookie jar.
-    func completeLogin(cookies: String, district: District) async {
+    func completeLogin(_ result: IcLoginResult, district: District) async {
         isFinishingLogin = true
         loginError = nil
         defer { isFinishingLogin = false }
 
         let base = district.baseURL.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
-        var ic = IcSession(cookies: cookies, baseUrl: base, appName: district.appName)
+        var ic = IcSession(cookies: result.cookies, baseUrl: base, appName: district.appName)
         guard let person = await ICClient(session: ic).fetchPersonInfo() else {
             loginError = "Signed in, but couldn't verify your student profile. Please try again."
             return
@@ -113,6 +144,13 @@ final class AppModel {
         let stored = StoredSession(ic: ic, districtName: district.name, stateCode: district.stateCode)
         KeychainStore.save(stored, for: Key.session)
         Persistence.save(district, for: Key.district)
+        // Only saved after IC accepted them; turning "Stay signed in" off on a later login forgets saved ones.
+        if let c = result.credentials {
+            KeychainStore.save(StoredCredentials(username: c.username, password: c.password, baseUrl: base), for: Key.credentials)
+        } else if !result.remember {
+            KeychainStore.delete(Key.credentials)
+        }
+        hasSavedLogin = KeychainStore.load(StoredCredentials.self, for: Key.credentials) != nil
         session = stored
         lastDistrict = district
         courses = []
@@ -142,6 +180,8 @@ final class AppModel {
     func signOut() async {
         FirebaseSession.shared.signOut()
         KeychainStore.delete(Key.session)
+        KeychainStore.delete(Key.credentials)
+        hasSavedLogin = false
         [Key.courses, Key.schedule].forEach(Persistence.remove)
         session = nil
         courses = []
@@ -167,26 +207,116 @@ final class AppModel {
         phase = .signedOut
     }
 
-    /// Re-checks the session when the app returns to the foreground. Offline or server errors never log the user out.
-    func checkSessionIfNeeded() async {
-        guard let s = session, Date().timeIntervalSince(lastSessionCheck) > 60 else { return }
-        lastSessionCheck = Date()
-        let client = ICClient(session: s.ic)
-        guard await client.isReachable() else { return }
-        if await client.probeAuth() == .expired, session == s { expireSession() }
+    /// Forget the saved login but stay signed in until the session expires.
+    func forgetSavedLogin() {
+        KeychainStore.delete(Key.credentials)
+        hasSavedLogin = false
     }
 
-    /// Runs `op` against the current session; if it fails, only an *expired* session (not offline/5xx) signs the user out.
+    // MARK: Session upkeep
+
+    private static let reauthTimeout: Duration = .seconds(45)
+    private var reauthTask: Task<StoredSession?, Never>?
+
+    /// Confirms the session is still valid and, if not, tries to establish a new one without the user via an
+    /// off-screen IC login using the saved credentials. Returns nil when that isn't possible. The session is only
+    /// cleared (sending the user to sign in) when IC clearly says it has expired, never for being offline, a timeout
+    /// or a server error. Concurrent callers share one attempt.
+    @discardableResult
+    func reauth() async -> StoredSession? {
+        if let reauthTask { return await reauthTask.value }
+        let task = Task { [weak self] () -> StoredSession? in
+            guard let self else { return nil }
+            // Upper bound on one attempt, so a hung request can't block every later reauth behind it.
+            return await withTaskGroup(of: StoredSession?.self) { group in
+                group.addTask { await self.attemptReauth() }
+                group.addTask { try? await Task.sleep(for: Self.reauthTimeout); return nil }
+                let first = await group.next() ?? nil
+                group.cancelAll()
+                return first
+            }
+        }
+        reauthTask = task
+        let result = await task.value
+        reauthTask = nil
+        return result
+    }
+
+    private func attemptReauth() async -> StoredSession? {
+        guard let current = session else { return nil }
+        // Anything that replaced or cleared the session meanwhile (sign-out, a manual re-login) wins over this attempt.
+        func stillCurrent() -> Bool { session == current }
+
+        let client = ICClient(session: current.ic)
+        let person = await withTaskGroup(of: (personId: String, displayName: String)?.self) { group in
+            group.addTask { await client.fetchPersonInfo() }
+            group.addTask { try? await Task.sleep(for: .seconds(10)); return nil }
+            let first = await group.next() ?? nil
+            group.cancelAll()
+            return first
+        }
+        if person != nil { return current }
+
+        // fetchPersonInfo can't tell "offline" from "expired". Never throw away a session (or burn a login attempt)
+        // just because there's no network.
+        guard await client.isReachable() else { return nil }
+        let authState = await client.probeAuth()
+        if authState == .valid { return current }
+
+        // Sessions without a personId predate it being required: no way to confirm a refreshed one is the same student.
+        if let district = lastDistrict, let personId = current.ic.personId, stillCurrent(),
+           let saved = KeychainStore.load(StoredCredentials.self, for: Key.credentials),
+           Self.sameBase(saved.baseUrl, district.baseURL) {
+            let ic = current.ic
+            let job = SilentIcLogin(
+                baseURL: district.baseURL, appName: district.appName,
+                credentials: (saved.username, saved.password),
+                // Must still be the same student: saved credentials or leftover cookies for someone else must never
+                // swap whose grades (and whose account's data) this session shows.
+                verify: { cookies in
+                    var candidate = ic
+                    candidate.cookies = cookies
+                    return await ICClient(session: candidate).fetchPersonInfo()?.personId == personId
+                })
+            if let cookies = await job.run(), stillCurrent() {
+                var next = current
+                next.ic.cookies = cookies
+                KeychainStore.save(next, for: Key.session)
+                session = next
+                return next
+            }
+        }
+
+        if authState == .expired, stillCurrent() { expireSession() }
+        return nil
+    }
+
+    private static func sameBase(_ a: String, _ b: String) -> Bool {
+        func n(_ s: String) -> String { s.trimmingCharacters(in: CharacterSet(charactersIn: "/")).lowercased() }
+        return n(a) == n(b)
+    }
+
+    private var lastSessionCheck = Date.distantPast
+
+    /// Called when the app returns to the foreground and periodically while it stays there.
+    func keepAlive(force: Bool = false) async {
+        guard session != nil, force || Date().timeIntervalSince(lastSessionCheck) > 60 else { return }
+        lastSessionCheck = Date()
+        await reauth()
+    }
+
+    /// Runs `op` against the current session; on failure, repairs the session (silent re-login) and retries once.
     private func withSession<T>(_ op: (ICClient) async throws -> T) async throws -> T {
         guard let s = session else { throw ICClient.ICError.sessionExpired("Not signed in.") }
-        let client = ICClient(session: s.ic)
         do {
-            return try await op(client)
+            return try await op(ICClient(session: s.ic))
         } catch {
-            if await client.isReachable(), await client.probeAuth() == .expired, session == s {
-                expireSession()
-            }
-            throw error
+            // IC understood and said no (seat full, closed): a fresh login won't change the answer.
+            if case ICClient.ICError.refused = error { throw error }
+            // @vela/ic-client folds network errors into the same "expired" error as a real 401, so check IC is
+            // reachable first: otherwise being offline would trigger a pointless login attempt.
+            guard await ICClient(session: s.ic).isReachable(), let fresh = await reauth() else { throw error }
+            return try await op(ICClient(session: fresh.ic))
         }
     }
 

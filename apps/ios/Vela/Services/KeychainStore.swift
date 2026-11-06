@@ -16,7 +16,8 @@ enum KeychainStore {
         var q = query(key)
         q[kSecValueData as String] = data
         q[kSecAttrAccessible as String] = kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly
-        SecItemAdd(q as CFDictionary, nil)
+        let status = SecItemAdd(q as CFDictionary, nil)
+        if status != errSecSuccess { NSLog("[keychain] save %@ failed: %d", key, status) }
     }
 
     static func load(_ key: String) -> Data? {

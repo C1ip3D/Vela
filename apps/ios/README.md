@@ -26,6 +26,16 @@ Without the Firebase values the app still signs in to Infinite Campus and shows 
 
 Debug builds accept a `-VelaDemo` launch argument: skips sign-in and shows fixture data (no network).
 
+To exercise login, "Stay signed in" and silent re-login without a real student account, run the fake IC and point a Debug build at it:
+
+```bash
+python3 apps/ios/Scripts/mock_ic.py 8099        # login: student / pw123
+# launch args: -VelaMockIC http://localhost:8099 [-VelaMockStale] [-VelaMockBadPassword]
+```
+
+`-VelaMockStale` starts signed in with an expired session and saved credentials (silent re-login); add `-VelaMockBadPassword` to see it fall back to sign-in.
+Use a signed simulator build (the default Xcode build): with `CODE_SIGNING_ALLOWED=NO` the Keychain is unavailable and nothing is saved.
+
 ## Backend contract (unchanged, Hono-compatible)
 
 - `POST /api/ic/mint-token` — `{cookies, baseUrl, appName, districtName, stateCode}` → `{firebaseCustomToken, personId, displayName}`
@@ -37,10 +47,9 @@ These are the same routes the Expo app uses, so the Next.js → Hono port only h
 ## Porting notes
 
 - `Parsers.swift` is a line-for-line port of `packages/ic-client/src/parsers.ts`, including its quirks (e.g. any node's `score` can set a course's grade; last one visited wins). IC's JSON varies per district, so it walks a key-order-preserving `JSON` value instead of fixed `Codable` models.
-- The IC session (cookie jar) lives in the Keychain; IC credentials are never stored or sent anywhere. Login runs in a non-persistent `WKWebView`.
+- The IC session (cookie jar) lives in the Keychain. Login runs in a non-persistent `WKWebView`. IC credentials are only kept if the student leaves "Stay signed in" on: they go to this device's Keychain (this-device-only, never sent to Vela) and are only ever typed into the district's own IC login page by `SilentIcLogin`, which checks the refreshed session is the same student before using it.
 
 ## Not yet ported (parity gaps vs apps/mobile)
 
 - "Reset to school schedule" for edited bell times (the backend has no delete route yet)
-- Silent IC re-login with saved credentials (an expired session now returns to sign-in)
 - Finals/study coach

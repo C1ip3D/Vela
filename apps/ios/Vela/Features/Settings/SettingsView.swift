@@ -15,6 +15,24 @@ struct SettingsView: View {
                     }
                     .card()
 
+                    VStack(alignment: .leading, spacing: 8) {
+                        HStack {
+                            Label("Stay signed in", systemImage: "key").foregroundStyle(Palette.starBright)
+                            Spacer()
+                            Text(model.hasSavedLogin ? "On" : "Off").foregroundStyle(Palette.starDim)
+                        }
+                        .font(.subheadline)
+                        Text(model.hasSavedLogin
+                             ? "Your Infinite Campus login is kept on this device so Vela can sign you back in when your session expires. It is never sent to Vela."
+                             : "Turn on \"Stay signed in\" the next time you sign in to Infinite Campus to avoid re-entering your password when your session expires.")
+                            .font(.caption).foregroundStyle(Palette.starFaint)
+                        if model.hasSavedLogin {
+                            Button("Forget saved login", role: .destructive) { model.forgetSavedLogin() }
+                                .font(.footnote.weight(.semibold))
+                        }
+                    }
+                    .card()
+
                     NavigationLink {
                         BellTimesView()
                     } label: {

@@ -31,11 +31,21 @@ struct RootView: View {
             }
         }
         .animation(.easeInOut(duration: 0.25), value: model.phase)
-        .onChange(of: scenePhase) { _, new in
-            if new == .active { Task { await model.checkSessionIfNeeded() } }
+        // Keepalive: check (and silently repair) the session whenever the app returns to the foreground, and every
+        // 10 minutes while it stays there, so IC's idle timeout rarely gets a chance to expire it.
+        .task(id: KeepaliveKey(active: scenePhase == .active, signedIn: model.phase == .signedIn)) {
+            guard scenePhase == .active, model.phase == .signedIn else { return }
+            await model.keepAlive()
+            while !Task.isCancelled {
+                try? await Task.sleep(for: .seconds(600))
+                if Task.isCancelled { return }
+                await model.keepAlive(force: true)
+            }
         }
     }
 }
+
+private struct KeepaliveKey: Equatable { var active: Bool; var signedIn: Bool }
 
 struct MainTabView: View {
     private var dayTitle: String {
