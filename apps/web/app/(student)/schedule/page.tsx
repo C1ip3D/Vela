@@ -83,7 +83,9 @@ export default function SchedulePage() {
   // Classes meeting this weekday, with times when a bell schedule covers the period.
   const dayEntries = entries
     .filter((e) => !e.days?.length || e.days.includes(day))
-    .sort((a, b) => periodSort(a.period, b.period));
+    .sort((a, b) => periodSort(a.period, b.period))
+    // IC can list the same class twice (e.g. one row per term); show it once.
+    .filter((e, i, all) => all.findIndex((x) => x.period === e.period && x.courseName === e.courseName && x.room === e.room) === i);
   const slotFor = (period: string) => slots.find((s) => s.period === period);
 
   return (

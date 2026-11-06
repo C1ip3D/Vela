@@ -76,7 +76,9 @@ export default function TimetableScreen() {
 
   const dayEntries = entries
     .filter((e) => !e.days?.length || e.days.includes(day))
-    .sort((a, b) => periodSort(a.period, b.period));
+    .sort((a, b) => periodSort(a.period, b.period))
+    // IC can list the same class twice (e.g. one row per term); show it once.
+    .filter((e, i, all) => all.findIndex((x) => x.period === e.period && x.courseName === e.courseName && x.room === e.room) === i);
 
   return (
     <SafeAreaView className="flex-1 bg-space-void">

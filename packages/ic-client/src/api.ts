@@ -404,17 +404,18 @@ export async function fetchSchedule(
   session: IcSession,
   opts: { today: string; dayTypeDays: Record<string, number[]> }
 ): Promise<ScheduleEntry[]> {
-  const aq = session.appName ? `&appName=${encodeURIComponent(session.appName)}` : "";
-  let data: unknown;
-  try {
-    const res = await icFetch(session, `/resources/portal/roster?_crossSite=true${aq}`, {
-      cache: "no-store",
-    });
-    if (!res.ok) throw new Error(String(res.status));
-    data = await res.json();
-  } catch {
-    // Network failure, or IC redirected an expired session to its HTML login page.
-    throw new Error("Session expired or unable to fetch the schedule. Please log in again.");
+  // IC answers 400 when the roster call also carries an `appName` query param
+  // (the header from buildIcHeaders already identifies the app), so it's omitted.
+  // `_expand` spelling varies by IC version; try the known forms, plain last.
+  for (const expand of ["sectionPlacements", "{sectionPlacements-term}", ""]) {
+    const q = `?${expand ? `_expand=${encodeURIComponent(expand)}&` : ""}_crossSite=true`;
+    try {
+      const res = await icFetch(session, `/resources/portal/roster${q}`, { cache: "no-store" });
+      if (!res.ok) continue;
+      return parseRosterSchedule(await res.json(), opts);
+    } catch {
+      // Network failure, or IC redirected an expired session to its HTML login page.
+    }
   }
-  return parseRosterSchedule(data, opts);
+  throw new Error("Session expired or unable to fetch the schedule. Please log in again.");
 }
