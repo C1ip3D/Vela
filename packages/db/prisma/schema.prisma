@@ -36,6 +36,12 @@ enum DataSource {
   INFINITE_CAMPUS
 }
 
+enum ScheduleSource {
+  INFINITE_CAMPUS
+  MANUAL
+  UPLOAD
+}
+
 // One Infinite Campus district instance (e.g. "dublinusd.infinitecampus.org").
 // IC course/section IDs are only unique *within* a district, so every
 // district-scoped identifier (Course.icCourseId) is scoped through this
@@ -76,6 +82,8 @@ model User {
   gpaSnapshots     GpaSnapshot[]
   advisorLogs      AdvisorLog[]
   assignmentGrades AssignmentGrade[]
+  scheduleEntries  ScheduleEntry[]
+  bellConfig       BellConfig?
 
   @@unique([districtId, icPersonId])
   @@index([districtId])
@@ -115,7 +123,7 @@ model Enrollment {
   letterGrade    String?
   enrolledAt     DateTime
   isActive       Boolean  @default(true)
-  finalWeight    Float?   // user-set final exam weight (0–1); null = use DUSD 15% default
+  finalWeight    Float? // user-set final exam weight (0–1); null = use DUSD 15% default
 
   user   User   @relation(fields: [userId], references: [id])
   course Course @relation(fields: [courseId], references: [id])
@@ -186,4 +194,33 @@ model AssignmentGrade {
 
   @@unique([userId, courseId, assignmentKey])
   @@index([userId, courseId])
+}
+
+// One class on a student's timetable: a section in a period, on given weekdays
+// (0 = Sunday). Mirrors @vela/types' ScheduleEntry. IC-sourced rows are
+// replaced wholesale on each sync, so rows aren't individually stable.
+model ScheduleEntry {
+  id         String         @id @default(cuid())
+  userId     String
+  period     String
+  courseName String
+  teacher    String?
+  room       String?
+  days       Int[]
+  term       String?
+  source     ScheduleSource @default(INFINITE_CAMPUS)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+// A student's own bell schedules (a JSON array of @vela/types' BellSchedule).
+// Absent row = use the district preset, if one exists. IC provides no clock times.
+model BellConfig {
+  userId    String   @id
+  schedules Json
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }

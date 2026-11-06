@@ -1,8 +1,9 @@
-import { View, Text, TouchableOpacity, Alert } from "react-native";
+import { View, Text, TouchableOpacity, Alert, ScrollView } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { LogOut } from "lucide-react-native";
 import { useAuth } from "@/contexts/AuthContext";
+import { BellTimesSettings } from "@/components/schedule/BellTimesSettings";
 
 export default function SettingsScreen() {
   const { signOut } = useAuth();
@@ -23,10 +24,11 @@ export default function SettingsScreen() {
 
   return (
     <SafeAreaView edges={["top"]} className="flex-1 bg-space-void">
-      <View style={{ padding: 20 }}>
+      <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 40 }} keyboardShouldPersistTaps="handled">
         <Text className="text-star-bright" style={{ fontSize: 28, fontWeight: "600", marginBottom: 24 }}>
           Settings
         </Text>
+        <BellTimesSettings />
         <TouchableOpacity
           onPress={handleSignOut}
           activeOpacity={0.7}
@@ -38,7 +40,7 @@ export default function SettingsScreen() {
           <LogOut size={20} color="#F87171" />
           <Text style={{ fontSize: 17, color: "#F87171" }}>Sign Out</Text>
         </TouchableOpacity>
-      </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }
