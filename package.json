@@ -12,7 +12,6 @@
     "build": "npm run typecheck -w @vela/api",
     "start": "npm run start -w @vela/api",
     "lint": "npm run typecheck -w @vela/api",
-    "mobile": "npm run start -w @vela/mobile",
     "db:generate": "npm run generate -w @vela/db",
     "db:migrate": "npm run migrate -w @vela/db",
     "db:studio": "npm run studio -w @vela/db"

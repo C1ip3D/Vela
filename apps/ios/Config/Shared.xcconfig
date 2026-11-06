@@ -1,0 +1,9 @@
+// Defaults; override any of these in Config/Secrets.xcconfig (gitignored).
+// In xcconfig files `//` starts a comment, so write URLs as https:/$()/host.
+VELA_API_BASE_URL = http:/$()/localhost:3000
+FIREBASE_API_KEY =
+FIREBASE_APP_ID =
+FIREBASE_PROJECT_ID =
+FIREBASE_GCM_SENDER_ID =
+
+#include? "Secrets.xcconfig"
