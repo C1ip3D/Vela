@@ -70,7 +70,7 @@ export interface MintCustomTokenResult {
  * Mints a Firebase custom token for a verified Infinite Campus identity.
  *
  * Callers MUST have already verified a real IC login server-side (see
- * apps/web/app/api/ic/auth and apps/web/app/api/ic/mint-token) — this
+ * apps/web/app/api/ic/mint-token) — this
  * function does no verification of its own. It only maps a
  * already-verified identity onto a Firebase uid (reusing an existing
  * account when one exists, so this is a no-op migration for anyone who
