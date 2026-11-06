@@ -40,7 +40,6 @@ Both are the same routes the Expo app uses, so the Next.js → Hono port only ha
 
 ## Not yet ported (parity gaps vs apps/mobile)
 
-- Course "what-if" grade calculator and custom assignments
 - Bell-time editing (the district preset is used; custom bells are read if present)
 - Responsive scheduling / flex-period picker (`Schedule` tab)
 - Silent IC re-login with saved credentials (an expired session now returns to sign-in)
