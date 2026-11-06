@@ -1,4 +1,13 @@
-@import "tailwindcss";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  input::placeholder,
+  textarea::placeholder {
+    color: color-mix(in oklab, currentColor 50%, transparent);
+  }
+}
 
 html {
   font-size: 24px !important;
@@ -22,6 +31,9 @@ html {
   --constellation-glow: rgba(124, 158, 245, 0.12);
   --star-bright: #E8ECFF;
   --star-accent: #A5B4FC;
+  --accent: #E879F9;
+  --accent-soft: #F0ABFC;
+  --accent-glow: rgba(232, 121, 249, 0.25);
 }
 
 * {

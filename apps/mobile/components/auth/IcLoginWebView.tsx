@@ -1,6 +1,6 @@
 import React, { useCallback, useRef, useState } from "react";
 import { View, Text, TouchableOpacity, ActivityIndicator, Switch } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import WebView, { WebViewNavigation } from "react-native-webview";
 import { X } from "lucide-react-native";
 import NitroCookies from "react-native-nitro-cookies";
@@ -232,27 +232,27 @@ export function IcLoginWebView({ baseUrl, appName, districtName, onSuccess, onCa
   }, [base]);
 
   return (
-    <SafeAreaView className="flex-1 bg-space-void">
-      <View className="flex-row items-center justify-between px-5 py-3 border-b border-space-border">
-        <View style={{ flex: 1 }}>
-          <Text className="text-base font-semibold text-star-bright" numberOfLines={1}>
-            {districtName}
-          </Text>
-          <Text className="text-xs text-star-dim">Sign in with Infinite Campus</Text>
+    <SafeAreaProvider>
+    <SafeAreaView className="flex-1 bg-space-void" edges={["top", "bottom"]}>
+      <View className="flex-row items-center px-3 py-2 border-b border-space-border">
+        <View style={{ width: 44 }} />
+        <View className="flex-1 flex-row items-center justify-center">
+          <Text className="text-sm font-semibold text-star-bright mr-3">Stay signed in</Text>
+          <Switch
+            value={remember}
+            onValueChange={setRemember}
+            trackColor={{ true: "#818CF8" }}
+            accessibilityLabel="Stay signed in"
+          />
         </View>
-        <TouchableOpacity onPress={onCancel} style={{ padding: 8 }}>
+        <TouchableOpacity
+          onPress={onCancel}
+          accessibilityRole="button"
+          accessibilityLabel="Close sign in"
+          style={{ width: 44, height: 44, alignItems: "center", justifyContent: "center" }}
+        >
           <X size={20} color="#8B98B8" />
         </TouchableOpacity>
-      </View>
-
-      <View className="flex-row items-center px-5 py-3 border-b border-space-border">
-        <View style={{ flex: 1, paddingRight: 12 }}>
-          <Text className="text-sm font-semibold text-star-bright">Stay signed in</Text>
-          <Text className="text-xs text-star-dim mt-0.5">
-            Saves your login in this iPhone&apos;s Keychain so Vela can reconnect you automatically. It&apos;s never sent to Vela&apos;s servers.
-          </Text>
-        </View>
-        <Switch value={remember} onValueChange={setRemember} trackColor={{ true: "#818CF8" }} />
       </View>
 
       {error && (
@@ -304,5 +304,6 @@ export function IcLoginWebView({ baseUrl, appName, districtName, onSuccess, onCa
         </View>
       )}
     </SafeAreaView>
+    </SafeAreaProvider>
   );
 }

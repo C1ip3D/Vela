@@ -1,0 +1,84 @@
+[
+  {
+    "responsiveSessionID": 2002,
+    "sessionName": "Tuesday ACCESS; Tue 11/03/2026",
+    "startDate": "2026-11-03T00:00:00.000-08",
+    "endDate": "2026-11-03T00:00:00.000-08",
+    "sessionOpen": true,
+    "offerings": [
+      {
+        "responsiveOfferingID": 9003,
+        "responsiveOfferingName": "study Hall",
+        "description": "",
+        "maxStudents": 30,
+        "courseNumber": "700041",
+        "sectionNumber": "103",
+        "teacherDisplay": "Teacher, Alpha",
+        "roomName": "A-101",
+        "currentStudents": 31,
+        "rosterID": 0,
+        "teacherRequest": false,
+        "reason": ""
+      },
+      {
+        "responsiveOfferingID": 9004,
+        "responsiveOfferingName": "Chemistry Help",
+        "description": "Drop-in help for chemistry students",
+        "maxStudents": 25,
+        "courseNumber": "700041",
+        "sectionNumber": "104",
+        "teacherDisplay": "Teacher, Bravo",
+        "roomName": "B-202",
+        "currentStudents": 18,
+        "rosterID": 0,
+        "teacherRequest": false,
+        "reason": ""
+      }
+    ]
+  },
+  {
+    "responsiveSessionID": 2001,
+    "sessionName": "Thursday ACCESS; Thu 10/29/2026",
+    "startDate": "2026-10-29T00:00:00.000-07",
+    "endDate": "2026-10-29T00:00:00.000-07",
+    "sessionOpen": false,
+    "offerings": [
+      {
+        "responsiveOfferingID": 9002,
+        "responsiveOfferingName": "Math Help/Study Hall",
+        "description": "",
+        "maxStudents": 30,
+        "courseNumber": "700041",
+        "sectionNumber": "102",
+        "teacherDisplay": "Teacher, Charlie",
+        "roomName": "C-303",
+        "currentStudents": 30,
+        "rosterID": 11111111,
+        "teacherRequest": true,
+        "reason": "Missing unit test"
+      },
+      {
+        "responsiveOfferingID": 9001,
+        "responsiveOfferingName": "Art Studio",
+        "description": "Extra time to work on projects.",
+        "maxStudents": 35,
+        "courseNumber": "700041",
+        "sectionNumber": "101",
+        "teacherDisplay": "Teacher, Delta",
+        "roomName": "D-404",
+        "currentStudents": 34,
+        "rosterID": 0,
+        "teacherRequest": false,
+        "reason": ""
+      }
+    ]
+  },
+  {
+    "responsiveSessionID": 2003,
+    "sessionName": "Friday ACCESS; Fri 11/06/2026",
+    "startDate": "2026-11-06T00:00:00.000-08",
+    "endDate": "2026-11-06T00:00:00.000-08",
+    "sessionOpen": true,
+    "offerings": []
+  }
+]

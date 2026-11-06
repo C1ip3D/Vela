@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef, use } from "react";
 import { useIC } from "@/contexts/InfiniteCampusContext";
 import { useCourses } from "@/hooks/useCourses";
+import { gradeColorForPercent } from "@/lib/utils";
 import {
   ChevronDown, ChevronRight, Clock, AlertTriangle,
   MoreVertical, Pencil, MinusCircle, RotateCcw, X, Check, Calculator, Plus,
@@ -41,9 +42,7 @@ interface NewAssignment {
   score: number | null;
 }
 
-function gradeColor(_grade: number): string {
-  return "text-emerald-400";
-}
+const gradeColor = gradeColorForPercent;
 
 // Recalculate group score with what-if mods
 function calcGroupScore(assignments: Assignment[], mods: Record<string, WhatIfMod>): number | null {

@@ -220,7 +220,7 @@ export default function SignupPage() {
                 <button
                   onClick={attemptICConnection}
                   disabled={icChecking || !icUsername.trim() || !icPassword.trim()}
-                  className="w-full mt-2 flex items-center justify-center gap-2 rounded-lg bg-[#818CF8] py-2.5 text-sm font-medium text-white hover:bg-[#6366F1] disabled:opacity-50 transition-all shadow-[0_0_16px_rgba(129,140,248,0.25)]">
+                  className="w-full mt-2 flex items-center justify-center gap-2 rounded-lg bg-accent py-2.5 text-sm font-medium text-accent-ink hover:bg-accent-soft disabled:opacity-50 transition-all shadow-[0_0_16px_rgba(232,121,249,0.25)]">
                   {icChecking ? <Loader2 size={14} className="animate-spin" /> : <>Access Vela Dashboard <ArrowRight size={14} /></>}
                 </button>
               </div>

@@ -5,8 +5,16 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-export function gradeColor(_letter: string): string {
-  return "text-emerald-400";
+// A = green, B = lighter green, C = yellow, D/F = red
+export function gradeColor(letter: string): string {
+  if (letter.startsWith("A")) return "text-emerald-400";
+  if (letter.startsWith("B")) return "text-emerald-200";
+  if (letter.startsWith("C")) return "text-yellow-400";
+  return "text-red-500";
+}
+
+export function gradeColorForPercent(pct: number): string {
+  return gradeColor(pct >= 90 ? "A" : pct >= 80 ? "B" : pct >= 70 ? "C" : "F");
 }
 
 export function severityColor(severity: string) {

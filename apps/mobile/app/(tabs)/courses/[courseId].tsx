@@ -13,8 +13,9 @@ import {
   Platform,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useLocalSearchParams } from "expo-router";
+import { useLocalSearchParams, router } from "expo-router";
 import { AlertTriangle } from "lucide-react-native";
+import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import { useCourses } from "@/hooks/useCourses";
 import { percentageToLetter } from "@vela/domain";
 import { Bone } from "@/components/ui/Skeleton";
@@ -954,8 +955,22 @@ export default function CourseDetailScreen() {
   const finalResultText =
     requiredFinal == null ? "—" : `${requiredFinal.toFixed(2)}%`;
 
+  const goBack = () => (router.canGoBack() ? router.back() : router.replace("/(tabs)/dashboard"));
+  const swipeBack = Gesture.Pan()
+    .runOnJS(true)
+    .activeOffsetX(12)
+    .failOffsetY([-20, 20])
+    .onEnd((e) => {
+      if (e.translationX > 70 || e.velocityX > 700) goBack();
+    });
+
   return (
-    <SafeAreaView className="flex-1 bg-space-void">
+    <SafeAreaView
+      edges={["top"]}
+      className="flex-1 bg-space-void"
+      // VoiceOver two-finger scrub ("escape") goes back, since the edge swipe isn't discoverable there.
+      onAccessibilityEscape={goBack}
+    >
       {loading ? (
         <SkeletonCourseDetail />
       ) : (
@@ -1714,6 +1729,12 @@ export default function CourseDetailScreen() {
           </View>
         </KeyboardAvoidingView>
       </Modal>
+
+      {/* Swipe right from the left edge to go back. A thin strip, so it never competes with the
+          scroll view or row actions. */}
+      <GestureDetector gesture={swipeBack}>
+        <View style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: 24 }} />
+      </GestureDetector>
     </SafeAreaView>
   );
 }
