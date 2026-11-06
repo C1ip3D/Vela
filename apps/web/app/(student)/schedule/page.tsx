@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { RefreshCw, Clock } from "lucide-react";
 import {
   getCurrentAndNext,
@@ -15,14 +15,6 @@ import { cn } from "@/lib/utils";
 
 const FULL_DAY = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
-const WEEKDAYS = [
-  { day: 1, label: "Mon" },
-  { day: 2, label: "Tue" },
-  { day: 3, label: "Wed" },
-  { day: 4, label: "Thu" },
-  { day: 5, label: "Fri" },
-];
-
 const periodSort = (a: string, b: string) => a.localeCompare(b, undefined, { numeric: true });
 const fmtMin = (m: number) => {
   const h = Math.floor(m / 60);
@@ -32,8 +24,7 @@ const fmtMin = (m: number) => {
 export default function SchedulePage() {
   const { entries, bells, bellsSource, loading, syncing, error, isConnected, syncFromIC, saveBells } = useSchedule();
   const [now, setNow] = useState(() => new Date());
-  const [picked, setPicked] = useState<number | "week">("week");
-  const [editing, setEditing] = useState(false);
+    const [editing, setEditing] = useState(false);
 
   useEffect(() => {
     const t = setInterval(() => setNow(new Date()), 30_000);
@@ -43,14 +34,11 @@ export default function SchedulePage() {
   const tz = bells[0]?.timezone;
   const local = getLocalParts(now, tz);
   const isSchoolDay = local.day >= 1 && local.day <= 5;
-  const isWeek = picked === "week";
-  const day = isWeek ? (isSchoolDay ? local.day : 1) : picked;
+  // Today's classes; on a weekend, the next school day (Monday).
+  const day = isSchoolDay ? local.day : 1;
 
   // Live status is always about today, whichever view is showing.
-  const todaySlots = useMemo(
-    () => (isSchoolDay ? getDaySlots(entries, bells, local.day, local.dateKey) : []),
-    [entries, bells, isSchoolDay, local.day, local.dateKey]
-  );
+  const todaySlots = isSchoolDay ? getDaySlots(entries, bells, local.day, local.dateKey) : [];
   const status = isSchoolDay ? getCurrentAndNext(todaySlots, local.minutes) : null;
 
   if (loading) {
@@ -88,30 +76,13 @@ export default function SchedulePage() {
     <div className="flex-1 p-6">
       <div className="mx-auto flex max-w-3xl flex-col gap-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
+          <h2 className="text-xs font-semibold uppercase tracking-widest text-[#A5B4FC]">
+            {isSchoolDay ? `Today · ${FULL_DAY[day]}` : `Next school day · ${FULL_DAY[day]}`}
+          </h2>
           <div className="flex gap-2">
-            {[{ key: "week" as const, label: "Week" }, ...WEEKDAYS.map((w) => ({ key: w.day, label: w.label }))].map(({ key, label }) => (
-              <button
-                key={String(key)}
-                onClick={() => {
-                  setPicked(key);
-                  if (key === "week") setEditing(false);
-                }}
-                aria-pressed={key === picked}
-                className={cn(
-                  "rounded-lg border px-3 py-1.5 text-sm transition-colors",
-                  key === picked ? "border-[#818CF8]/30 bg-[#818CF8]/10 text-[#A5B4FC]" : "border-[#1C2A45]/60 text-[#8B98B8] hover:text-[#D4DAF0]"
-                )}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
-          <div className="flex gap-2">
-            {!isWeek && (
-              <button onClick={() => setEditing((v) => !v)} aria-expanded={editing} className="flex items-center gap-1.5 rounded-lg border border-[#1C2A45]/60 px-3 py-1.5 text-sm text-[#8B98B8] hover:text-[#D4DAF0]">
-                <Clock size={14} /> {editing ? "Done" : "Bell times"}
-              </button>
-            )}
+            <button onClick={() => setEditing((v) => !v)} aria-expanded={editing} className="flex items-center gap-1.5 rounded-lg border border-[#1C2A45]/60 px-3 py-1.5 text-sm text-[#8B98B8] hover:text-[#D4DAF0]">
+              <Clock size={14} /> {editing ? "Done" : "Bell times"}
+            </button>
             {isConnected && (
               <button onClick={syncFromIC} disabled={syncing} className="flex items-center gap-1.5 rounded-lg border border-[#1C2A45]/60 px-3 py-1.5 text-sm text-[#8B98B8] hover:text-[#D4DAF0] disabled:opacity-50">
                 <RefreshCw size={14} className={syncing ? "animate-spin" : ""} /> Sync
@@ -134,7 +105,7 @@ export default function SchedulePage() {
           <p className="text-sm text-amber-400">Add your bell times to see when each class meets.</p>
         )}
 
-        {editing && !isWeek && (
+        {editing && (
           <BellEditor
             key={day}
             day={day}
@@ -145,20 +116,9 @@ export default function SchedulePage() {
           />
         )}
 
-        {isWeek ? (
-          WEEKDAYS.map(({ day: d }) => (
-            <section key={d} className="flex flex-col gap-3">
-              <h2 className={cn("text-xs font-semibold uppercase tracking-widest", d === local.day ? "text-[#A5B4FC]" : "text-[#8B98B8]")}>
-                {FULL_DAY[d]}{d === local.day ? " · Today" : ""}
-              </h2>
-              <DayCards day={d} entries={entries} bells={bells} local={local} />
-            </section>
-          ))
-        ) : (
-          <div className="flex flex-col gap-3">
-            <DayCards day={day} entries={entries} bells={bells} local={local} />
-          </div>
-        )}
+        <div className="flex flex-col gap-3">
+          <DayCards day={day} entries={entries} bells={bells} local={local} />
+        </div>
       </div>
     </div>
   );

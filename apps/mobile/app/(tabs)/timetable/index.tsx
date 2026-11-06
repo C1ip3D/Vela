@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { View, Text, ScrollView, TouchableOpacity, TextInput } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import {
@@ -15,14 +15,6 @@ import { Spinner } from "@/components/ui/Skeleton";
 
 const FULL_DAY = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
-const WEEKDAYS = [
-  { day: 1, label: "Mon" },
-  { day: 2, label: "Tue" },
-  { day: 3, label: "Wed" },
-  { day: 4, label: "Thu" },
-  { day: 5, label: "Fri" },
-];
-
 const periodSort = (a: string, b: string) => a.localeCompare(b, undefined, { numeric: true });
 const fmtMin = (m: number) => {
   const h = Math.floor(m / 60);
@@ -32,8 +24,6 @@ const fmtMin = (m: number) => {
 export default function TimetableScreen() {
   const { entries, bells, usingPreset, loading, error, isConnected, reload, saveBells } = useSchedule();
   const [now, setNow] = useState(() => new Date());
-  // "week" shows Mon-Fri stacked; a number shows just that weekday.
-  const [picked, setPicked] = useState<number | "week">("week");
   const [editing, setEditing] = useState(false);
 
   useEffect(() => {
@@ -43,14 +33,11 @@ export default function TimetableScreen() {
 
   const local = getLocalParts(now, bells[0]?.timezone);
   const isSchoolDay = local.day >= 1 && local.day <= 5;
-  const isWeek = picked === "week";
-  const day = isWeek ? (isSchoolDay ? local.day : 1) : picked;
+  // Today's classes; on a weekend, the next school day (Monday).
+  const day = isSchoolDay ? local.day : 1;
 
   // Live status is always about today, whichever view is showing.
-  const todaySlots = useMemo(
-    () => (isSchoolDay ? getDaySlots(entries, bells, local.day, local.dateKey) : []),
-    [entries, bells, isSchoolDay, local.day, local.dateKey]
-  );
+  const todaySlots = isSchoolDay ? getDaySlots(entries, bells, local.day, local.dateKey) : [];
   const status = isSchoolDay ? getCurrentAndNext(todaySlots, local.minutes) : null;
 
   if (loading) {
@@ -82,32 +69,9 @@ export default function TimetableScreen() {
   return (
     <SafeAreaView className="flex-1 bg-space-void">
       <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 40 }}>
-        <View style={{ flexDirection: "row", marginBottom: 16 }}>
-          {[{ key: "week" as const, label: "Week" }, ...WEEKDAYS.map((w) => ({ key: w.day, label: w.label }))].map(
-            ({ key, label }) => (
-              <TouchableOpacity
-                key={String(key)}
-                onPress={() => {
-                  setPicked(key);
-                  if (key === "week") setEditing(false);
-                }}
-                accessibilityRole="button"
-                accessibilityState={{ selected: key === picked }}
-                style={{
-                  marginRight: 6,
-                  paddingHorizontal: 11,
-                  paddingVertical: 8,
-                  borderRadius: 10,
-                  borderWidth: 1,
-                  borderColor: key === picked ? "rgba(129,140,248,0.3)" : "#1C2A45",
-                  backgroundColor: key === picked ? "rgba(129,140,248,0.1)" : "transparent",
-                }}
-              >
-                <Text style={{ color: key === picked ? "#A5B4FC" : "#8B98B8" }}>{label}</Text>
-              </TouchableOpacity>
-            )
-          )}
-        </View>
+        <Text style={{ color: "#A5B4FC", fontSize: 13, fontWeight: "600", letterSpacing: 1, textTransform: "uppercase", marginBottom: 12 }}>
+          {isSchoolDay ? `Today · ${FULL_DAY[day]}` : `Next school day · ${FULL_DAY[day]}`}
+        </Text>
 
         {status && status.state !== "no-school" ? (
           <Text style={{ color: "#8B98B8", marginBottom: 12 }}>
@@ -123,16 +87,12 @@ export default function TimetableScreen() {
         ) : null}
 
         <View style={{ flexDirection: "row", justifyContent: "flex-end", marginBottom: 12 }}>
-          {isWeek ? (
-            <Text style={{ color: "#4A5578", fontSize: 12 }}>Pick a day to edit its bell times</Text>
-          ) : (
-            <TouchableOpacity onPress={() => setEditing((v) => !v)} accessibilityRole="button">
-              <Text style={{ color: "#A5B4FC" }}>{editing ? "Done" : "Edit bell times"}</Text>
-            </TouchableOpacity>
-          )}
+          <TouchableOpacity onPress={() => setEditing((v) => !v)} accessibilityRole="button">
+            <Text style={{ color: "#A5B4FC" }}>{editing ? "Done" : "Edit bell times"}</Text>
+          </TouchableOpacity>
         </View>
 
-        {editing && !isWeek ? (
+        {editing ? (
           <BellEditor
             key={day}
             day={day}
@@ -143,19 +103,7 @@ export default function TimetableScreen() {
           />
         ) : null}
 
-        {isWeek ? (
-          WEEKDAYS.map(({ day: d }) => (
-            <View key={d} style={{ marginBottom: 8 }}>
-              <Text style={{ color: d === local.day ? "#A5B4FC" : "#8B98B8", fontSize: 13, fontWeight: "600", letterSpacing: 1, textTransform: "uppercase", marginBottom: 8 }}>
-                {FULL_DAY[d]}
-                {d === local.day ? " · Today" : ""}
-              </Text>
-              <DayCards day={d} entries={entries} bells={bells} local={local} />
-            </View>
-          ))
-        ) : (
-          <DayCards day={day} entries={entries} bells={bells} local={local} />
-        )}
+        <DayCards day={day} entries={entries} bells={bells} local={local} />
       </ScrollView>
     </SafeAreaView>
   );
