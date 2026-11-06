@@ -158,7 +158,11 @@ function DayCards({
   // A date-pinned variant (finals, minimum day) only applies to its own date.
   const slots = getDaySlots(entries, bells, day, isToday ? local.dateKey : undefined);
   const current = isToday ? getCurrentAndNext(slots, local.minutes).current : null;
-  const dayEntries = entriesForDay(entries, day);
+  // Chronological by bell time; classes with no bell time go last, by period.
+  const startOf = (e: ScheduleEntry) => slots.find((s) => s.period === e.period)?.startMinutes ?? Infinity;
+  const dayEntries = entriesForDay(entries, day).sort(
+    (a, b) => startOf(a) - startOf(b) || periodSort(a.period, b.period)
+  );
   if (dayEntries.length === 0) return <p className="text-sm text-[#4A5578]">No classes</p>;
 
   return (
