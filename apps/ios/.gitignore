@@ -1,0 +1,9 @@
+Config/Secrets.xcconfig
+Vela.xcodeproj/
+Vela/Info.plist
+.build/
+build/
+DerivedData/
+xcuserdata/
+*.xcuserstate
+.swiftpm/

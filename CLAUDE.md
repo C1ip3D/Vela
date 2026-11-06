@@ -14,7 +14,8 @@ Vela is a student academic monitoring and planning platform built for Stang Hack
 ```
 apps/
   web/         — API-only Next.js 16 backend (route handlers, no UI)
-  mobile/      — Expo/React Native app
+  mobile/      — Expo/React Native app (being replaced by apps/ios)
+  ios/         — native SwiftUI rewrite of the mobile app (see apps/ios/README.md); VelaKit/ is a Swift port of ic-client + domain
 packages/
   types/       — shared TypeScript interfaces
   domain/      — pure grading logic: GPA calculation, finals study-coach ranking (tested — see packages/domain/src/__tests__)
@@ -48,6 +49,15 @@ npm run android   # run on Android emulator
 npm run bundle:ios  # production iOS bundle
 npm test           # jest (currently only packages/domain has unit tests; apps/mobile has none of its own)
 ```
+
+### iOS (apps/ios)
+
+```bash
+cd apps/ios && xcodegen generate   # .xcodeproj is generated from project.yml
+swift test --package-path apps/ios/VelaKit   # ported ic-client/domain tests
+```
+
+When changing grading/IC-parsing logic, update both the TypeScript package and its Swift port in `apps/ios/VelaKit` until `apps/mobile` is removed.
 
 ### Domain package tests
 
