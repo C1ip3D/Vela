@@ -403,4 +403,56 @@ public enum Parsers {
             return c == .orderedSame ? l.offset < r.offset : c == .orderedAscending
         }.map(\.element)
     }
+
+    // MARK: Responsive scheduling
+
+    private static func nonEmptyString(_ v: JSON) -> String? {
+        guard let s = v.string?.trimmingCharacters(in: .whitespacesAndNewlines), !s.isEmpty else { return nil }
+        return s
+    }
+
+    private static func parseResponsiveOffering(_ raw: JSON) -> ICResponsiveOffering? {
+        guard !raw["responsiveOfferingID"].isNull, let id = raw["responsiveOfferingID"].stringified else { return nil }
+        let maxStudents = raw["maxStudents"].parsedFloat
+        let current = raw["currentStudents"].parsedFloat
+        return ICResponsiveOffering(
+            id: id,
+            name: nonEmptyString(raw["responsiveOfferingName"]) ?? "Untitled",
+            description: nonEmptyString(raw["description"]),
+            teacher: nonEmptyString(raw["teacherDisplay"]),
+            room: nonEmptyString(raw["roomName"]),
+            maxStudents: maxStudents,
+            currentStudents: current,
+            seatsLeft: (maxStudents != nil && current != nil) ? max(0, Int(maxStudents! - current!)) : nil,
+            // IC's own portal treats a non-zero rosterID as "the student is enrolled here".
+            isSelected: raw["rosterID"].truthy,
+            teacherAssigned: raw["teacherRequest"].truthy,
+            teacherReason: nonEmptyString(raw["reason"])
+        )
+    }
+
+    /// Parses /resources/prism/portal/responsiveSchedule. Like IC's portal, drops sessions with no offerings and
+    /// sorts offerings by name; sessions come back in date order.
+    public static func parseResponsiveSessions(_ data: JSON) -> [ICResponsiveSession] {
+        let list = data.array ?? data["data"].array ?? []
+        var sessions = [ICResponsiveSession]()
+        for raw in list {
+            guard !raw["responsiveSessionID"].isNull, let id = raw["responsiveSessionID"].stringified else { continue }
+            let offerings = (raw["offerings"].array ?? [])
+                .compactMap(parseResponsiveOffering)
+                .sorted { $0.name.lowercased() < $1.name.lowercased() }
+            if offerings.isEmpty { continue }
+            sessions.append(ICResponsiveSession(
+                id: id,
+                name: nonEmptyString(raw["sessionName"]) ?? "Flex period",
+                startDate: datePrefix(raw["startDate"].string),
+                endDate: datePrefix(raw["endDate"].string),
+                isOpen: raw["sessionOpen"].truthy,
+                personId: nil, calendarId: nil,
+                offerings: offerings,
+                selectedOffering: offerings.first { $0.isSelected }
+            ))
+        }
+        return sessions.sorted { ($0.startDate ?? "") < ($1.startDate ?? "") }
+    }
 }

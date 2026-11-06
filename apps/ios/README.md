@@ -42,6 +42,5 @@ These are the same routes the Expo app uses, so the Next.js → Hono port only h
 ## Not yet ported (parity gaps vs apps/mobile)
 
 - "Reset to school schedule" for edited bell times (the backend has no delete route yet)
-- Responsive scheduling / flex-period picker (`Schedule` tab)
 - Silent IC re-login with saved credentials (an expired session now returns to sign-in)
 - Finals/study coach

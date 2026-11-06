@@ -48,6 +48,7 @@ struct MainTabView: View {
         TabView {
             Tab("Dashboard", systemImage: "square.grid.2x2") { DashboardView() }
             Tab(dayTitle, systemImage: "calendar.day.timeline.left") { DayView() }
+            Tab("Schedule", systemImage: "calendar.badge.checkmark") { FlexView() }
             Tab("Settings", systemImage: "gearshape") { SettingsView() }
         }
         .toolbarBackground(Palette.deep, for: .tabBar)

@@ -174,3 +174,48 @@ final class ClientHeaderTests: XCTestCase {
         XCTAssertTrue(IcLoginSignals.containsFailureMarkers("Invalid Username and/or Password"))
     }
 }
+
+final class ResponsiveScheduleTests: XCTestCase {
+    private func fixture() throws -> JSON {
+        let url = try XCTUnwrap(Bundle.module.url(forResource: "responsiveSchedule", withExtension: "json", subdirectory: "Fixtures"))
+        return try JSON(data: Data(contentsOf: url))
+    }
+
+    func testFixtureMirrorsTypeScriptTests() throws {
+        let sessions = Parsers.parseResponsiveSessions(try fixture())
+        // Drops sessions with no offerings; sorted by date.
+        XCTAssertEqual(sessions.map(\.id), ["2001", "2002"])
+        // Keeps the district-local day from IC's timestamp.
+        XCTAssertEqual(sessions[0].startDate, "2026-10-29")
+        XCTAssertEqual(sessions[0].name, "Thursday ACCESS; Thu 10/29/2026")
+        XCTAssertFalse(sessions[0].isOpen)
+        XCTAssertTrue(sessions[1].isOpen)
+        // Offerings sorted by name, case-insensitively.
+        XCTAssertEqual(sessions[1].offerings.map(\.name), ["Chemistry Help", "study Hall"])
+        // rosterID marks the student's pick.
+        let picked = try XCTUnwrap(sessions[0].selectedOffering)
+        XCTAssertEqual(picked.id, "9002")
+        XCTAssertTrue(picked.teacherAssigned)
+        XCTAssertEqual(picked.teacherReason, "Missing unit test")
+        XCTAssertNil(sessions[1].selectedOffering)
+        // Seats left, never below zero.
+        XCTAssertEqual(sessions[1].offerings[0].seatsLeft, 7)
+        XCTAssertEqual(sessions[1].offerings[1].seatsLeft, 0)
+        // Empty strings become nil.
+        let art = try XCTUnwrap(sessions[0].offerings.first { $0.id == "9001" })
+        XCTAssertEqual(art.description, "Extra time to work on projects.")
+        XCTAssertNil(sessions[1].offerings[1].description)
+        XCTAssertEqual(art.teacher, "Teacher, Delta")
+        XCTAssertEqual(art.room, "D-404")
+    }
+
+    func testMissingCapacityAndMalformedInput() throws {
+        let one = Parsers.parseResponsiveSessions(try JSON(data: Data(
+            #"[{"responsiveSessionID":1,"offerings":[{"responsiveOfferingID":5,"responsiveOfferingName":"X"}]}]"#.utf8)))
+        XCTAssertNil(one[0].offerings[0].seatsLeft)
+        XCTAssertNil(one[0].startDate)
+        XCTAssertEqual(Parsers.parseResponsiveSessions(.null), [])
+        XCTAssertEqual(Parsers.parseResponsiveSessions(try JSON(data: Data(#"{"data":"nope"}"#.utf8))), [])
+        XCTAssertEqual(Parsers.parseResponsiveSessions(try JSON(data: Data(#"[{"offerings":[]},"junk"]"#.utf8))), [])
+    }
+}

@@ -7,8 +7,10 @@ import Foundation
 public struct ICClient: Sendable {
     public enum ICError: LocalizedError, Sendable {
         case sessionExpired(String)
+        /// IC understood the request and said no (seat full, session closed, teacher-placed).
+        case refused(String)
         public var errorDescription: String? {
-            switch self { case .sessionExpired(let m): return m }
+            switch self { case .sessionExpired(let m), .refused(let m): return m }
         }
     }
 
@@ -271,6 +273,81 @@ public struct ICClient: Sendable {
             }
         }
         throw ICError.sessionExpired("Session expired or unable to fetch the schedule. Please log in again.")
+    }
+
+    // MARK: Responsive scheduling (flex periods)
+
+    /// Fetches the student's flex-period sessions with every offering, its seats left, and which one the student is in.
+    public func fetchResponsiveSchedule() async throws -> [ICResponsiveSession] {
+        let q = Self.appQuery(session)
+        let aq = Self.appParam(session)
+        let expired = ICError.sessionExpired("Session expired or unable to fetch the responsive schedule. Please log in again.")
+
+        // The endpoint is keyed by enrollment (calendar + schedule structure), so look those up first.
+        guard let studentsJSON = await getJSON("/api/portal/students\(q)") else { throw expired }
+        let students = studentsJSON.array ?? studentsJSON["data"].array ?? []
+
+        struct Enrollment: Hashable { var personID, calendarID, structureID: String }
+        var seen = Set<Enrollment>()
+        var enrollments = [Enrollment]()
+        for s in students {
+            for e in s["enrollments"].array ?? [] {
+                guard let person = (e["personID"] ?? s["personID"]).stringified,
+                      let calendar = e["calendarID"].stringified, let structure = e["structureID"].stringified else { continue }
+                let item = Enrollment(personID: person, calendarID: calendar, structureID: structure)
+                if seen.insert(item).inserted { enrollments.append(item) } // ask IC once per pair
+            }
+        }
+
+        var byId = [String: ICResponsiveSession]()
+        var unreachable = 0
+        for e in enrollments {
+            // Must be fresh: right after a sign-up, a cached copy would show the old pick and seat counts.
+            let path = "/resources/prism/portal/responsiveSchedule?calendarID=\(e.calendarID)&personID=\(e.personID)&structureID=\(e.structureID)\(aq)"
+            guard let req = request(path, noCache: true), let (data, resp) = try? await urlSession.data(for: req),
+                  let http = resp as? HTTPURLResponse else { unreachable += 1; continue }
+            if http.statusCode == 401 || http.statusCode == 403 { unreachable += 1; continue }
+            // A school without Responsive Scheduling answers with an error: no flex periods for this enrollment.
+            guard (200..<300).contains(http.statusCode) else { continue }
+            // IC redirects an expired session to its HTML login page.
+            guard let json = try? JSON(data: data) else { unreachable += 1; continue }
+            for var s in Parsers.parseResponsiveSessions(json) {
+                s.personId = e.personID
+                s.calendarId = e.calendarID
+                byId[s.id] = s
+            }
+        }
+
+        // Report expiry (so callers can re-login) rather than "no flex periods" when no enrollment could be read.
+        if !enrollments.isEmpty && unreachable == enrollments.count { throw expired }
+        return byId.values.sorted { ($0.startDate ?? "") < ($1.startDate ?? "") }
+    }
+
+    /// Signs the student up for one offering of a session (or switches their pick), the same call IC's own portal makes.
+    /// Throws with IC's message when it refuses (full, closed, teacher-placed, expired login).
+    public func selectResponsiveOffering(personId: String, calendarId: String, responsiveSessionId: String, offeringId: String) async throws {
+        guard var req = request("/resources/prism/portal/responsiveSchedule/update\(Self.appQuery(session))") else {
+            throw ICError.sessionExpired("Couldn't reach Infinite Campus. Check your connection and try again.")
+        }
+        req.httpMethod = "POST"
+        req.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        let body: [String: Int] = [
+            "personID": Int(personId) ?? 0, "responsiveSessionID": Int(responsiveSessionId) ?? 0,
+            "calendarID": Int(calendarId) ?? 0, "responsiveOfferingID": Int(offeringId) ?? 0,
+        ]
+        req.httpBody = try JSONSerialization.data(withJSONObject: body)
+
+        let data: Data, resp: URLResponse
+        do { (data, resp) = try await urlSession.data(for: req) }
+        catch { throw ICError.sessionExpired("Couldn't reach Infinite Campus. Check your connection and try again.") }
+
+        // IC redirects an expired session to its HTML login page.
+        guard let json = try? JSON(data: data) else { throw ICError.sessionExpired("Session expired. Please log in again.") }
+        let ok = ((resp as? HTTPURLResponse).map { (200..<300).contains($0.statusCode) } ?? false) && json["success"] == .bool(true)
+        if !ok {
+            let message = json["message"].string.flatMap { $0.isEmpty ? nil : $0 } ?? "Infinite Campus rejected the change."
+            throw ICError.refused(message)
+        }
     }
 
     // MARK: Session health

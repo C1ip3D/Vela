@@ -156,3 +156,54 @@ public struct ScheduleSlot: Equatable, Sendable {
     public var startMinutes: Int
     public var endMinutes: Int
 }
+
+// MARK: Responsive scheduling (flex periods)
+
+public struct ICResponsiveOffering: Codable, Equatable, Hashable, Identifiable, Sendable {
+    public var id: String
+    public var name: String
+    public var description: String?
+    public var teacher: String?
+    public var room: String?
+    public var maxStudents: Double?
+    public var currentStudents: Double?
+    /// nil when IC didn't report capacity. Never negative.
+    public var seatsLeft: Int?
+    /// The student is currently scheduled into this offering.
+    public var isSelected: Bool
+    /// A teacher placed the student here, so the student can't switch out.
+    public var teacherAssigned: Bool
+    public var teacherReason: String?
+
+    public init(id: String, name: String, description: String? = nil, teacher: String? = nil, room: String? = nil,
+                maxStudents: Double? = nil, currentStudents: Double? = nil, seatsLeft: Int? = nil,
+                isSelected: Bool = false, teacherAssigned: Bool = false, teacherReason: String? = nil) {
+        self.id = id; self.name = name; self.description = description; self.teacher = teacher; self.room = room
+        self.maxStudents = maxStudents; self.currentStudents = currentStudents; self.seatsLeft = seatsLeft
+        self.isSelected = isSelected; self.teacherAssigned = teacherAssigned; self.teacherReason = teacherReason
+    }
+}
+
+/// One flex period (e.g. "Thursday ACCESS") and the offerings students can pick from.
+public struct ICResponsiveSession: Codable, Equatable, Hashable, Identifiable, Sendable {
+    public var id: String
+    public var name: String
+    /// YYYY-MM-DD in the district's local time.
+    public var startDate: String?
+    public var endDate: String?
+    /// Students can still sign up or switch.
+    public var isOpen: Bool
+    /// Needed to sign up; filled in from the enrollment the session was fetched for.
+    public var personId: String?
+    public var calendarId: String?
+    public var offerings: [ICResponsiveOffering]
+    public var selectedOffering: ICResponsiveOffering?
+
+    public init(id: String, name: String, startDate: String? = nil, endDate: String? = nil, isOpen: Bool,
+                personId: String? = nil, calendarId: String? = nil, offerings: [ICResponsiveOffering],
+                selectedOffering: ICResponsiveOffering? = nil) {
+        self.id = id; self.name = name; self.startDate = startDate; self.endDate = endDate; self.isOpen = isOpen
+        self.personId = personId; self.calendarId = calendarId; self.offerings = offerings
+        self.selectedOffering = selectedOffering
+    }
+}

@@ -50,6 +50,10 @@ final class AppModel {
     enum BellSaveResult { case synced, localOnly }
     private(set) var scheduleState: Load = .idle
 
+    // Flex periods (responsive scheduling)
+    private(set) var flexSessions: [ICResponsiveSession] = []
+    private(set) var flexState: Load = .idle
+
     private let backend = BackendClient()
     private var lastSessionCheck = Date.distantPast
 
@@ -116,6 +120,8 @@ final class AppModel {
         assignmentGroups = [:]
         coursesState = .idle
         scheduleState = .idle
+        flexSessions = []
+        flexState = .idle
         phase = .signedIn
 
         // Vela identity is best-effort: IC data loads on-device either way.
@@ -143,6 +149,8 @@ final class AppModel {
         assignmentGroups = [:]
         coursesState = .idle
         scheduleState = .idle
+        flexSessions = []
+        flexState = .idle
         loginError = nil
         phase = .signedOut
         // Don't leave the previous student's IC login in any shared web store.
@@ -218,6 +226,61 @@ final class AppModel {
         let groups = try await withSession { try await $0.fetchAssignments(courseId: courseId) }
         assignmentGroups[courseId] = groups
         return groups
+    }
+
+    // MARK: Flex periods
+
+    func loadFlex(force: Bool = false) async {
+        guard session != nil else { return }
+        if flexState == .loading { return }
+        if !force, flexState == .loaded { return }
+        #if DEBUG
+        if DemoData.isEnabled {
+            if flexSessions.isEmpty { flexSessions = DemoData.flex }
+            flexState = .loaded
+            return
+        }
+        #endif
+        flexState = .loading
+        do {
+            flexSessions = try await withSession { try await $0.fetchResponsiveSchedule() }
+            flexState = .loaded
+        } catch {
+            flexSessions = []
+            flexState = .failed(error.localizedDescription)
+        }
+    }
+
+    /// Signs up for (or switches to) an offering, then reloads so seat counts and "your pick" are IC's truth.
+    /// Throws IC's own message when it refuses (full, closed, teacher-placed).
+    func selectFlexOffering(in target: ICResponsiveSession, offeringId: String) async throws {
+        guard let current = session else { throw ICClient.ICError.sessionExpired("Not connected to Infinite Campus.") }
+        #if DEBUG
+        if DemoData.isEnabled {
+            try await Task.sleep(for: .milliseconds(600))
+            flexSessions = flexSessions.map { s in
+                guard s.id == target.id else { return s }
+                var s = s
+                s.offerings = s.offerings.map { o in
+                    var o = o
+                    if o.isSelected { o.isSelected = false; o.currentStudents = (o.currentStudents ?? 1) - 1; o.seatsLeft = o.seatsLeft.map { $0 + 1 } }
+                    if o.id == offeringId { o.isSelected = true; o.currentStudents = (o.currentStudents ?? 0) + 1; o.seatsLeft = o.seatsLeft.map { max(0, $0 - 1) } }
+                    return o
+                }
+                s.selectedOffering = s.offerings.first { $0.isSelected }
+                return s
+            }
+            return
+        }
+        #endif
+        guard let personId = target.personId ?? current.ic.personId, let calendarId = target.calendarId else {
+            throw ICClient.ICError.refused("Missing schedule details. Pull to refresh and try again.")
+        }
+        try await withSession {
+            try await $0.selectResponsiveOffering(
+                personId: personId, calendarId: calendarId, responsiveSessionId: target.id, offeringId: offeringId)
+        }
+        await loadFlex(force: true)
     }
 
     // MARK: Schedule
