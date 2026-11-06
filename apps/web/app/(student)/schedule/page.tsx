@@ -9,9 +9,11 @@ import {
   pickBellSchedule,
   upsertPeriodTimes,
 } from "@vela/domain";
-import type { BellPeriod, BellSchedule } from "@vela/types";
+import type { BellPeriod, BellSchedule, ScheduleEntry } from "@vela/types";
 import { useSchedule } from "@/hooks/useSchedule";
 import { cn } from "@/lib/utils";
+
+const FULL_DAY = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
 const WEEKDAYS = [
   { day: 1, label: "Mon" },
@@ -30,7 +32,7 @@ const fmtMin = (m: number) => {
 export default function SchedulePage() {
   const { entries, bells, bellsSource, loading, syncing, error, isConnected, syncFromIC, saveBells } = useSchedule();
   const [now, setNow] = useState(() => new Date());
-  const [picked, setPicked] = useState<number | null>(null);
+  const [picked, setPicked] = useState<number | "week">("week");
   const [editing, setEditing] = useState(false);
 
   useEffect(() => {
@@ -41,15 +43,15 @@ export default function SchedulePage() {
   const tz = bells[0]?.timezone;
   const local = getLocalParts(now, tz);
   const isSchoolDay = local.day >= 1 && local.day <= 5;
-  const day = picked ?? (isSchoolDay ? local.day : 1);
-  const viewingToday = day === local.day;
+  const isWeek = picked === "week";
+  const day = isWeek ? (isSchoolDay ? local.day : 1) : picked;
 
-  // A date-pinned variant (finals, minimum day) only applies to its own date.
-  const slots = useMemo(
-    () => getDaySlots(entries, bells, day, viewingToday ? local.dateKey : undefined),
-    [entries, bells, day, viewingToday, local.dateKey]
+  // Live status is always about today, whichever view is showing.
+  const todaySlots = useMemo(
+    () => (isSchoolDay ? getDaySlots(entries, bells, local.day, local.dateKey) : []),
+    [entries, bells, isSchoolDay, local.day, local.dateKey]
   );
-  const status = viewingToday ? getCurrentAndNext(slots, local.minutes) : null;
+  const status = isSchoolDay ? getCurrentAndNext(todaySlots, local.minutes) : null;
 
   if (loading) {
     return (
@@ -80,27 +82,24 @@ export default function SchedulePage() {
     );
   }
 
-  // Classes meeting this weekday, with times when a bell schedule covers the period.
-  const dayEntries = entries
-    .filter((e) => !e.days?.length || e.days.includes(day))
-    .sort((a, b) => periodSort(a.period, b.period))
-    // IC can list the same class twice (e.g. one row per term); show it once.
-    .filter((e, i, all) => all.findIndex((x) => x.period === e.period && x.courseName === e.courseName && x.room === e.room) === i);
-  const slotFor = (period: string) => slots.find((s) => s.period === period);
+  const dayEntries = entriesForDay(entries, day);
 
   return (
     <div className="flex-1 p-6">
       <div className="mx-auto flex max-w-3xl flex-col gap-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex gap-2">
-            {WEEKDAYS.map(({ day: d, label }) => (
+            {[{ key: "week" as const, label: "Week" }, ...WEEKDAYS.map((w) => ({ key: w.day, label: w.label }))].map(({ key, label }) => (
               <button
-                key={d}
-                onClick={() => setPicked(d)}
-                aria-pressed={d === day}
+                key={String(key)}
+                onClick={() => {
+                  setPicked(key);
+                  if (key === "week") setEditing(false);
+                }}
+                aria-pressed={key === picked}
                 className={cn(
                   "rounded-lg border px-3 py-1.5 text-sm transition-colors",
-                  d === day ? "border-[#818CF8]/30 bg-[#818CF8]/10 text-[#A5B4FC]" : "border-[#1C2A45]/60 text-[#8B98B8] hover:text-[#D4DAF0]"
+                  key === picked ? "border-[#818CF8]/30 bg-[#818CF8]/10 text-[#A5B4FC]" : "border-[#1C2A45]/60 text-[#8B98B8] hover:text-[#D4DAF0]"
                 )}
               >
                 {label}
@@ -108,9 +107,11 @@ export default function SchedulePage() {
             ))}
           </div>
           <div className="flex gap-2">
-            <button onClick={() => setEditing((v) => !v)} aria-expanded={editing} className="flex items-center gap-1.5 rounded-lg border border-[#1C2A45]/60 px-3 py-1.5 text-sm text-[#8B98B8] hover:text-[#D4DAF0]">
-              <Clock size={14} /> {editing ? "Done" : "Bell times"}
-            </button>
+            {!isWeek && (
+              <button onClick={() => setEditing((v) => !v)} aria-expanded={editing} className="flex items-center gap-1.5 rounded-lg border border-[#1C2A45]/60 px-3 py-1.5 text-sm text-[#8B98B8] hover:text-[#D4DAF0]">
+                <Clock size={14} /> {editing ? "Done" : "Bell times"}
+              </button>
+            )}
             {isConnected && (
               <button onClick={syncFromIC} disabled={syncing} className="flex items-center gap-1.5 rounded-lg border border-[#1C2A45]/60 px-3 py-1.5 text-sm text-[#8B98B8] hover:text-[#D4DAF0] disabled:opacity-50">
                 <RefreshCw size={14} className={syncing ? "animate-spin" : ""} /> Sync
@@ -128,12 +129,12 @@ export default function SchedulePage() {
             {status.state === "after" && "School's out for today"}
           </p>
         )}
-        {viewingToday && !isSchoolDay && <p className="text-sm text-[#8B98B8]">No school today.</p>}
+        {!isSchoolDay && <p className="text-sm text-[#8B98B8]">No school today.</p>}
         {bells.length === 0 && (
           <p className="text-sm text-amber-400">Add your bell times to see when each class meets.</p>
         )}
 
-        {editing && (
+        {editing && !isWeek && (
           <BellEditor
             key={day}
             day={day}
@@ -144,35 +145,79 @@ export default function SchedulePage() {
           />
         )}
 
-        <div className="flex flex-col gap-3">
-          {dayEntries.map((e) => {
-            const slot = slotFor(e.period);
-            const isNow = status?.current?.entry === e;
-            return (
-              <div
-                key={`${e.period}-${e.courseName}`}
-                className={cn(
-                  "flex items-center justify-between rounded-xl border px-6 py-5 backdrop-blur-sm",
-                  isNow ? "border-[#818CF8]/40 bg-[#818CF8]/10" : "border-[#1C2A45]/60 bg-[#101828]/50"
-                )}
-              >
-                <div className="min-w-0">
-                  <p className="truncate text-lg font-medium text-[#E8ECFF]">{e.courseName}</p>
-                  <p className="text-sm text-[#4A5578]">
-                    Period {e.period}
-                    {e.room ? ` · Room ${e.room}` : ""}
-                    {e.teacher ? ` · ${e.teacher}` : ""}
-                  </p>
-                </div>
-                <span className="shrink-0 font-mono text-sm text-[#8B98B8]">
-                  {slot ? `${fmtMin(slot.startMinutes)} – ${fmtMin(slot.endMinutes)}` : "No bell time"}
-                </span>
-              </div>
-            );
-          })}
-        </div>
+        {isWeek ? (
+          WEEKDAYS.map(({ day: d }) => (
+            <section key={d} className="flex flex-col gap-3">
+              <h2 className={cn("text-xs font-semibold uppercase tracking-widest", d === local.day ? "text-[#A5B4FC]" : "text-[#8B98B8]")}>
+                {FULL_DAY[d]}{d === local.day ? " · Today" : ""}
+              </h2>
+              <DayCards day={d} entries={entries} bells={bells} local={local} />
+            </section>
+          ))
+        ) : (
+          <div className="flex flex-col gap-3">
+            <DayCards day={day} entries={entries} bells={bells} local={local} />
+          </div>
+        )}
       </div>
     </div>
+  );
+}
+
+function entriesForDay(entries: ScheduleEntry[], day: number): ScheduleEntry[] {
+  return entries
+    .filter((e) => !e.days?.length || e.days.includes(day))
+    .sort((a, b) => periodSort(a.period, b.period))
+    // IC can list the same class twice (e.g. one row per term); show it once.
+    .filter((e, i, all) => all.findIndex((x) => x.period === e.period && x.courseName === e.courseName && x.room === e.room) === i);
+}
+
+function DayCards({
+  day,
+  entries,
+  bells,
+  local,
+}: {
+  day: number;
+  entries: ScheduleEntry[];
+  bells: BellSchedule[];
+  local: { day: number; dateKey: string; minutes: number };
+}) {
+  const isToday = day === local.day;
+  // A date-pinned variant (finals, minimum day) only applies to its own date.
+  const slots = getDaySlots(entries, bells, day, isToday ? local.dateKey : undefined);
+  const current = isToday ? getCurrentAndNext(slots, local.minutes).current : null;
+  const dayEntries = entriesForDay(entries, day);
+  if (dayEntries.length === 0) return <p className="text-sm text-[#4A5578]">No classes</p>;
+
+  return (
+    <>
+      {dayEntries.map((e) => {
+        const slot = slots.find((s) => s.period === e.period);
+        const isNow = current?.entry === e;
+        return (
+          <div
+            key={`${e.period}-${e.courseName}-${e.room ?? ""}`}
+            className={cn(
+              "flex items-center justify-between rounded-xl border px-6 py-5 backdrop-blur-sm",
+              isNow ? "border-[#818CF8]/40 bg-[#818CF8]/10" : "border-[#1C2A45]/60 bg-[#101828]/50"
+            )}
+          >
+            <div className="min-w-0">
+              <p className="truncate text-lg font-medium text-[#E8ECFF]">{e.courseName}</p>
+              <p className="text-sm text-[#4A5578]">
+                Period {e.period}
+                {e.room ? ` · Room ${e.room}` : ""}
+                {e.teacher ? ` · ${e.teacher}` : ""}
+              </p>
+            </div>
+            <span className="shrink-0 font-mono text-sm text-[#8B98B8]">
+              {slot ? `${fmtMin(slot.startMinutes)} – ${fmtMin(slot.endMinutes)}` : "No bell time"}
+            </span>
+          </div>
+        );
+      })}
+    </>
   );
 }
 

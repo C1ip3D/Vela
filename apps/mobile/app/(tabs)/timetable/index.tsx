@@ -9,9 +9,11 @@ import {
   pickBellSchedule,
   upsertPeriodTimes,
 } from "@vela/domain";
-import type { BellPeriod, BellSchedule } from "@vela/types";
+import type { BellPeriod, BellSchedule, ScheduleEntry } from "@vela/types";
 import { useSchedule } from "@/hooks/useSchedule";
 import { Spinner } from "@/components/ui/Skeleton";
+
+const FULL_DAY = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
 const WEEKDAYS = [
   { day: 1, label: "Mon" },
@@ -30,7 +32,8 @@ const fmtMin = (m: number) => {
 export default function TimetableScreen() {
   const { entries, bells, usingPreset, loading, error, isConnected, reload, saveBells } = useSchedule();
   const [now, setNow] = useState(() => new Date());
-  const [picked, setPicked] = useState<number | null>(null);
+  // "week" shows Mon-Fri stacked; a number shows just that weekday.
+  const [picked, setPicked] = useState<number | "week">("week");
   const [editing, setEditing] = useState(false);
 
   useEffect(() => {
@@ -40,15 +43,15 @@ export default function TimetableScreen() {
 
   const local = getLocalParts(now, bells[0]?.timezone);
   const isSchoolDay = local.day >= 1 && local.day <= 5;
-  const day = picked ?? (isSchoolDay ? local.day : 1);
-  const viewingToday = day === local.day;
+  const isWeek = picked === "week";
+  const day = isWeek ? (isSchoolDay ? local.day : 1) : picked;
 
-  // A date-pinned variant (finals, minimum day) only applies to its own date.
-  const slots = useMemo(
-    () => getDaySlots(entries, bells, day, viewingToday ? local.dateKey : undefined),
-    [entries, bells, day, viewingToday, local.dateKey]
+  // Live status is always about today, whichever view is showing.
+  const todaySlots = useMemo(
+    () => (isSchoolDay ? getDaySlots(entries, bells, local.day, local.dateKey) : []),
+    [entries, bells, isSchoolDay, local.day, local.dateKey]
   );
-  const status = viewingToday ? getCurrentAndNext(slots, local.minutes) : null;
+  const status = isSchoolDay ? getCurrentAndNext(todaySlots, local.minutes) : null;
 
   if (loading) {
     return (
@@ -74,35 +77,36 @@ export default function TimetableScreen() {
     );
   }
 
-  const dayEntries = entries
-    .filter((e) => !e.days?.length || e.days.includes(day))
-    .sort((a, b) => periodSort(a.period, b.period))
-    // IC can list the same class twice (e.g. one row per term); show it once.
-    .filter((e, i, all) => all.findIndex((x) => x.period === e.period && x.courseName === e.courseName && x.room === e.room) === i);
+  const dayEntries = entriesForDay(entries, day);
 
   return (
     <SafeAreaView className="flex-1 bg-space-void">
       <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 40 }}>
         <View style={{ flexDirection: "row", marginBottom: 16 }}>
-          {WEEKDAYS.map(({ day: d, label }) => (
-            <TouchableOpacity
-              key={d}
-              onPress={() => setPicked(d)}
-              accessibilityRole="button"
-              accessibilityState={{ selected: d === day }}
-              style={{
-                marginRight: 8,
-                paddingHorizontal: 14,
-                paddingVertical: 8,
-                borderRadius: 10,
-                borderWidth: 1,
-                borderColor: d === day ? "rgba(129,140,248,0.3)" : "#1C2A45",
-                backgroundColor: d === day ? "rgba(129,140,248,0.1)" : "transparent",
-              }}
-            >
-              <Text style={{ color: d === day ? "#A5B4FC" : "#8B98B8" }}>{label}</Text>
-            </TouchableOpacity>
-          ))}
+          {[{ key: "week" as const, label: "Week" }, ...WEEKDAYS.map((w) => ({ key: w.day, label: w.label }))].map(
+            ({ key, label }) => (
+              <TouchableOpacity
+                key={String(key)}
+                onPress={() => {
+                  setPicked(key);
+                  if (key === "week") setEditing(false);
+                }}
+                accessibilityRole="button"
+                accessibilityState={{ selected: key === picked }}
+                style={{
+                  marginRight: 6,
+                  paddingHorizontal: 11,
+                  paddingVertical: 8,
+                  borderRadius: 10,
+                  borderWidth: 1,
+                  borderColor: key === picked ? "rgba(129,140,248,0.3)" : "#1C2A45",
+                  backgroundColor: key === picked ? "rgba(129,140,248,0.1)" : "transparent",
+                }}
+              >
+                <Text style={{ color: key === picked ? "#A5B4FC" : "#8B98B8" }}>{label}</Text>
+              </TouchableOpacity>
+            )
+          )}
         </View>
 
         {status && status.state !== "no-school" ? (
@@ -113,18 +117,22 @@ export default function TimetableScreen() {
             {status.state === "after" && "School's out for today"}
           </Text>
         ) : null}
-        {viewingToday && !isSchoolDay ? <Text style={{ color: "#8B98B8", marginBottom: 12 }}>No school today.</Text> : null}
+        {!isSchoolDay ? <Text style={{ color: "#8B98B8", marginBottom: 12 }}>No school today.</Text> : null}
         {bells.length === 0 ? (
           <Text style={{ color: "#F59E0B", marginBottom: 12 }}>Add your bell times to see when each class meets.</Text>
         ) : null}
 
         <View style={{ flexDirection: "row", justifyContent: "flex-end", marginBottom: 12 }}>
-          <TouchableOpacity onPress={() => setEditing((v) => !v)} accessibilityRole="button">
-            <Text style={{ color: "#A5B4FC" }}>{editing ? "Done" : "Edit bell times"}</Text>
-          </TouchableOpacity>
+          {isWeek ? (
+            <Text style={{ color: "#4A5578", fontSize: 12 }}>Pick a day to edit its bell times</Text>
+          ) : (
+            <TouchableOpacity onPress={() => setEditing((v) => !v)} accessibilityRole="button">
+              <Text style={{ color: "#A5B4FC" }}>{editing ? "Done" : "Edit bell times"}</Text>
+            </TouchableOpacity>
+          )}
         </View>
 
-        {editing ? (
+        {editing && !isWeek ? (
           <BellEditor
             key={day}
             day={day}
@@ -135,39 +143,84 @@ export default function TimetableScreen() {
           />
         ) : null}
 
-        {dayEntries.map((e) => {
-          const slot = slots.find((s) => s.period === e.period);
-          const isNow = status?.current?.entry === e;
-          return (
-            <View
-              key={`${e.period}-${e.courseName}`}
-              style={{
-                marginBottom: 12,
-                padding: 18,
-                borderRadius: 16,
-                borderWidth: 1,
-                borderColor: isNow ? "rgba(129,140,248,0.4)" : "#1C2A45",
-                backgroundColor: isNow ? "rgba(129,140,248,0.1)" : "rgba(16,24,40,0.5)",
-              }}
-            >
-              <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
-                <Text style={{ flex: 1, fontSize: 18, color: "#E8ECFF", paddingRight: 12 }} numberOfLines={2}>
-                  {e.courseName}
-                </Text>
-                <Text style={{ color: "#8B98B8", fontVariant: ["tabular-nums"] }}>
-                  {slot ? `${fmtMin(slot.startMinutes)} – ${fmtMin(slot.endMinutes)}` : "No bell time"}
-                </Text>
-              </View>
-              <Text style={{ fontSize: 13, color: "#4A5578", marginTop: 4 }}>
-                Period {e.period}
-                {e.room ? ` · Room ${e.room}` : ""}
-                {e.teacher ? ` · ${e.teacher}` : ""}
+        {isWeek ? (
+          WEEKDAYS.map(({ day: d }) => (
+            <View key={d} style={{ marginBottom: 8 }}>
+              <Text style={{ color: d === local.day ? "#A5B4FC" : "#8B98B8", fontSize: 13, fontWeight: "600", letterSpacing: 1, textTransform: "uppercase", marginBottom: 8 }}>
+                {FULL_DAY[d]}
+                {d === local.day ? " · Today" : ""}
               </Text>
+              <DayCards day={d} entries={entries} bells={bells} local={local} />
             </View>
-          );
-        })}
+          ))
+        ) : (
+          <DayCards day={day} entries={entries} bells={bells} local={local} />
+        )}
       </ScrollView>
     </SafeAreaView>
+  );
+}
+
+function entriesForDay(entries: ScheduleEntry[], day: number): ScheduleEntry[] {
+  return entries
+    .filter((e) => !e.days?.length || e.days.includes(day))
+    .sort((a, b) => periodSort(a.period, b.period))
+    // IC can list the same class twice (e.g. one row per term); show it once.
+    .filter((e, i, all) => all.findIndex((x) => x.period === e.period && x.courseName === e.courseName && x.room === e.room) === i);
+}
+
+function DayCards({
+  day,
+  entries,
+  bells,
+  local,
+}: {
+  day: number;
+  entries: ScheduleEntry[];
+  bells: BellSchedule[];
+  local: { day: number; dateKey: string; minutes: number };
+}) {
+  const isToday = day === local.day;
+  // A date-pinned variant (finals, minimum day) only applies to its own date.
+  const slots = getDaySlots(entries, bells, day, isToday ? local.dateKey : undefined);
+  const current = isToday ? getCurrentAndNext(slots, local.minutes).current : null;
+  const dayEntries = entriesForDay(entries, day);
+  if (dayEntries.length === 0) return <Text style={{ color: "#4A5578", marginBottom: 12 }}>No classes</Text>;
+
+  return (
+    <>
+      {dayEntries.map((e) => {
+        const slot = slots.find((s) => s.period === e.period);
+        const isNow = current?.entry === e;
+        return (
+          <View
+            key={`${e.period}-${e.courseName}-${e.room ?? ""}`}
+            style={{
+              marginBottom: 12,
+              padding: 18,
+              borderRadius: 16,
+              borderWidth: 1,
+              borderColor: isNow ? "rgba(129,140,248,0.4)" : "#1C2A45",
+              backgroundColor: isNow ? "rgba(129,140,248,0.1)" : "rgba(16,24,40,0.5)",
+            }}
+          >
+            <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
+              <Text style={{ flex: 1, fontSize: 18, color: "#E8ECFF", paddingRight: 12 }} numberOfLines={2}>
+                {e.courseName}
+              </Text>
+              <Text style={{ color: "#8B98B8", fontVariant: ["tabular-nums"] }}>
+                {slot ? `${fmtMin(slot.startMinutes)} – ${fmtMin(slot.endMinutes)}` : "No bell time"}
+              </Text>
+            </View>
+            <Text style={{ fontSize: 13, color: "#4A5578", marginTop: 4 }}>
+              Period {e.period}
+              {e.room ? ` · Room ${e.room}` : ""}
+              {e.teacher ? ` · ${e.teacher}` : ""}
+            </Text>
+          </View>
+        );
+      })}
+    </>
   );
 }
 
