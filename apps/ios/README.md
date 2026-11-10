@@ -6,7 +6,7 @@ Native rewrite of `apps/mobile` (Expo). iOS 18+, SwiftUI + Observation, Swift 5 
 apps/ios/
   project.yml        XcodeGen spec (the .xcodeproj is generated, not committed)
   Config/            xcconfig: API base URL + Firebase keys (Secrets.xcconfig is gitignored)
-  Vela/              the app: App/, Services/, Theme/, Features/{Login,Dashboard,Courses,Day,Settings}
+  Vela/              the app: App/, Services/, Theme/, Features/{Login,Dashboard,Courses,Day,Schedule,Settings}
   VelaKit/           Swift package, no UI: ports of @vela/ic-client and @vela/domain + tests
 ```
 
@@ -25,6 +25,12 @@ Unit tests (macOS, no simulator): `swift test --package-path apps/ios/VelaKit`
 Without the Firebase values the app still signs in to Infinite Campus and shows grades; it just skips Vela sign-in and the best-effort `/api/ic/courses` snapshot.
 
 Debug builds accept a `-VelaDemo` launch argument: skips sign-in and shows fixture data (no network).
+
+### Preview without a Mac
+
+The `iOS preview build` GitHub Actions workflow (`.github/workflows/ios-preview.yml`) runs the VelaKit tests, builds a
+demo-mode simulator app (`VELA_DEMO=YES`, fixture data, no sign-in) and uploads it as the `Vela-simulator` artifact.
+Download the zip from the workflow run and upload it at <https://appetize.io/upload> to use the app in a browser.
 
 To exercise login, "Stay signed in" and silent re-login without a real student account, run the fake IC and point a Debug build at it:
 

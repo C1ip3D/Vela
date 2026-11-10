@@ -11,8 +11,7 @@ struct DayView: View {
                 content(now: timeline.date)
             }
             .velaBackground()
-            .navigationTitle("Day")
-            .navigationBarTitleDisplayMode(.inline)
+            .navigationTitle("Today")
             .refreshable { await model.loadSchedule(force: true) }
             .task { await model.loadSchedule() }
         }
@@ -32,17 +31,23 @@ struct DayView: View {
             let status = isSchoolDay ? getCurrentAndNext(todaySlots, nowMinutes: local.minutes) : nil
 
             ScrollView {
-                VStack(alignment: .leading, spacing: 12) {
-                    SectionLabel(title: isSchoolDay ? "Today · \(Self.dayNames[day])" : "Next school day · \(Self.dayNames[day])")
-                    if let line = statusLine(status) { Text(line).foregroundStyle(Palette.starDim) }
-                    if !isSchoolDay { Text("No school today.").foregroundStyle(Palette.starDim) }
-                    if bells.isEmpty {
-                        Text("No bell times for your district yet, so classes are listed without times.")
-                            .font(.footnote).foregroundStyle(Palette.amber)
+                VStack(alignment: .leading, spacing: Layout.gap) {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(statusLine(status) ?? (isSchoolDay ? "No classes right now" : "No school today"))
+                            .font(.headline).foregroundStyle(Palette.text)
+                        Text(isSchoolDay ? Self.dayNames[day] : "Showing \(Self.dayNames[day])")
+                            .font(.subheadline).foregroundStyle(Palette.textDim)
                     }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .card()
+                    if bells.isEmpty {
+                        Text("No bell times for your district yet, so classes are listed without times. Add them in Settings.")
+                            .font(.footnote).foregroundStyle(Palette.warn)
+                    }
+                    SectionLabel(title: "Classes").padding(.top, 8)
                     dayCards(day: day, isToday: day == local.day, local: local, bells: bells)
                 }
-                .padding(20)
+                .padding(Layout.screen)
             }
         }
     }
@@ -76,12 +81,15 @@ struct DayView: View {
         }.map(\.element)
 
         if entries.isEmpty {
-            Text("No classes").foregroundStyle(Palette.starDim)
+            EmptyState(systemImage: "calendar", message: "No classes").card()
         } else {
-            ForEach(Array(entries.enumerated()), id: \.offset) { _, e in
-                let slot = slots.first { $0.period == e.period }
-                ClassCard(entry: e, slot: slot, isNow: current?.entry == e)
+            VStack(spacing: 0) {
+                ForEach(Array(entries.enumerated()), id: \.offset) { i, e in
+                    ClassRow(entry: e, slot: slots.first { $0.period == e.period }, isNow: current?.entry == e)
+                    if i < entries.count - 1 { RowDivider().padding(.leading, Layout.card) }
+                }
             }
+            .card(padding: 0)
         }
     }
 
@@ -90,13 +98,13 @@ struct DayView: View {
         VStack(spacing: 12) {
             switch model.scheduleState {
             case .loading, .idle:
-                ProgressView().tint(Palette.vela400)
+                ProgressView().tint(Palette.tint)
             case .failed(let message):
-                Text("No schedule found yet").font(.title3).foregroundStyle(Palette.starBright)
-                Text(message).font(.subheadline).foregroundStyle(Palette.rose).multilineTextAlignment(.center)
+                Text("No schedule found yet").font(.headline).foregroundStyle(Palette.text)
+                Text(message).font(.subheadline).foregroundStyle(Palette.bad).multilineTextAlignment(.center)
                 Button("Try again") { Task { await model.loadSchedule(force: true) } }.buttonStyle(.bordered)
             case .loaded:
-                Text("No schedule found yet").font(.title3).foregroundStyle(Palette.starBright)
+                Text("No schedule found yet").font(.headline).foregroundStyle(Palette.text)
             }
         }
         .padding(32)
@@ -104,35 +112,51 @@ struct DayView: View {
     }
 }
 
-private struct ClassCard: View {
+private struct ClassRow: View {
     let entry: ScheduleEntry
     let slot: ScheduleSlot?
     let isNow: Bool
 
     private static func clock(_ minutes: Int) -> String {
         let h = minutes / 60
-        return "\((h + 11) % 12 + 1):\(String(format: "%02d", minutes % 60)) \(h < 12 ? "AM" : "PM")"
+        return "\((h + 11) % 12 + 1):\(String(format: "%02d", minutes % 60))"
     }
+    private static func meridiem(_ minutes: Int) -> String { minutes / 60 < 12 ? "AM" : "PM" }
 
     private var detail: String {
-        var s = entry.period.allSatisfy(\.isNumber) ? "Period \(entry.period)" : entry.period
-        if let room = entry.room { s += " · Room \(room)" }
-        if let teacher = entry.teacher { s += " · \(teacher)" }
-        return s
+        var parts = [entry.period.allSatisfy(\.isNumber) ? "Period \(entry.period)" : entry.period]
+        if let room = entry.room { parts.append("Room \(room)") }
+        if let teacher = entry.teacher { parts.append(teacher) }
+        return parts.joined(separator: " · ")
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            HStack(alignment: .firstTextBaseline) {
-                Text(entry.courseName).font(.title3).foregroundStyle(Palette.starBright).lineLimit(2)
-                Spacer(minLength: 12)
-                Text(slot.map { "\(Self.clock($0.startMinutes)) – \(Self.clock($0.endMinutes))" } ?? "No bell time")
-                    .font(.subheadline).monospacedDigit().foregroundStyle(Palette.starDim)
+        HStack(spacing: 12) {
+            // Fixed-width time column keeps every class name on the same left edge.
+            VStack(alignment: .leading, spacing: 2) {
+                if let slot {
+                    Text("\(Self.clock(slot.startMinutes)) \(Self.meridiem(slot.startMinutes))")
+                        .font(.subheadline.weight(.medium)).foregroundStyle(Palette.text)
+                    Text("\(Self.clock(slot.endMinutes)) \(Self.meridiem(slot.endMinutes))")
+                        .font(.footnote).foregroundStyle(Palette.textFaint)
+                } else {
+                    Text("—").font(.subheadline).foregroundStyle(Palette.textFaint)
+                }
             }
-            Text(detail).font(.footnote).foregroundStyle(Palette.starDim)
+            .monospacedDigit()
+            .lineLimit(1).minimumScaleFactor(0.8)
+            .frame(width: 72, alignment: .leading)
+
+            VStack(alignment: .leading, spacing: 3) {
+                Text(entry.courseName).font(.body.weight(.medium)).foregroundStyle(Palette.text).lineLimit(1)
+                Text(detail).font(.footnote).foregroundStyle(Palette.textDim).lineLimit(1)
+            }
+            Spacer(minLength: 8)
+            if isNow { Pill(text: "Now", color: Palette.good) }
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .card(highlighted: isNow)
+        .padding(.horizontal, Layout.card)
+        .frame(minHeight: 64)
+        .background(isNow ? Palette.elevated : .clear)
         .accessibilityElement(children: .combine)
         .accessibilityAddTraits(isNow ? .isSelected : [])
     }

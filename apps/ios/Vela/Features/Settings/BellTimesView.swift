@@ -27,29 +27,19 @@ struct BellTimesView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 14) {
-                HStack(spacing: 8) {
-                    ForEach(Self.days, id: \.day) { d in
-                        let on = d.day == day
-                        Button { day = d.day } label: {
-                            Text(d.label)
-                                .font(.subheadline.weight(on ? .semibold : .regular))
-                                .foregroundStyle(on ? Palette.starBright : Palette.starDim)
-                                .frame(maxWidth: .infinity, minHeight: 44)
-                                .background(Capsule().fill(on ? Palette.vela400.opacity(0.15) : .clear))
-                                .overlay(Capsule().strokeBorder(on ? Palette.vela400.opacity(0.5) : Palette.border))
-                        }
-                        .accessibilityAddTraits(on ? .isSelected : [])
-                    }
+            VStack(alignment: .leading, spacing: Layout.gap) {
+                Picker("Day", selection: $day) {
+                    ForEach(Self.days, id: \.day) { Text($0.label).tag($0.day) }
                 }
+                .pickerStyle(.segmented)
 
                 if periods.isEmpty {
-                    Text("Load your schedule on the Day tab first.").foregroundStyle(Palette.starDim)
+                    EmptyState(systemImage: "clock", message: "Load your schedule on the Today tab first.").card()
                 } else {
                     BellEditor(day: day, periods: periods).id(day)
                 }
             }
-            .padding(20)
+            .padding(Layout.screen)
         }
         .scrollDismissesKeyboard(.interactively)
         .velaBackground()
@@ -71,35 +61,32 @@ private struct BellEditor: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            if let variant { Text(variant.name).font(.headline).foregroundStyle(Palette.starBright) }
+            if let variant { Text(variant.name).font(.headline).foregroundStyle(Palette.text) }
             Text(model.usingPresetBells
                  ? "Prefilled from your school's published schedule. Edit if wrong; applies to every day sharing it."
                  : "Infinite Campus doesn't provide period times. Enter e.g. 8:30 AM.")
-                .font(.footnote).foregroundStyle(Palette.starDim)
+                .font(.footnote).foregroundStyle(Palette.textDim)
 
             ForEach(periods, id: \.self) { p in
                 HStack(spacing: 8) {
                     Text(p.allSatisfy(\.isNumber) ? "Period \(p)" : p)
-                        .font(.subheadline).foregroundStyle(Palette.starDim).frame(width: 78, alignment: .leading)
+                        .font(.subheadline).foregroundStyle(Palette.text)
+                        .lineLimit(1).minimumScaleFactor(0.8).frame(width: 72, alignment: .leading)
                     field("8:30 AM", text: binding(p, \.start), label: "Period \(p) start")
-                    Text("to").foregroundStyle(Palette.starDim)
+                    Text("to").font(.footnote).foregroundStyle(Palette.textFaint)
                     field("9:20 AM", text: binding(p, \.end), label: "Period \(p) end")
                 }
             }
 
             if let message {
-                Text(message.text).font(.footnote).foregroundStyle(message.ok ? Palette.emerald : Palette.rose)
+                Text(message.text).font(.footnote).foregroundStyle(message.ok ? Palette.good : Palette.bad)
             }
-            Button(action: save) {
-                Text(saving ? "Saving…" : "Save")
-                    .font(.headline).foregroundStyle(Color(hex: 0xC7D2FE))
-                    .frame(maxWidth: .infinity, minHeight: 48)
-                    .background(RoundedRectangle(cornerRadius: 12).fill(Palette.vela400.opacity(0.18)))
-                    .overlay(RoundedRectangle(cornerRadius: 12).strokeBorder(Palette.vela400.opacity(0.4)))
-            }
-            .disabled(saving)
+            Button(saving ? "Saving…" : "Save", action: save)
+                .buttonStyle(PrimaryButtonStyle())
+                .disabled(saving)
+                .padding(.top, 4)
         }
-        .card(padding: 16)
+        .card()
         .onAppear(perform: loadDraft)
     }
 
@@ -109,11 +96,11 @@ private struct BellEditor: View {
             .autocorrectionDisabled()
             .keyboardType(.numbersAndPunctuation)
             .multilineTextAlignment(.center)
-            .foregroundStyle(Palette.starBright)
+            .font(.subheadline).monospacedDigit()
+            .foregroundStyle(Palette.text)
             .padding(.horizontal, 6)
-            .frame(minHeight: 44)
-            .background(RoundedRectangle(cornerRadius: 8).fill(Palette.mid))
-            .overlay(RoundedRectangle(cornerRadius: 8).strokeBorder(Palette.border))
+            .frame(maxWidth: .infinity)
+            .fieldChrome()
             .onChange(of: text.wrappedValue) { _, new in if new.count > 8 { text.wrappedValue = String(new.prefix(8)) } }
             .accessibilityLabel(label)
     }

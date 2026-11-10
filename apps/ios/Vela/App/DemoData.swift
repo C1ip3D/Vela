@@ -4,7 +4,11 @@ import VelaKit
 
 /// Launch with `-VelaDemo` to skip sign-in and show fixture data (no network). Debug builds only.
 enum DemoData {
-    static var isEnabled: Bool { ProcessInfo.processInfo.arguments.contains("-VelaDemo") }
+    /// A build made with `VELA_DEMO=YES` (the CI preview build) is always in demo mode, for hosts that can't pass arguments.
+    static var isEnabled: Bool {
+        ProcessInfo.processInfo.arguments.contains("-VelaDemo")
+            || (Bundle.main.object(forInfoDictionaryKey: "VelaDemo") as? String) == "YES"
+    }
 
     /// `-VelaMockIC http://localhost:8099` points the app at a local fake IC (Scripts/mock_ic.py). Add `-VelaMockStale`
     /// to start signed in with an expired session and saved credentials, which exercises silent re-login.
