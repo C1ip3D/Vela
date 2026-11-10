@@ -1,0 +1,53 @@
+name: iOS preview build
+
+# Builds a demo-mode simulator app (fixture data, no sign-in) that can be uploaded to appetize.io and used in a browser.
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "apps/ios/**"
+      - ".github/workflows/ios-preview.yml"
+
+concurrency:
+  group: ios-preview-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: macos-15
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: VelaKit tests
+        run: swift test --package-path apps/ios/VelaKit
+
+      - name: Generate Xcode project
+        working-directory: apps/ios
+        run: |
+          brew install xcodegen
+          xcodegen generate
+
+      - name: Build for the simulator (demo mode)
+        working-directory: apps/ios
+        run: |
+          set -o pipefail
+          xcodebuild build \
+            -project Vela.xcodeproj -scheme Vela -configuration Debug \
+            -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath build \
+            ONLY_ACTIVE_ARCH=NO CODE_SIGNING_ALLOWED=NO VELA_DEMO=YES \
+            | tail -n 200
+
+      - name: Zip the app
+        working-directory: apps/ios/build/Build/Products/Debug-iphonesimulator
+        run: ditto -c -k --sequesterRsrc --keepParent Vela.app "$RUNNER_TEMP/Vela-simulator.zip"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Vela-simulator
+          path: ${{ runner.temp }}/Vela-simulator.zip
+          if-no-files-found: error

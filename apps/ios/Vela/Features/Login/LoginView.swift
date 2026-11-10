@@ -18,19 +18,17 @@ struct LoginView: View {
 
     var body: some View {
         ZStack {
-            StarField().ignoresSafeArea()
-
             ScrollView {
                 VStack(spacing: 0) {
                     Image("Logo")
-                        .resizable().scaledToFit().frame(width: 140, height: 140)
+                        .resizable().scaledToFit().frame(width: 96, height: 96)
                         .accessibilityHidden(true)
-                    Text("VELA")
-                        .font(.system(size: 40, weight: .heavy)).tracking(8)
-                        .foregroundStyle(Color(hex: 0xF0F4FF)).padding(.top, 8)
-                    Text("ACADEMIC NAVIGATOR")
-                        .font(.caption2).tracking(4).foregroundStyle(Palette.starFaint).padding(.top, 6)
-                        .padding(.bottom, 36)
+                    Text("Vela")
+                        .font(.largeTitle.weight(.bold))
+                        .foregroundStyle(Palette.text).padding(.top, 12)
+                    Text("Grades and schedule from Infinite Campus")
+                        .font(.subheadline).foregroundStyle(Palette.textDim).multilineTextAlignment(.center)
+                        .padding(.top, 4).padding(.bottom, 32)
 
                     VStack(alignment: .leading, spacing: 16) {
                         if let error = model.loginError { ErrorBanner(message: error) }
@@ -40,7 +38,7 @@ struct LoginView: View {
                                 showWebView = true
                             } label: {
                                 if model.isFinishingLogin {
-                                    ProgressView().tint(Palette.accentInk)
+                                    ProgressView().tint(Palette.actionInk)
                                 } else {
                                     Label("Continue to Infinite Campus", systemImage: "arrow.right")
                                         .labelStyle(TrailingIconLabelStyle())
@@ -51,12 +49,10 @@ struct LoginView: View {
                             .accessibilityHint("Opens \(selected.name)'s sign-in page")
                         }
                     }
-                    .padding(24)
-                    .background(RoundedRectangle(cornerRadius: 24, style: .continuous).fill(Palette.surface.opacity(0.6)))
-                    .overlay(RoundedRectangle(cornerRadius: 24, style: .continuous).strokeBorder(Palette.border))
+                    .card()
                     .frame(maxWidth: 480)
                 }
-                .padding(.horizontal, 24)
+                .padding(.horizontal, Layout.screen)
                 .padding(.vertical, 40)
                 .frame(maxWidth: .infinity)
             }
@@ -64,12 +60,12 @@ struct LoginView: View {
 
             if model.isFinishingLogin {
                 VStack(spacing: 12) {
-                    ProgressView().controlSize(.large).tint(Palette.emerald)
-                    Text("Signed in to Infinite Campus").font(.title3.weight(.semibold)).foregroundStyle(Palette.emerald)
-                    Text("Loading your classes…").foregroundStyle(Palette.starDim)
+                    ProgressView().controlSize(.large).tint(Palette.tint)
+                    Text("Signed in to Infinite Campus").font(.headline).foregroundStyle(Palette.text)
+                    Text("Loading your classes…").foregroundStyle(Palette.textDim)
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .background(Palette.void)
+                .background(Palette.bg)
             }
         }
         .velaBackground()
@@ -108,32 +104,30 @@ struct LoginView: View {
                         }
                     } label: {
                         HStack {
-                            Text(stateCode).foregroundStyle(Palette.starBright)
+                            Text(stateCode).foregroundStyle(Palette.text)
                             Spacer(minLength: 4)
-                            Image(systemName: "chevron.up.chevron.down").font(.caption2).foregroundStyle(Palette.starFaint)
+                            Image(systemName: "chevron.up.chevron.down").font(.caption2).foregroundStyle(Palette.textFaint)
                         }
-                        .padding(.horizontal, 12).frame(width: 88, height: 48)
-                        .background(RoundedRectangle(cornerRadius: 12).fill(Palette.mid.opacity(0.6)))
-                        .overlay(RoundedRectangle(cornerRadius: 12).strokeBorder(Palette.border))
+                        .padding(.horizontal, 12).frame(width: 84)
+                        .fieldChrome(height: 48)
                     }
                     .onChange(of: stateCode) { _, _ in selected = nil }
                 }
                 VStack(alignment: .leading, spacing: 6) {
                     fieldLabel("District")
                     HStack(spacing: 8) {
-                        Image(systemName: "magnifyingglass").foregroundStyle(Palette.starFaint)
+                        Image(systemName: "magnifyingglass").foregroundStyle(Palette.textFaint)
                         TextField("Search district…", text: $query)
                             .textInputAutocapitalization(.words)
                             .autocorrectionDisabled()
-                            .foregroundStyle(Palette.starBright)
+                            .foregroundStyle(Palette.text)
                             .onChange(of: query) { _, new in
                                 if let s = selected, s.name != new { selected = nil }
                             }
                         if isSearching { ProgressView().controlSize(.small) }
                     }
-                    .padding(.horizontal, 12).frame(height: 48)
-                    .background(RoundedRectangle(cornerRadius: 12).fill(Palette.mid.opacity(0.6)))
-                    .overlay(RoundedRectangle(cornerRadius: 12).strokeBorder(Palette.border))
+                    .padding(.horizontal, 12)
+                    .fieldChrome(height: 48)
                 }
             }
 
@@ -146,26 +140,29 @@ struct LoginView: View {
                             results = []
                         } label: {
                             Text(d.name)
-                                .foregroundStyle(Palette.starBright)
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                                .padding(.horizontal, 16).padding(.vertical, 14)
+                                .foregroundStyle(Palette.text)
+                                .lineLimit(2).multilineTextAlignment(.leading)
+                                .frame(maxWidth: .infinity, minHeight: Layout.row, alignment: .leading)
+                                .padding(.horizontal, 12)
+                                .contentShape(Rectangle())
                         }
-                        if d.id != results.last?.id { Divider().overlay(Palette.border.opacity(0.5)) }
+                        .buttonStyle(.plain)
+                        if d.id != results.last?.id { RowDivider() }
                     }
                 }
-                .background(RoundedRectangle(cornerRadius: 12).fill(Palette.mid))
-                .overlay(RoundedRectangle(cornerRadius: 12).strokeBorder(Palette.border))
+                .fieldChrome()
+                .clipShape(RoundedRectangle(cornerRadius: Layout.fieldRadius, style: .continuous))
             } else if selected == nil, searchFailed {
                 Text("Couldn't reach the district directory. Check your connection.")
-                    .font(.footnote).foregroundStyle(Palette.starDim)
+                    .font(.footnote).foregroundStyle(Palette.textDim)
             } else if selected == nil, query.count >= 3, !isSearching, results.isEmpty {
-                Text("No districts found in \(stateCode).").font(.footnote).foregroundStyle(Palette.starDim)
+                Text("No districts found in \(stateCode).").font(.footnote).foregroundStyle(Palette.textDim)
             }
         }
     }
 
     private func fieldLabel(_ text: String) -> some View {
-        Text(text.uppercased()).font(.caption).tracking(1).foregroundStyle(Palette.starDim)
+        Text(text).font(.caption.weight(.medium)).foregroundStyle(Palette.textDim)
     }
 
     private func search() async {
@@ -192,41 +189,5 @@ struct LoginView: View {
 private struct TrailingIconLabelStyle: LabelStyle {
     func makeBody(configuration: Configuration) -> some View {
         HStack(spacing: 8) { configuration.title; configuration.icon }
-    }
-}
-
-/// Twinkling background, a lighter take on the old animated star field.
-private struct StarField: View {
-    private struct Star { let x, y, size, phase: Double }
-    private let stars: [Star] = {
-        var g = SeededGenerator(seed: 42)
-        return (0..<60).map { _ in
-            Star(x: .random(in: 0...1, using: &g), y: .random(in: 0...1, using: &g),
-                 size: .random(in: 1.5...3, using: &g), phase: .random(in: 0...6.28, using: &g))
-        }
-    }()
-
-    var body: some View {
-        TimelineView(.animation(minimumInterval: 1 / 20)) { timeline in
-            Canvas { ctx, size in
-                let t = timeline.date.timeIntervalSinceReferenceDate
-                for s in stars {
-                    let alpha = 0.2 + 0.8 * (0.5 + 0.5 * sin(t * 1.3 + s.phase))
-                    let rect = CGRect(x: s.x * size.width, y: s.y * size.height, width: s.size, height: s.size)
-                    ctx.fill(Path(ellipseIn: rect), with: .color(Palette.vela300.opacity(alpha)))
-                }
-            }
-        }
-        .allowsHitTesting(false)
-        .accessibilityHidden(true)
-    }
-}
-
-private struct SeededGenerator: RandomNumberGenerator {
-    var state: UInt64
-    init(seed: UInt64) { state = seed }
-    mutating func next() -> UInt64 {
-        state = state &* 6364136223846793005 &+ 1442695040888963407
-        return state
     }
 }

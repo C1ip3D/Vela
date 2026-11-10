@@ -239,35 +239,35 @@ struct IcLoginSheet: View {
                 }
                 .accessibilityLabel("Close sign in")
             }
-            .padding(.leading, 20)
+            .padding(.leading, Layout.screen)
             .padding(.trailing, 4)
-            .overlay(alignment: .bottom) { Divider().overlay(Palette.border) }
+            .overlay(alignment: .bottom) { RowDivider() }
 
             if let error = state.error {
-                ErrorBanner(message: error).padding(.horizontal, 20).padding(.top, 12)
+                ErrorBanner(message: error).padding(.horizontal, Layout.screen).padding(.top, 12)
             }
 
             ZStack {
                 IcLoginWebView(baseURL: district.baseURL, appName: district.appName, state: state, onSuccess: onSuccess)
                 if state.isResolving {
                     VStack(spacing: 12) {
-                        ProgressView().controlSize(.large).tint(Palette.vela400)
-                        Text("Finishing sign-in…").font(.subheadline).foregroundStyle(Palette.starDim)
+                        ProgressView().controlSize(.large).tint(Palette.tint)
+                        Text("Finishing sign-in…").font(.subheadline).foregroundStyle(Palette.textDim)
                     }
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .background(Palette.void.opacity(0.85))
+                    .background(Palette.bg.opacity(0.85))
                 }
             }
 
             if state.showManualFallback && !state.isResolving {
                 VStack(spacing: 8) {
                     Text("Already signed in on the page above? Tap below to continue.")
-                        .font(.caption).foregroundStyle(Palette.starDim)
+                        .font(.caption).foregroundStyle(Palette.textDim)
                     Button("I'm signed in") { state.extractNow?() }
                         .buttonStyle(PrimaryButtonStyle())
                 }
-                .padding(20)
-                .overlay(alignment: .top) { Divider().overlay(Palette.border) }
+                .padding(Layout.screen)
+                .overlay(alignment: .top) { RowDivider() }
             }
         }
         .velaBackground()

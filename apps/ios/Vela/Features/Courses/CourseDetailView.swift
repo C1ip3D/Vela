@@ -44,18 +44,17 @@ struct CourseDetailView: View {
 
     var body: some View {
         ScrollView {
-            VStack(spacing: 14) {
+            VStack(spacing: Layout.gap) {
                 header
                 switch phase {
                 case .loading, .idle:
-                    ProgressView().tint(Palette.vela400).padding(40)
+                    ProgressView().tint(Palette.tint).padding(40)
                 case .failed(let message):
                     ErrorBanner(message: message)
                     Button("Try again") { Task { await load(force: true) } }.buttonStyle(.bordered)
                 case .loaded:
                     if groups.isEmpty {
-                        Text("No assignments yet for this term.")
-                            .font(.subheadline).foregroundStyle(Palette.starDim).card(padding: 28)
+                        EmptyState(systemImage: "tray", message: "No assignments yet for this term.").card()
                     } else {
                         ForEach(groups) { group in
                             GroupSection(
@@ -76,7 +75,7 @@ struct CourseDetailView: View {
                     }
                 }
             }
-            .padding(20)
+            .padding(Layout.screen)
         }
         .refreshable { await load(force: true) }
         .velaBackground()
@@ -105,42 +104,45 @@ struct CourseDetailView: View {
     // MARK: Header
 
     private var header: some View {
-        VStack(spacing: 14) {
-            HStack(alignment: .firstTextBaseline) {
-                VStack(alignment: .leading, spacing: 4) {
-                    if let teacher = course.teacher { Text(teacher).foregroundStyle(Palette.starDim) }
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(alignment: .center, spacing: 12) {
+                VStack(alignment: .leading, spacing: 3) {
+                    if let teacher = course.teacher {
+                        Text(teacher).font(.body.weight(.medium)).foregroundStyle(Palette.text).lineLimit(1)
+                    }
                     Text([course.courseCode, course.period.map { "Period \($0)" }].compactMap { $0 }.filter { !$0.isEmpty }.joined(separator: " · "))
-                        .font(.footnote).foregroundStyle(Palette.starFaint)
+                        .font(.footnote).foregroundStyle(Palette.textDim).lineLimit(1)
                 }
-                Spacer()
+                Spacer(minLength: 8)
                 VStack(alignment: .trailing, spacing: 2) {
                     Text(shownGrade.map { String(format: "%.2f%%", $0) } ?? "—")
                         .font(.title.weight(.bold)).monospacedDigit()
-                        .foregroundStyle(shownGrade.map(Palette.grade(percent:)) ?? Palette.starDim)
+                        .foregroundStyle(shownGrade.map(Palette.grade(percent:)) ?? Palette.textFaint)
                     if let d = gradeDelta {
-                        Text(Self.delta(d)).font(.subheadline.weight(.semibold)).foregroundStyle(Self.deltaColor(d))
+                        Text(Self.delta(d)).font(.subheadline.weight(.semibold)).monospacedDigit().foregroundStyle(Self.deltaColor(d))
                     } else if !hasChanges, let letter = course.displayLetter {
-                        Text(letter).font(.subheadline.weight(.semibold)).foregroundStyle(Palette.grade(letter: letter))
+                        Text(letter).font(.subheadline.weight(.semibold)).foregroundStyle(Palette.textDim)
                     }
                 }
+                .fixedSize()
             }
             if let g = shownGrade { GradeBar(percent: g) }
             if hasChanges {
                 HStack {
-                    Label("What-if mode", systemImage: "wand.and.stars").font(.footnote).foregroundStyle(Palette.vela300)
+                    Pill(text: "What-if", color: Palette.tint)
+                    Text("Not saved anywhere").font(.footnote).foregroundStyle(Palette.textFaint)
                     Spacer()
                     Button("Reset") { mods = [:]; added = [:] }.font(.footnote.weight(.semibold))
                 }
             } else if course.missingCount > 0 {
-                Label("\(course.missingCount) missing assignment\(course.missingCount == 1 ? "" : "s")", systemImage: "exclamationmark.triangle")
-                    .font(.footnote).foregroundStyle(Palette.amber).frame(maxWidth: .infinity, alignment: .leading)
+                Pill(text: "\(course.missingCount) missing assignment\(course.missingCount == 1 ? "" : "s")", color: Palette.warn)
             }
         }
-        .card(padding: 20)
+        .card()
     }
 
     static func delta(_ d: Double) -> String { String(format: "%@%.2f%%", d >= 0 ? "+" : "", d) }
-    static func deltaColor(_ d: Double) -> Color { d >= 0 ? Palette.emerald : Palette.rose }
+    static func deltaColor(_ d: Double) -> Color { d >= 0 ? Palette.good : Palette.bad }
 
     // MARK: Actions
 
@@ -231,12 +233,12 @@ private struct GroupSection: View {
                 Button(action: toggle) {
                     HStack(spacing: 8) {
                         Image(systemName: "chevron.right")
-                            .font(.caption.weight(.bold)).foregroundStyle(Palette.starFaint)
+                            .font(.caption.weight(.bold)).foregroundStyle(Palette.textFaint)
                             .rotationEffect(.degrees(isExpanded ? 90 : 0))
-                        Text(group.name).font(.headline).foregroundStyle(Palette.starBright)
+                        Text(group.name).font(.body.weight(.semibold)).foregroundStyle(Palette.text).lineLimit(1)
                         if group.weight > 0 {
                             Text("\(group.weight.formatted(.number.precision(.fractionLength(0...1))))%")
-                                .font(.caption).foregroundStyle(Palette.starDim)
+                                .font(.caption).foregroundStyle(Palette.textDim)
                         }
                         Spacer(minLength: 8)
                         if let d = delta {
@@ -244,9 +246,10 @@ private struct GroupSection: View {
                         }
                         if let s = score {
                             Text(String(format: "%.1f%%", s)).font(.subheadline.weight(.semibold)).monospacedDigit()
-                                .foregroundStyle(Palette.grade(percent: s))
+                                .foregroundStyle(Palette.grade(percent: s)).fixedSize()
                         }
                     }
+                    .frame(minHeight: Layout.row)
                     .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
@@ -257,8 +260,8 @@ private struct GroupSection: View {
                     Button("Add assignment", systemImage: "plus", action: onAddCustom)
                     if hasMods { Button("Reset category", systemImage: "arrow.counterclockwise", role: .destructive, action: onResetGroup) }
                 } label: {
-                    Image(systemName: "ellipsis").font(.body).foregroundStyle(Palette.starDim)
-                        .frame(width: 36, height: 36)
+                    Image(systemName: "ellipsis").font(.body).foregroundStyle(Palette.textDim)
+                        .frame(width: 32, height: Layout.row)
                 }
                 .accessibilityLabel("\(group.name) options")
             }
@@ -266,20 +269,21 @@ private struct GroupSection: View {
             if isExpanded {
                 VStack(spacing: 0) {
                     ForEach(extras) { c in
-                        Divider().overlay(Palette.border.opacity(0.6))
+                        RowDivider()
                         CustomRow(item: c, onEdit: { onEditCustom(c) }, onRemove: { onRemoveCustom(c) })
                     }
                     ForEach(group.assignments) { a in
-                        Divider().overlay(Palette.border.opacity(0.6))
+                        RowDivider()
                         AssignmentRow(
                             assignment: a, mod: mods[a.id],
                             onEdit: { onEditScore(a) }, onToggleDrop: { onToggleDrop(a) }, onReset: { onReset(a) })
                     }
                 }
-                .padding(.top, 10)
+                .padding(.top, 4)
             }
         }
-        .card(padding: 16)
+        .padding(.leading, Layout.card).padding(.trailing, 8).padding(.vertical, 4)
+        .card(padding: 0)
     }
 }
 
@@ -315,14 +319,14 @@ private struct AssignmentRow: View {
     var body: some View {
         HStack(alignment: .center, spacing: 10) {
             VStack(alignment: .leading, spacing: 4) {
-                Text(assignment.name).font(.subheadline).foregroundStyle(Palette.starWhite)
-                    .strikethrough(dropped)
+                Text(assignment.name).font(.subheadline).foregroundStyle(Palette.text)
+                    .strikethrough(dropped).lineLimit(2)
                 HStack(spacing: 8) {
-                    if let dueText { Text("Due \(dueText)").font(.caption).foregroundStyle(Palette.starFaint) }
-                    if dropped { badge("Dropped", color: Palette.vela300) }
+                    if let dueText { Text("Due \(dueText)").font(.caption).foregroundStyle(Palette.textFaint) }
+                    if dropped { Pill(text: "Dropped") }
                     else {
-                        if assignment.missing && mod?.editedScore == nil { badge("Missing", color: Palette.amber) }
-                        if assignment.late { badge("Late", color: Palette.rose) }
+                        if assignment.missing && mod?.editedScore == nil { Pill(text: "Missing", color: Palette.warn) }
+                        if assignment.late { Pill(text: "Late", color: Palette.bad) }
                     }
                 }
             }
@@ -334,26 +338,23 @@ private struct AssignmentRow: View {
                 Text(effectiveScore.map { "\($0.formatted(scoreFormat)) / \(assignment.pointsPossible.formatted(scoreFormat))" }
                      ?? (assignment.missing ? "Missing" : "—"))
                     .font(.subheadline).monospacedDigit()
-                    .foregroundStyle(effectiveScore == nil && assignment.missing ? Palette.amber : Palette.starBright)
-                if let pct { Text(String(format: "%.2f%%", pct)).font(.caption).monospacedDigit().foregroundStyle(Palette.starDim) }
+                    .foregroundStyle(effectiveScore == nil && assignment.missing ? Palette.warn : Palette.text)
+                if let pct {
+                    Text(String(format: "%.2f%%", pct)).font(.caption).monospacedDigit().foregroundStyle(Palette.grade(percent: pct))
+                }
             }
+            .fixedSize()
             Menu {
                 Button("Edit score", systemImage: "pencil", action: onEdit)
                 Button(dropped ? "Restore" : "Drop assignment", systemImage: dropped ? "arrow.uturn.backward" : "minus.circle", action: onToggleDrop)
                 if mod != nil { Button("Reset", systemImage: "arrow.counterclockwise", action: onReset) }
             } label: {
-                Image(systemName: "ellipsis").foregroundStyle(Palette.starDim).frame(width: 32, height: 36)
+                Image(systemName: "ellipsis").foregroundStyle(Palette.textDim).frame(width: 32, height: Layout.row)
             }
             .accessibilityLabel("Options for \(assignment.name)")
         }
-        .padding(.vertical, 10)
+        .frame(minHeight: 56)
         .opacity(dropped ? 0.45 : 1)
-    }
-
-    private func badge(_ text: String, color: Color) -> some View {
-        Text(text).font(.caption2.weight(.semibold)).foregroundStyle(color)
-            .padding(.horizontal, 6).padding(.vertical, 2)
-            .background(Capsule().fill(color.opacity(0.15)))
     }
 }
 
@@ -365,29 +366,28 @@ private struct CustomRow: View {
     var body: some View {
         HStack(spacing: 10) {
             VStack(alignment: .leading, spacing: 4) {
-                Text(item.name).font(.subheadline).foregroundStyle(Palette.starWhite)
-                Text("Hypothetical").font(.caption2.weight(.semibold)).foregroundStyle(Palette.vela300)
-                    .padding(.horizontal, 6).padding(.vertical, 2)
-                    .background(Capsule().fill(Palette.vela400.opacity(0.15)))
+                Text(item.name).font(.subheadline).foregroundStyle(Palette.text).lineLimit(2)
+                Pill(text: "Hypothetical")
             }
             Spacer(minLength: 8)
             VStack(alignment: .trailing, spacing: 2) {
                 Text("\(item.score.formatted(scoreFormat)) / \(item.pointsPossible.formatted(scoreFormat))")
-                    .font(.subheadline).monospacedDigit().foregroundStyle(Palette.starBright)
+                    .font(.subheadline).monospacedDigit().foregroundStyle(Palette.text)
                 if item.pointsPossible > 0 {
                     Text(String(format: "%.2f%%", item.score / item.pointsPossible * 100))
-                        .font(.caption).monospacedDigit().foregroundStyle(Palette.starDim)
+                        .font(.caption).monospacedDigit().foregroundStyle(Palette.textDim)
                 }
             }
+            .fixedSize()
             Menu {
                 Button("Edit", systemImage: "pencil", action: onEdit)
                 Button("Remove", systemImage: "trash", role: .destructive, action: onRemove)
             } label: {
-                Image(systemName: "ellipsis").foregroundStyle(Palette.starDim).frame(width: 32, height: 36)
+                Image(systemName: "ellipsis").foregroundStyle(Palette.textDim).frame(width: 32, height: Layout.row)
             }
             .accessibilityLabel("Options for \(item.name)")
         }
-        .padding(.vertical, 10)
+        .frame(minHeight: 56)
     }
 }
 
@@ -425,7 +425,7 @@ private struct NumberFormSheet: View {
     var body: some View {
         NavigationStack {
             Form {
-                if let subtitle { Section { Text(subtitle).foregroundStyle(Palette.starDim) } }
+                if let subtitle { Section { Text(subtitle).foregroundStyle(Palette.textDim) } }
                 Section {
                     ForEach(fields.indices, id: \.self) { i in
                         HStack {
@@ -433,13 +433,13 @@ private struct NumberFormSheet: View {
                             Spacer()
                             TextField("0", text: binding(i))
                                 .keyboardType(.decimalPad).multilineTextAlignment(.trailing)
-                                .focused($focused, equals: i).frame(maxWidth: 120)
-                            if !fields[i].suffix.isEmpty { Text(fields[i].suffix).foregroundStyle(Palette.starDim) }
+                                .focused($focused, equals: i).frame(width: 100)
+                            if !fields[i].suffix.isEmpty { Text(fields[i].suffix).foregroundStyle(Palette.textDim) }
                         }
                     }
                 }
             }
-            .scrollContentBackground(.hidden).background(Palette.void)
+            .scrollContentBackground(.hidden).background(Palette.bar)
             .navigationTitle(title).navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
@@ -449,8 +449,7 @@ private struct NumberFormSheet: View {
             }
             .onAppear { focused = 0 }
         }
-        .presentationDetents([.medium])
-        .preferredColorScheme(.dark)
+        .velaSheet()
     }
 
     private func binding(_ i: Int) -> Binding<String> {
@@ -482,16 +481,16 @@ private struct CustomAssignmentSheet: View {
                     HStack {
                         Text("Score")
                         Spacer()
-                        TextField("0", text: $score).keyboardType(.decimalPad).multilineTextAlignment(.trailing).frame(maxWidth: 100)
+                        TextField("0", text: $score).keyboardType(.decimalPad).multilineTextAlignment(.trailing).frame(width: 100)
                     }
                     HStack {
                         Text("Out of")
                         Spacer()
-                        TextField("100", text: $possible).keyboardType(.decimalPad).multilineTextAlignment(.trailing).frame(maxWidth: 100)
+                        TextField("100", text: $possible).keyboardType(.decimalPad).multilineTextAlignment(.trailing).frame(width: 100)
                     }
                 }
             }
-            .scrollContentBackground(.hidden).background(Palette.void)
+            .scrollContentBackground(.hidden).background(Palette.bar)
             .navigationTitle(existing == nil ? "Add assignment" : "Edit assignment").navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
@@ -515,8 +514,7 @@ private struct CustomAssignmentSheet: View {
                 }
             }
         }
-        .presentationDetents([.medium])
-        .preferredColorScheme(.dark)
+        .velaSheet()
     }
 }
 
@@ -539,35 +537,35 @@ private struct FinalCalcSheet: View {
                     HStack {
                         Text("Final's weight")
                         Spacer()
-                        TextField("20", text: $weight).keyboardType(.decimalPad).multilineTextAlignment(.trailing).frame(maxWidth: 80)
-                        Text("%").foregroundStyle(Palette.starDim)
+                        TextField("20", text: $weight).keyboardType(.decimalPad).multilineTextAlignment(.trailing).frame(width: 100)
+                        Text("%").foregroundStyle(Palette.textDim)
                     }
                     HStack {
                         Text("Target grade")
                         Spacer()
-                        TextField("90", text: $target).keyboardType(.decimalPad).multilineTextAlignment(.trailing).frame(maxWidth: 80)
-                        Text("%").foregroundStyle(Palette.starDim)
+                        TextField("90", text: $target).keyboardType(.decimalPad).multilineTextAlignment(.trailing).frame(width: 100)
+                        Text("%").foregroundStyle(Palette.textDim)
                     }
                 }
                 Section("You need") {
                     Text(required.map { String(format: "%.2f%%", $0) } ?? "—")
                         .font(.system(size: 34, weight: .bold)).monospacedDigit()
-                        .foregroundStyle(required == nil ? Palette.starFaint : (required! > 100 ? Palette.rose : Palette.emerald))
+                        .lineLimit(1).minimumScaleFactor(0.6)
+                        .foregroundStyle(required.map { $0 > 100 ? Palette.bad : Palette.good } ?? Palette.textFaint)
                     if let r = required, r > 100 {
                         Text("Above 100%, so that target isn't reachable on the final alone.")
-                            .font(.footnote).foregroundStyle(Palette.starDim)
+                            .font(.footnote).foregroundStyle(Palette.textDim)
                     }
                 }
             }
-            .scrollContentBackground(.hidden).background(Palette.void)
+            .scrollContentBackground(.hidden).background(Palette.bar)
             .navigationTitle("Final grade calculator").navigationBarTitleDisplayMode(.inline)
             .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done") { dismiss() } } }
         }
-        .presentationDetents([.medium, .large])
-        .preferredColorScheme(.dark)
+        .velaSheet()
     }
 
     private func row(_ title: String, _ value: String) -> some View {
-        HStack { Text(title); Spacer(); Text(value).foregroundStyle(Palette.starDim) }
+        HStack { Text(title); Spacer(); Text(value).foregroundStyle(Palette.textDim) }
     }
 }
