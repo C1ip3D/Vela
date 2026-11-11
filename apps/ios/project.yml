@@ -25,6 +25,8 @@ targets:
     platform: iOS
     sources:
       - path: Vela
+      - path: GoogleService-Info.plist
+        optional: true
     dependencies:
       - package: VelaKit
       - package: Firebase
@@ -59,11 +61,21 @@ targets:
     scheme:
       testTargets: []
 schemes:
-  Vela:
+  Vela Dev:
     build:
       targets:
         Vela: all
     run:
       config: Debug
+    archive:
+      config: Release
+  Vela Release:
+    build:
+      targets:
+        Vela: all
+    run:
+      config: Release
+    profile:
+      config: Release
     archive:
       config: Release

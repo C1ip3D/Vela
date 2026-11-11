@@ -1,1 +1,2 @@
 #include "Shared.xcconfig"
+VELA_API_BASE_URL = https:/$()/vela-434k.onrender.com
