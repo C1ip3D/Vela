@@ -48,7 +48,12 @@ swift test --package-path apps/ios/VelaKit   # ported ic-client/domain tests
 
 When changing grading/IC-parsing logic, update both the TypeScript package and its Swift port in `apps/ios/VelaKit`.
 
-Config lives in `apps/ios/Config/Secrets.xcconfig` (gitignored; copy `Secrets.example.xcconfig`): `VELA_API_BASE_URL` plus the `FIREBASE_*` values from the Firebase iOS app (bundle ID `com.avaneesh.vela`). Firebase is configured in code, so no `GoogleService-Info.plist` is needed.
+`npm run xcode` (from the repo root) is a shortcut for `xcodegen generate`. Re-run it after any `project.yml` change; `Vela.xcodeproj` is gitignored and generated.
+
+Config for the iOS app:
+- **Backend URL:** set per configuration in `apps/ios/Config/Debug.xcconfig` (`http://localhost:3000`) and `Release.xcconfig` (the Render URL). In xcconfig, write URLs as `https:/$()/host` because `//` starts a comment. `Shared.xcconfig` holds common settings (`VELA_DEMO`) and optionally includes a gitignored `Secrets.xcconfig` for local overrides.
+- **Firebase:** drop `GoogleService-Info.plist` (gitignored) into `apps/ios/` for the Firebase iOS app (bundle ID `com.avaneesh.vela`). It is wired into the target as an optional source, so builds still work without it. When it is absent, `FirebaseSession.configure()` falls back to `FIREBASE_*` values from xcconfig (e.g. in `Secrets.xcconfig`), and with neither the app runs IC-only.
+- **Schemes:** `Vela` runs Debug (localhost); `Vela Release` runs/profiles/archives Release (Render). Archive on `Vela` also uses Release.
 
 ### Domain package tests
 
@@ -96,4 +101,4 @@ PostgreSQL via Prisma (schema in `packages/db/prisma/schema.prisma`). Key models
 `npm run dev` loads the root `.env.local`/`.env` directly (Node `--env-file`). `packages/db` still needs its own copy/symlink for the Prisma CLI (it only auto-loads env from its own cwd). On Render, set the vars listed in `render.yaml`.
 
 Needs: `DATABASE_URL`, `NEXT_PUBLIC_FIREBASE_*` (also used server-side by `@vela/auth` to verify ID tokens), `FIREBASE_SERVICE_ACCOUNT_KEY_BASE64` (used by `@vela/auth`'s `mintCustomTokenForIcIdentity` for `/api/ic/mint-token`).
-The iOS app needs `VELA_API_BASE_URL` and the `FIREBASE_*` values in `apps/ios/Config/Secrets.xcconfig` (see the iOS section above).
+The iOS app needs `GoogleService-Info.plist` in `apps/ios/` (or `FIREBASE_*` values in xcconfig) and a backend URL from `Debug`/`Release.xcconfig` (see the iOS section above).
