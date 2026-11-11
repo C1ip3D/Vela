@@ -48,6 +48,7 @@ targets:
         VelaFirebaseAppID: $(FIREBASE_APP_ID)
         VelaFirebaseProjectID: $(FIREBASE_PROJECT_ID)
         VelaFirebaseSenderID: $(FIREBASE_GCM_SENDER_ID)
+        VelaDemo: $(VELA_DEMO)
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.avaneesh.vela

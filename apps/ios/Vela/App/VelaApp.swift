@@ -9,7 +9,7 @@ struct VelaApp: App {
             RootView()
                 .environment(model)
                 .preferredColorScheme(.dark)
-                .tint(Palette.vela300)
+                .tint(Palette.tint)
                 .dynamicTypeSize(.xLarge)
                 .task { model.bootstrap() }
         }
@@ -24,14 +24,14 @@ struct RootView: View {
         Group {
             switch model.phase {
             case .launching:
-                ProgressView().tint(Palette.vela400).frame(maxWidth: .infinity, maxHeight: .infinity).velaBackground()
+                ProgressView().tint(Palette.tint).frame(maxWidth: .infinity, maxHeight: .infinity).velaBackground()
             case .signedOut:
                 LoginView()
             case .signedIn:
                 MainTabView()
             }
         }
-        .animation(.easeInOut(duration: 0.25), value: model.phase)
+        .animation(.easeInOut(duration: 0.2), value: model.phase)
         // Keepalive: check (and silently repair) the session whenever the app returns to the foreground, and every
         // 10 minutes while it stays there, so IC's idle timeout rarely gets a chance to expire it.
         .task(id: KeepaliveKey(active: scenePhase == .active, signedIn: model.phase == .signedIn)) {
@@ -49,19 +49,14 @@ struct RootView: View {
 private struct KeepaliveKey: Equatable { var active: Bool; var signedIn: Bool }
 
 struct MainTabView: View {
-    private var dayTitle: String {
-        let d = Calendar.current.component(.weekday, from: Date()) - 1
-        let names = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
-        return names[(1...5).contains(d) ? d : 1]
-    }
-
     var body: some View {
         TabView {
-            Tab("Dashboard", systemImage: "square.grid.2x2") { DashboardView() }
-            Tab(dayTitle, systemImage: "calendar.day.timeline.left") { DayView() }
-            Tab("Schedule", systemImage: "calendar.badge.checkmark") { FlexView() }
+            Tab("Grades", systemImage: "chart.bar") { DashboardView() }
+            Tab("Today", systemImage: "clock") { DayView() }
+            Tab("Access", systemImage: "person.2") { FlexView() }
             Tab("Settings", systemImage: "gearshape") { SettingsView() }
         }
-        .toolbarBackground(Palette.deep, for: .tabBar)
+        .toolbarBackground(Palette.bar, for: .tabBar)
+        .toolbarBackground(.visible, for: .tabBar)
     }
 }

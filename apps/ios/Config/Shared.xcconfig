@@ -5,5 +5,7 @@ FIREBASE_API_KEY =
 FIREBASE_APP_ID =
 FIREBASE_PROJECT_ID =
 FIREBASE_GCM_SENDER_ID =
+// YES makes a Debug build start in demo mode (fixture data, no sign-in). Used by the CI preview build.
+VELA_DEMO = NO
 
 #include? "Secrets.xcconfig"

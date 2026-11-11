@@ -8,59 +8,52 @@ struct DashboardView: View {
         let g = model.gradedCourses.compactMap(\.currentGrade)
         return g.isEmpty ? nil : g.reduce(0, +) / Double(g.count)
     }
+    private var missing: Int { model.courses.reduce(0) { $0 + $1.missingCount } }
 
     var body: some View {
         NavigationStack {
             ScrollView {
-                VStack(spacing: 16) {
-                    gpaHero
-                    HStack(spacing: 12) {
-                        StatCard(systemImage: "book", value: "\(model.courses.count)", label: "Courses")
-                        let missing = model.courses.reduce(0) { $0 + $1.missingCount }
-                        StatCard(systemImage: "exclamationmark.triangle", value: "\(missing)", label: "Missing", warn: missing > 0)
-                        StatCard(systemImage: "star", value: avgGrade.map { String(format: "%.2f%%", $0) } ?? "—", label: "Avg Grade")
+                VStack(spacing: Layout.gap) {
+                    gpaCard
+                    HStack(spacing: Layout.gap) {
+                        StatCard(value: "\(model.courses.count)", label: "Courses")
+                        StatCard(value: "\(missing)", label: "Missing", warn: missing > 0)
+                        StatCard(value: avgGrade.map { String(format: "%.2f%%", $0) } ?? "—", label: "Average")
                     }
-                    SectionLabel(title: "Current Courses").padding(.top, 8)
+                    SectionLabel(title: "Courses").padding(.top, 8)
                     courseList
                 }
-                .padding(20)
+                .padding(Layout.screen)
             }
             .refreshable { await model.loadCourses(force: true) }
             .velaBackground()
-            .navigationTitle("Dashboard")
-            .navigationBarTitleDisplayMode(.inline)
+            .navigationTitle("Grades")
             .navigationDestination(for: ICCourse.self) { CourseDetailView(course: $0) }
             .task { await model.loadCourses() }
         }
     }
 
-    private var gpaHero: some View {
-        VStack(spacing: 0) {
-            Text("GPA OVERVIEW")
-                .font(.footnote).tracking(2.4).foregroundStyle(Palette.starFaint)
-                .frame(maxWidth: .infinity, alignment: .leading).padding(.horizontal, 24).padding(.vertical, 18)
-            Divider().overlay(Palette.border)
-            HStack(spacing: 0) {
-                gpaColumn("Unweighted", value: model.gpa.unweighted, color: Palette.vela300)
-                Rectangle().fill(Palette.border).frame(width: 1)
-                gpaColumn("Weighted", value: model.gpa.weighted, color: Palette.emerald)
-            }
-            .padding(.vertical, 20)
-            .redacted(reason: model.coursesState == .loading && model.courses.isEmpty ? .placeholder : [])
+    private var gpaCard: some View {
+        HStack(spacing: 0) {
+            gpaColumn("Unweighted GPA", value: model.gpa.unweighted)
+            Rectangle().fill(Palette.border).frame(width: 1).padding(.vertical, 4)
+            gpaColumn("Weighted GPA", value: model.gpa.weighted)
         }
-        .background(RoundedRectangle(cornerRadius: 18, style: .continuous).fill(Palette.elevated))
-        .overlay(RoundedRectangle(cornerRadius: 18, style: .continuous).strokeBorder(Palette.borderLit))
+        .redacted(reason: model.coursesState == .loading && model.courses.isEmpty ? .placeholder : [])
+        .card(padding: 20)
     }
 
-    private func gpaColumn(_ title: String, value: Double, color: Color) -> some View {
-        VStack(spacing: 8) {
-            Text(title.uppercased()).font(.caption).tracking(1.6).foregroundStyle(Palette.starFaint)
+    private func gpaColumn(_ title: String, value: Double) -> some View {
+        VStack(spacing: 6) {
             Text(String(format: "%.2f", value))
-                .font(.system(size: 48, weight: .bold)).monospacedDigit().foregroundStyle(color)
+                .font(.system(size: 40, weight: .bold)).monospacedDigit()
+                .lineLimit(1).minimumScaleFactor(0.6)
+                .foregroundStyle(Palette.text)
+            Text(title).font(.caption).foregroundStyle(Palette.textDim).lineLimit(1).minimumScaleFactor(0.8)
         }
         .frame(maxWidth: .infinity)
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel("\(title) GPA \(String(format: "%.2f", value))")
+        .accessibilityLabel("\(title) \(String(format: "%.2f", value))")
     }
 
     @ViewBuilder
@@ -68,63 +61,68 @@ struct DashboardView: View {
         if model.courses.isEmpty {
             switch model.coursesState {
             case .loading, .idle:
-                ProgressView().tint(Palette.vela400).frame(maxWidth: .infinity).padding(40)
+                ProgressView().tint(Palette.tint).frame(maxWidth: .infinity).padding(40)
             case .failed(let message):
-                VStack(spacing: 12) {
-                    Image(systemName: "exclamationmark.triangle").font(.title).foregroundStyle(Palette.amber)
-                    Text("Couldn't load your courses.\n\(message)")
-                        .font(.subheadline).foregroundStyle(Palette.starDim).multilineTextAlignment(.center)
+                VStack(spacing: 4) {
+                    EmptyState(systemImage: "exclamationmark.triangle", message: "Couldn't load your courses.\n\(message)")
                     Button("Try again") { Task { await model.loadCourses(force: true) } }
                         .buttonStyle(.bordered)
                 }
-                .frame(maxWidth: .infinity).card(padding: 28)
+                .frame(maxWidth: .infinity).card()
             case .loaded:
-                VStack(spacing: 12) {
-                    Image(systemName: "book").font(.largeTitle).foregroundStyle(Palette.starFaint)
-                    Text("No courses found.").font(.subheadline).foregroundStyle(Palette.starDim)
-                }
-                .frame(maxWidth: .infinity).card(padding: 36)
+                EmptyState(systemImage: "book", message: "No courses found.").card()
             }
         } else {
             if case .failed(let message) = model.coursesState {
                 ErrorBanner(message: "Showing saved grades. \(message)")
             }
-            LazyVStack(spacing: 14) {
+            // One grouped list instead of a stack of separate cards: every row is the same height and width.
+            VStack(spacing: 0) {
                 ForEach(model.courses) { course in
-                    NavigationLink(value: course) { CourseCard(course: course) }
+                    NavigationLink(value: course) { CourseRow(course: course) }
                         .buttonStyle(.plain)
+                    if course.id != model.courses.last?.id { RowDivider().padding(.leading, Layout.card) }
                 }
             }
+            .card(padding: 0)
         }
     }
 }
 
-struct CourseCard: View {
+struct CourseRow: View {
     let course: ICCourse
 
+    private var subtitle: String {
+        [course.period.map { "Period \($0)" }, course.teacher].compactMap { $0 }.filter { !$0.isEmpty }.joined(separator: " · ")
+    }
+
     var body: some View {
-        HStack(alignment: .center, spacing: 12) {
-            VStack(alignment: .leading, spacing: 6) {
+        HStack(spacing: 12) {
+            VStack(alignment: .leading, spacing: 3) {
                 Text(course.shortName)
-                    .font(.title2).foregroundStyle(Palette.starBright)
-                    .lineLimit(1).minimumScaleFactor(0.7).multilineTextAlignment(.leading)
-                // Missing tag sits inline with the teacher so every card has the same height.
+                    .font(.body.weight(.medium)).foregroundStyle(Palette.text)
+                    .lineLimit(1)
                 HStack(spacing: 6) {
-                    Text(course.teacher ?? " ").foregroundStyle(Palette.starDim).lineLimit(1)
-                    if course.missingCount > 0 {
-                        if course.teacher != nil { Text("·").foregroundStyle(Palette.starFaint) }
-                        Text("\(course.missingCount) missing")
-                            .foregroundStyle(Palette.amber).lineLimit(1).layoutPriority(1)
+                    if !subtitle.isEmpty {
+                        Text(subtitle).font(.footnote).foregroundStyle(Palette.textDim).lineLimit(1)
                     }
+                    if course.missingCount > 0 { Pill(text: "\(course.missingCount) missing", color: Palette.warn) }
                 }
-                .font(.subheadline)
             }
             Spacer(minLength: 8)
-            Text(course.currentGrade.map { String(format: "%.2f%%", $0) } ?? "—")
-                .font(.title2.weight(.bold)).monospacedDigit()
-                .foregroundStyle(course.currentGrade.map(Palette.grade(percent:)) ?? Palette.starDim)
+            VStack(alignment: .trailing, spacing: 3) {
+                Text(course.currentGrade.map { String(format: "%.2f%%", $0) } ?? "—")
+                    .font(.body.weight(.semibold)).monospacedDigit()
+                    .foregroundStyle(course.currentGrade.map(Palette.grade(percent:)) ?? Palette.textFaint)
+                if let letter = course.displayLetter {
+                    Text(letter).font(.footnote).foregroundStyle(Palette.textDim)
+                }
+            }
+            .fixedSize()
+            Image(systemName: "chevron.right").font(.caption.weight(.semibold)).foregroundStyle(Palette.textFaint)
         }
-        .card(padding: 22)
+        .padding(.horizontal, Layout.card)
+        .frame(minHeight: 64)
         .contentShape(Rectangle())
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(
