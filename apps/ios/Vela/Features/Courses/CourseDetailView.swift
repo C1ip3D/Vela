@@ -321,7 +321,8 @@ private struct AssignmentRow: View {
                     if let dueText { Text("Due \(dueText)").font(.caption).foregroundStyle(Palette.starFaint) }
                     if dropped { badge("Dropped", color: Palette.vela300) }
                     else {
-                        if assignment.missing && mod?.editedScore == nil { badge("Missing", color: Palette.amber) }
+                        // The score column already reads "Missing" when there's no score; only badge here if a score is shown.
+                        if assignment.missing && effectiveScore != nil && mod?.editedScore == nil { badge("Missing", color: Palette.amber) }
                         if assignment.late { badge("Late", color: Palette.rose) }
                     }
                 }
@@ -351,10 +352,9 @@ private struct AssignmentRow: View {
     }
 
     private func badge(_ text: String, color: Color) -> some View {
-        Text(text).font(.caption2.weight(.semibold)).foregroundStyle(color)
-            .padding(.horizontal, 6).padding(.vertical, 2)
-            .background(Capsule().fill(color.opacity(0.15)))
-    }
+        Text(text).font(.footnote.weight(.semibold)).foregroundStyle(color)
+            .padding(.horizontal, 10).padding(.vertical, 4)
+            .background(Capsule().fill(color.opacity(0.15)))    }
 }
 
 private struct CustomRow: View {

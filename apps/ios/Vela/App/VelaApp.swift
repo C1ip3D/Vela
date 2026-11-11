@@ -10,6 +10,7 @@ struct VelaApp: App {
                 .environment(model)
                 .preferredColorScheme(.dark)
                 .tint(Palette.vela300)
+                .dynamicTypeSize(.xLarge)
                 .task { model.bootstrap() }
         }
     }

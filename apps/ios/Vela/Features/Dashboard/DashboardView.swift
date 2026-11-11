@@ -107,14 +107,17 @@ struct CourseCard: View {
             VStack(alignment: .leading, spacing: 6) {
                 Text(course.shortName)
                     .font(.title2).foregroundStyle(Palette.starBright)
-                    .lineLimit(2).multilineTextAlignment(.leading)
-                if let teacher = course.teacher {
-                    Text(teacher).font(.subheadline).foregroundStyle(Palette.starDim)
+                    .lineLimit(1).minimumScaleFactor(0.7).multilineTextAlignment(.leading)
+                // Missing tag sits inline with the teacher so every card has the same height.
+                HStack(spacing: 6) {
+                    Text(course.teacher ?? " ").foregroundStyle(Palette.starDim).lineLimit(1)
+                    if course.missingCount > 0 {
+                        if course.teacher != nil { Text("·").foregroundStyle(Palette.starFaint) }
+                        Text("\(course.missingCount) missing")
+                            .foregroundStyle(Palette.amber).lineLimit(1).layoutPriority(1)
+                    }
                 }
-                if course.missingCount > 0 {
-                    Label("\(course.missingCount) missing", systemImage: "exclamationmark.triangle")
-                        .font(.footnote).foregroundStyle(Palette.amber).padding(.top, 4)
-                }
+                .font(.subheadline)
             }
             Spacer(minLength: 8)
             Text(course.currentGrade.map { String(format: "%.2f%%", $0) } ?? "—")

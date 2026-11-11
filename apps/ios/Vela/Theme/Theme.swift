@@ -119,6 +119,7 @@ struct StatCard: View {
             Text(value)
                 .font(.title2.weight(.bold))
                 .monospacedDigit()
+                .lineLimit(1).minimumScaleFactor(0.7)
                 .foregroundStyle(warn ? Palette.amber : Palette.starBright)
             Text(label)
                 .font(.caption)
