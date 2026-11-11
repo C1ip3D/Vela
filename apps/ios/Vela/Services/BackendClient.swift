@@ -81,19 +81,6 @@ struct BackendClient {
         try await send("POST", path, body: body, bearer: bearer)
     }
 
-    /// The student's saved bell schedules, or nil when they haven't customised any (the backend then serves a preset).
-    func customBells(idToken: String) async throws -> [BellSchedule]? {
-        struct Response: Decodable { let bellsSource: String; let bells: [BellSchedule] }
-        let data = try await send("GET", "/api/schedule", body: Optional<String>.none, bearer: idToken)
-        let r = try JSONDecoder().decode(Response.self, from: data)
-        return r.bellsSource == "custom" ? r.bells : nil
-    }
-
-    func saveBells(_ bells: [BellSchedule], idToken: String) async throws {
-        struct Body: Encodable { let bells: [BellSchedule] }
-        _ = try await send("PUT", "/api/schedule/bell", body: Body(bells: bells), bearer: idToken)
-    }
-
     /// Backend re-verifies the IC cookies against the district server, then mints a Firebase custom token.
     func mintToken(session: IcSession, districtName: String, stateCode: String) async throws -> MintResponse {
         struct Body: Encodable { let cookies, baseUrl, appName, districtName, stateCode: String }

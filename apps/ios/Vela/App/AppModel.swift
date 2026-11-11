@@ -39,7 +39,6 @@ final class AppModel {
         static let district = "vela_ic_last_district"
         static let courses = "vela_cached_courses"
         static let schedule = "vela_schedule_entries"
-        static let bells = "vela_custom_bells"
     }
 
     // Auth
@@ -57,8 +56,6 @@ final class AppModel {
 
     // Schedule
     private(set) var scheduleEntries: [ScheduleEntry] = []
-    private(set) var customBells: [BellSchedule]?
-    enum BellSaveResult { case synced, localOnly }
     private(set) var scheduleState: Load = .idle
 
     // Flex periods (responsive scheduling)
@@ -71,8 +68,7 @@ final class AppModel {
     var districtDefaults: DistrictScheduleDefaults? {
         defaultsForHostname(session.flatMap { URL(string: $0.ic.baseUrl)?.host })
     }
-    var bells: [BellSchedule] { customBells ?? districtDefaults?.bells ?? [] }
-    var usingPresetBells: Bool { customBells == nil && districtDefaults != nil }
+    var bells: [BellSchedule] { districtDefaults?.bells ?? [] }
     var gradedCourses: [ICCourse] { courses.filter { $0.currentGrade != nil } }
     var gpa: GpaResult { courses.gpa }
     var displayName: String? { session?.ic.displayName }
@@ -117,7 +113,6 @@ final class AppModel {
         lastDistrict = Persistence.load(District.self, for: Key.district)
         courses = Persistence.load([ICCourse].self, for: Key.courses) ?? []
         scheduleEntries = Persistence.load([ScheduleEntry].self, for: Key.schedule) ?? []
-        customBells = Persistence.load([BellSchedule].self, for: Key.bells)
         session = KeychainStore.load(StoredSession.self, for: Key.session)
         hasSavedLogin = KeychainStore.load(StoredCredentials.self, for: Key.credentials) != nil
         phase = session == nil ? .signedOut : .signedIn
@@ -415,33 +410,8 @@ final class AppModel {
 
     // MARK: Schedule
 
-    /// Saves the student's own bell times on-device, then to their Vela account (shared with web). Local save always succeeds.
-    func saveBells(_ next: [BellSchedule]) async -> BellSaveResult {
-        customBells = next
-        #if DEBUG
-        if DemoData.isEnabled { return .localOnly } // never persist demo edits
-        #endif
-        Persistence.save(next, for: Key.bells)
-        guard FirebaseSession.shared.isAvailable, let token = await FirebaseSession.shared.idToken() else { return .localOnly }
-        do {
-            try await backend.saveBells(next, idToken: token)
-            return .synced
-        } catch {
-            return .localOnly
-        }
-    }
-
-    /// Best-effort: pick up bell times the student saved from another device or web.
-    private func pullCustomBells() async {
-        guard FirebaseSession.shared.isAvailable, let token = await FirebaseSession.shared.idToken(),
-              let remote = try? await backend.customBells(idToken: token) else { return }
-        customBells = remote
-        Persistence.save(remote, for: Key.bells)
-    }
-
     func loadSchedule(force: Bool = false) async {
         guard session != nil else { return }
-        Task { await pullCustomBells() }
         if scheduleState == .loading { return }
         if !force, scheduleState == .loaded { return }
         guard let defaults = districtDefaults else {

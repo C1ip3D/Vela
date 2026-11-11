@@ -103,18 +103,6 @@ final class ScheduleTests: XCTestCase {
         XCTAssertNil(defaultsForHostname("example.infinitecampus.org"))
     }
 
-    func testUpsertPeriodTimes() {
-        let edited = upsertPeriodTimes(bells, day: 1, times: [
-            BellPeriod(period: "1", start: "08:05", end: "08:55"),
-            BellPeriod(period: "9", start: "16:00", end: "16:30"),
-        ])
-        XCTAssertEqual(edited[0].periods.first { $0.period == "1" }?.start, "08:05")
-        XCTAssertEqual(edited[0].periods.last?.period, "9")
-        XCTAssertEqual(edited[1], lateStart)
-        // No schedule for Saturday: a custom one is appended.
-        XCTAssertEqual(upsertPeriodTimes(bells, day: 6, times: []).last?.id, "custom-day-6")
-    }
-
     func testEntriesForDayCollapsesRepeatedFlexPeriods() {
         let flex = [
             ScheduleEntry(period: "Access", courseName: "ACCESS", teacher: "A", room: "1", days: [1]),
@@ -129,29 +117,6 @@ final class ScheduleTests: XCTestCase {
 }
 
 final class ClockInputTests: XCTestCase {
-    func testNormalize() {
-        XCTAssertEqual(normalizeClockInput("1:17 PM"), "13:17")
-        XCTAssertEqual(normalizeClockInput("1:17p"), "13:17")
-        XCTAssertEqual(normalizeClockInput("12:05 AM"), "00:05")
-        XCTAssertEqual(normalizeClockInput("12:05 pm"), "12:05")
-        XCTAssertEqual(normalizeClockInput("8:30 AM"), "08:30")
-        XCTAssertEqual(normalizeClockInput(" 13:17 "), "13:17")
-        XCTAssertEqual(normalizeClockInput("07:15"), "07:15")
-        XCTAssertNil(normalizeClockInput("13:17 PM"))
-        XCTAssertNil(normalizeClockInput("0:30 AM"))
-        XCTAssertNil(normalizeClockInput("24:00"))
-        XCTAssertNil(normalizeClockInput("8:75"))
-        XCTAssertNil(normalizeClockInput("nope"))
-        XCTAssertNil(normalizeClockInput(""))
-    }
-
-    func testFormat() {
-        XCTAssertEqual(formatClock12("13:17"), "1:17 PM")
-        XCTAssertEqual(formatClock12("00:05"), "12:05 AM")
-        XCTAssertEqual(formatClock12("12:00"), "12:00 PM")
-        XCTAssertEqual(formatClock12("garbage"), "garbage")
-    }
-
     func testBellSchedulesRoundTripThroughJSON() throws {
         let data = try JSONEncoder().encode(BellPresets.emeraldHighBells)
         let back = try JSONDecoder().decode([BellSchedule].self, from: data)

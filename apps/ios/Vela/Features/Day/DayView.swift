@@ -41,7 +41,7 @@ struct DayView: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .card()
                     if bells.isEmpty {
-                        Text("No bell times for your district yet, so classes are listed without times. Add them in Settings.")
+                        Text("No bell times for your district yet, so classes are listed without times.")
                             .font(.footnote).foregroundStyle(Palette.warn)
                     }
                     SectionLabel(title: "Classes").padding(.top, 8)

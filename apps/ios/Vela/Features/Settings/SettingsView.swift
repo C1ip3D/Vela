@@ -22,12 +22,6 @@ struct SettingsView: View {
                     SectionLabel(title: "Sign-in").padding(.top, 8)
                     VStack(alignment: .leading, spacing: 0) {
                         row("Stay signed in", model.hasSavedLogin ? "On" : "Off")
-                        RowDivider().padding(.leading, Layout.card)
-                        Text(model.hasSavedLogin
-                             ? "Your Infinite Campus login is kept on this device so Vela can sign you back in when your session expires. It is never sent to Vela."
-                             : "No login is saved. Sign in to Infinite Campus again to save it, so you won't have to re-enter your password when your session expires.")
-                            .font(.footnote).foregroundStyle(Palette.textDim)
-                            .padding(.horizontal, Layout.card).padding(.vertical, 12)
                         if model.hasSavedLogin {
                             RowDivider().padding(.leading, Layout.card)
                             Button(role: .destructive) { model.forgetSavedLogin() } label: {
@@ -39,24 +33,6 @@ struct SettingsView: View {
                             .buttonStyle(.plain)
                         }
                     }
-                    .card(padding: 0)
-
-                    SectionLabel(title: "Schedule").padding(.top, 8)
-                    NavigationLink {
-                        BellTimesView()
-                    } label: {
-                        HStack(spacing: 8) {
-                            Text("Bell times").foregroundStyle(Palette.text)
-                            Spacer(minLength: 8)
-                            Text(bellSummary).foregroundStyle(Palette.textDim)
-                            Image(systemName: "chevron.right").font(.caption.weight(.semibold)).foregroundStyle(Palette.textFaint)
-                        }
-                        .font(.subheadline)
-                        .padding(.horizontal, Layout.card)
-                        .frame(minHeight: Layout.row + 4)
-                        .contentShape(Rectangle())
-                    }
-                    .buttonStyle(.plain)
                     .card(padding: 0)
 
                     Button(role: .destructive) { confirmSignOut = true } label: {
@@ -78,12 +54,6 @@ struct SettingsView: View {
                 Text("You'll need to sign in to Infinite Campus again.")
             }
         }
-    }
-
-    private var bellSummary: String {
-        if model.customBells != nil { return "Custom" }
-        if model.usingPresetBells { return "District preset" }
-        return "Not set"
     }
 
     private func row(_ title: String, _ value: String) -> some View {
