@@ -17,16 +17,23 @@ enum AppConfig {
     static var firebaseSenderID: String? { string("VelaFirebaseSenderID") }
 }
 
-/// Firebase Auth, configured programmatically so no GoogleService-Info.plist is needed.
-/// When the keys are absent, `isAvailable` is false and the app runs IC-only.
+/// Firebase Auth. Uses GoogleService-Info.plist when it is bundled; otherwise falls back to
+/// the FIREBASE_* values from Config/*.xcconfig (so CI/demo builds work without the plist).
+/// When neither is present, `isAvailable` is false and the app runs IC-only.
 @MainActor
 final class FirebaseSession {
     static let shared = FirebaseSession()
     private(set) var isAvailable = false
 
     func configure() {
-        guard FirebaseApp.app() == nil,
-              let key = AppConfig.firebaseAPIKey, let appID = AppConfig.firebaseAppID,
+        // Don't call FirebaseApp.app() here: it logs the "default app not configured" error when nil.
+        guard !isAvailable else { return }
+        if Bundle.main.path(forResource: "GoogleService-Info", ofType: "plist") != nil {
+            FirebaseApp.configure()
+            isAvailable = true
+            return
+        }
+        guard let key = AppConfig.firebaseAPIKey, let appID = AppConfig.firebaseAppID,
               let project = AppConfig.firebaseProjectID, let sender = AppConfig.firebaseSenderID else { return }
         let options = FirebaseOptions(googleAppID: appID, gcmSenderID: sender)
         options.apiKey = key

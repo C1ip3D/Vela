@@ -12,6 +12,7 @@
     "build": "npm run typecheck -w @vela/api",
     "start": "npm run start -w @vela/api",
     "lint": "npm run typecheck -w @vela/api",
+    "xcode": "cd apps/ios && xcodegen generate",
     "db:generate": "npm run generate -w @vela/db",
     "db:migrate": "npm run migrate -w @vela/db",
     "db:studio": "npm run studio -w @vela/db"
