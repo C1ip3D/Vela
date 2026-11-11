@@ -5,7 +5,7 @@ Native rewrite of `apps/mobile` (Expo). iOS 18+, SwiftUI + Observation, Swift 5 
 ```
 apps/ios/
   project.yml        XcodeGen spec (the .xcodeproj is generated, not committed)
-  Config/            xcconfig: API base URL + Firebase keys (Secrets.xcconfig is gitignored)
+  Config/            xcconfig: per-config API base URL (Debug/Release); optional gitignored Secrets.xcconfig overrides
   Vela/              the app: App/, Services/, Theme/, Features/{Login,Dashboard,Courses,Day,Schedule,Settings}
   VelaKit/           Swift package, no UI: ports of @vela/ic-client and @vela/domain + tests
 ```
@@ -15,14 +15,15 @@ apps/ios/
 ```bash
 brew install xcodegen          # once
 cd apps/ios
-cp Config/Secrets.example.xcconfig Config/Secrets.xcconfig   # fill in; optional (see below)
+# put GoogleService-Info.plist (from Firebase) in apps/ios/ — optional, see below
 xcodegen generate && open Vela.xcodeproj
 ```
 
 Unit tests (macOS, no simulator): `swift test --package-path apps/ios/VelaKit`
 
-`Secrets.xcconfig` holds `VELA_API_BASE_URL` and the `FIREBASE_*` values (same ones the Expo app took from `EXPO_PUBLIC_*`).
-Without the Firebase values the app still signs in to Infinite Campus and shows grades; it just skips Vela sign-in and the best-effort `/api/ic/courses` snapshot.
+The backend URL is set per configuration: `Config/Debug.xcconfig` (localhost) and `Config/Release.xcconfig` (Render). The `Vela` scheme runs Debug; `Vela Release` runs Release.
+Firebase comes from `GoogleService-Info.plist` (gitignored, in `apps/ios/`); alternatively set the `FIREBASE_*` values in a gitignored `Config/Secrets.xcconfig`.
+Without Firebase config the app still signs in to Infinite Campus and shows grades; it just skips Vela sign-in and the best-effort `/api/ic/courses` snapshot.
 
 Debug builds accept a `-VelaDemo` launch argument: skips sign-in and shows fixture data (no network).
 
