@@ -184,8 +184,7 @@ final class AppModel {
         KeychainStore.delete(Key.session)
         KeychainStore.delete(Key.credentials)
         hasSavedLogin = false
-        [Key.courses, Key.schedule, Key.bells].forEach(Persistence.remove)
-        customBells = nil // the next student must not inherit this one's bell times
+        [Key.courses, Key.schedule].forEach(Persistence.remove)
         session = nil
         courses = []
         scheduleEntries = []
