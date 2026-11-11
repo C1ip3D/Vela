@@ -81,11 +81,12 @@ export async function syncICCoursesToDB(
 
   const now = new Date();
 
-  // 2. Upsert each course and enrollment
+  // 2. Upsert every course first, so per-user history and assignments can be loaded in two queries
+  // instead of one (or two) per course / assignment.
+  const courseRows = new Map<string, { id: string }>();
   for (const c of courses) {
     const courseType = normalizeCourseType(c.courseType);
-
-    const course = await prisma.course.upsert({
+    const row = await prisma.course.upsert({
       where: { districtId_icCourseId: { districtId: district.id, icCourseId: c.id } },
       create: {
         districtId: district.id,
@@ -106,6 +107,34 @@ export async function syncICCoursesToDB(
         updatedAt: now,
       },
     });
+    courseRows.set(c.id, row);
+  }
+
+  const courseIds = [...courseRows.values()].map((r) => r.id);
+  const latestHistory = new Map(
+    (
+      await prisma.gradeHistory.findMany({
+        where: { userId: user.id, courseId: { in: courseIds } },
+        orderBy: { recordedAt: "desc" },
+        distinct: ["courseId"],
+      })
+    ).map((h) => [h.courseId, h])
+  );
+  const knownAssignments = new Map(
+    (await prisma.assignmentGrade.findMany({ where: { userId: user.id, courseId: { in: courseIds } } })).map((a) => [
+      `${a.courseId}|${a.assignmentKey}`,
+      a,
+    ])
+  );
+
+  // Courses IC no longer returns (dropped, or a finished term) stop showing up in the cached list.
+  await prisma.enrollment.updateMany({
+    where: { userId: user.id, isActive: true, courseId: { notIn: courseIds } },
+    data: { isActive: false },
+  });
+
+  for (const c of courses) {
+    const course = courseRows.get(c.id)!;
 
     const icEnrollmentId = `${user.id}_${course.id}`;
     await prisma.enrollment.upsert({
@@ -132,10 +161,7 @@ export async function syncICCoursesToDB(
 
     // 3. Record a grade snapshot only when the grade actually changed
     if (c.currentGrade != null) {
-      const prevHistory = await prisma.gradeHistory.findFirst({
-        where: { userId: user.id, courseId: course.id },
-        orderBy: { recordedAt: "desc" },
-      });
+      const prevHistory = latestHistory.get(course.id) ?? null;
 
       const gradeChanged =
         prevHistory === null ||
@@ -177,15 +203,7 @@ export async function syncICCoursesToDB(
     // 4. Upsert assignment grades and notify on newly graded assignments
     if (c.assignments?.length) {
       for (const a of c.assignments) {
-        const prev = await prisma.assignmentGrade.findUnique({
-          where: {
-            userId_courseId_assignmentKey: {
-              userId: user.id,
-              courseId: course.id,
-              assignmentKey: a.key,
-            },
-          },
-        });
+        const prev = knownAssignments.get(`${course.id}|${a.key}`) ?? null;
 
         await prisma.assignmentGrade.upsert({
           where: {
@@ -306,12 +324,9 @@ export async function getCachedCourses(
 
   if (!user || user.enrollments.length === 0) return null;
 
-  const mostRecent = await prisma.gradeHistory.findFirst({
-    where: { userId: user.id },
-    orderBy: { recordedAt: "desc" },
-  });
-
-  const isStale = !mostRecent || Date.now() - mostRecent.recordedAt.getTime() > CACHE_TTL_MS;
+  // Every sync touches User.updatedAt. (GradeHistory only gets a row when a grade changes, so it can't
+  // tell "synced a minute ago, nothing changed" from "never synced".)
+  const isStale = Date.now() - user.updatedAt.getTime() > CACHE_TTL_MS;
 
   const courseIds = user.enrollments.map((e) => e.courseId);
   const recentHistories = await prisma.gradeHistory.findMany({

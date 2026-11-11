@@ -42,17 +42,28 @@ enum KeychainStore {
     }
 }
 
-/// Non-secret cached values (last district, schedule cache).
+/// Cached values (last district, grades, schedule, bells). Grades are a student's records, so they live in files with
+/// data protection (encrypted while the device is locked) rather than plain UserDefaults.
 enum Persistence {
+    private static func url(_ key: String) -> URL? {
+        guard let dir = try? FileManager.default.url(
+            for: .applicationSupportDirectory, in: .userDomainMask, appropriateFor: nil, create: true) else { return nil }
+        return dir.appendingPathComponent("\(key).json")
+    }
+
     static func save<T: Encodable>(_ value: T, for key: String) {
-        if let data = try? JSONEncoder().encode(value) { UserDefaults.standard.set(data, forKey: key) }
+        guard let data = try? JSONEncoder().encode(value), let url = url(key) else { return }
+        try? data.write(to: url, options: [.atomic, .completeFileProtection])
+        UserDefaults.standard.removeObject(forKey: key) // drop any copy from before this moved to files
     }
 
     static func load<T: Decodable>(_ type: T.Type, for key: String) -> T? {
-        UserDefaults.standard.data(forKey: key).flatMap { try? JSONDecoder().decode(type, from: $0) }
+        if let url = url(key), let data = try? Data(contentsOf: url), let v = try? JSONDecoder().decode(type, from: data) { return v }
+        return UserDefaults.standard.data(forKey: key).flatMap { try? JSONDecoder().decode(type, from: $0) }
     }
 
     static func remove(_ key: String) {
+        if let url = url(key) { try? FileManager.default.removeItem(at: url) }
         UserDefaults.standard.removeObject(forKey: key)
     }
 }

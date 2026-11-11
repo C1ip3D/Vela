@@ -118,14 +118,14 @@ public enum Parsers {
         for cs in raw {
             let name = (cs["courseName"] ?? cs["name"]).string ?? "Unknown Course"
             let code = (cs["courseNumber"] ?? cs["code"] ?? cs["number"]).stringified ?? ""
-            let id = (cs["courseSectionID"] ?? cs["sectionID"] ?? cs["id"]).stringified ?? code
+            let id = (cs["courseSectionID"] ?? cs["sectionID"] ?? cs["id"]).stringified ?? (code.isEmpty ? name : code)
 
             var scan = GradeScan()
             findGrades(cs, courseId: id, scan: &scan)
             let assignments = scan.assignments.map(\.value)
             let currentGrade = scan.currentGrade
 
-            let replacesExisting = map[id].map { ($0.currentGrade ?? 0) == 0 && (currentGrade ?? 0) != 0 } ?? true
+            let replacesExisting = map[id].map { $0.currentGrade == nil && currentGrade != nil } ?? true
             if replacesExisting {
                 if map[id] == nil { order.append(id) }
                 map[id] = ICCourse(

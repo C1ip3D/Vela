@@ -106,5 +106,33 @@ export async function verifyIcDistrictHost(
 ): Promise<boolean> {
   if (isValidIcDistrictHost(hostname)) return true;
   if (!districtName || !stateCode) return false;
-  return isKnownIcDistrictHost(hostname, districtName, stateCode);
+
+  // Only successful lookups are cached, so a failure never sticks.
+  const key = `${hostname.toLowerCase()}|${districtName}|${stateCode}`;
+  const hit = verifiedHosts.get(key);
+  if (hit && hit > Date.now()) return true;
+  const ok = await isKnownIcDistrictHost(hostname, districtName, stateCode);
+  if (ok) {
+    if (verifiedHosts.size > 500) verifiedHosts.clear();
+    verifiedHosts.set(key, Date.now() + VERIFIED_HOST_TTL_MS);
+  }
+  return ok;
+}
+
+const VERIFIED_HOST_TTL_MS = 60 * 60 * 1000;
+const verifiedHosts = new Map<string, number>();
+
+/**
+ * Hostname of a district base URL, or null unless it is a plain `https://host[/path]`:
+ * no other scheme, no explicit port, no embedded credentials. Callers fetch the base URL
+ * server-side, so anything else would widen what an untrusted caller can make us request.
+ */
+export function icBaseUrlHost(baseUrl: string): string | null {
+  try {
+    const u = new URL(baseUrl);
+    if (u.protocol !== "https:" || u.port !== "" || u.username !== "" || u.password !== "") return null;
+    return u.hostname;
+  } catch {
+    return null;
+  }
 }

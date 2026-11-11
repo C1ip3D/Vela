@@ -44,7 +44,8 @@ export function parseCoursesResilient(data: any): ICCourse[] {
   for (const cs of rawCourses) {
     const name = cs.courseName ?? cs.name ?? "Unknown Course";
     const code = cs.courseNumber ?? cs.code ?? cs.number ?? "";
-    const id = String(cs.courseSectionID ?? cs.sectionID ?? cs.id ?? code ?? Math.random());
+    // Stable fallback (never random, never empty): an empty id would merge every id-less course into one.
+    const id = String(cs.courseSectionID ?? cs.sectionID ?? cs.id ?? (code || name));
 
     let currentGrade: number | null = null;
     let letterGrade: string | null = null;
@@ -99,7 +100,8 @@ export function parseCoursesResilient(data: any): ICCourse[] {
 
     const assignments = Array.from(assignmentsMap.values());
     const existing = coursesMap.get(id);
-    if (!existing || (!existing.currentGrade && currentGrade)) {
+    // A real 0% is a grade; only a missing (null) one may be replaced.
+    if (!existing || (existing.currentGrade == null && currentGrade != null)) {
       coursesMap.set(id, {
         id,
         name,
@@ -115,7 +117,7 @@ export function parseCoursesResilient(data: any): ICCourse[] {
       });
     } else {
       existing.missingCount += missingCount;
-      if (!existing.currentGrade && currentGrade) {
+      if (existing.currentGrade == null && currentGrade != null) {
         existing.currentGrade = currentGrade;
         existing.letterGrade = letterGrade;
       }

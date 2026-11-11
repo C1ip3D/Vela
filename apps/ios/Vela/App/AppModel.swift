@@ -126,6 +126,10 @@ final class AppModel {
         isFinishingLogin = true
         loginError = nil
         defer { isFinishingLogin = false }
+        // A previous student's Vela identity must never carry over to this login, even if minting a new one fails.
+        velaSignInTask?.cancel()
+        velaSignInTask = nil
+        FirebaseSession.shared.signOut()
 
         let base = district.baseURL.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
         var ic = IcSession(cookies: result.cookies, baseUrl: base, appName: district.appName)
@@ -157,9 +161,12 @@ final class AppModel {
         flexState = .idle
         phase = .signedIn
 
-        // Vela identity is best-effort: IC data loads on-device either way.
-        Task { await signInToVela(stored) }
+        // Vela identity is best-effort: IC data loads on-device either way. The snapshot sync waits for this.
+        velaSignInTask = Task { await signInToVela(stored) }
     }
+
+    /// In flight while this login's Vela (Firebase) identity is being established.
+    private var velaSignInTask: Task<Void, Never>?
 
     private func signInToVela(_ stored: StoredSession) async {
         guard FirebaseSession.shared.isAvailable else { return }
@@ -177,7 +184,8 @@ final class AppModel {
         KeychainStore.delete(Key.session)
         KeychainStore.delete(Key.credentials)
         hasSavedLogin = false
-        [Key.courses, Key.schedule].forEach(Persistence.remove)
+        [Key.courses, Key.schedule, Key.bells].forEach(Persistence.remove)
+        customBells = nil // the next student must not inherit this one's bell times
         session = nil
         courses = []
         scheduleEntries = []
@@ -196,6 +204,9 @@ final class AppModel {
 
     /// IC clearly said the session is gone: send the user back to sign in (keeping the district for a quick re-login).
     private func expireSession() {
+        velaSignInTask?.cancel()
+        velaSignInTask = nil
+        FirebaseSession.shared.signOut()
         KeychainStore.delete(Key.session)
         session = nil
         loginError = "Your Infinite Campus session expired. Please sign in again."
@@ -340,7 +351,9 @@ final class AppModel {
     private func syncSnapshot() {
         guard let s = session, FirebaseSession.shared.isAvailable else { return }
         let backend = self.backend
+        let signIn = velaSignInTask
         Task.detached {
+            await signIn?.value
             guard let token = await FirebaseSession.shared.idToken() else { return }
             await backend.syncCourses(session: s.ic, districtName: s.districtName, stateCode: s.stateCode, idToken: token)
         }
