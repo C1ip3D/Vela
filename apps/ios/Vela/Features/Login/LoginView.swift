@@ -111,6 +111,7 @@ struct LoginView: View {
                         .padding(.horizontal, 12).frame(width: 84)
                         .fieldChrome(height: 48)
                     }
+                    .menuStyle(.button).buttonStyle(.plain)
                     .onChange(of: stateCode) { _, _ in selected = nil }
                 }
                 VStack(alignment: .leading, spacing: 6) {

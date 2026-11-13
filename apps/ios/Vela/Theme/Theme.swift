@@ -26,12 +26,12 @@ enum Palette {
 
     // Text: warm ivory, not pure white.
     static let text = Color(hex: 0xF3EEE6)
-    static let textDim = Color(hex: 0xAEA9A0)
-    static let textFaint = Color(hex: 0x858279)
+    static let textDim = Color(hex: 0xA7A9AE)
+    static let textFaint = Color(hex: 0x7C8089)
 
     // Accents.
-    static let tan = Color(hex: 0xD8B98A)
-    static let blue = Color(hex: 0x7FB2E8)
+    static let tan = Color(hex: 0xCFB896)
+    static let blue = Color(hex: 0x86AEDD)
 
     /// Default emphasis for links, selection and spinners.
     static let tint = tan
@@ -40,13 +40,13 @@ enum Palette {
     static let actionInk = Color(hex: 0x14110B)
 
     // Semantic colours.
-    static let good = Color(hex: 0x34D399)
-    static let warn = Color(hex: 0xFBBF24)
-    static let bad = Color(hex: 0xF87171)
+    static let good = Color(hex: 0x6CC8A0)
+    static let warn = Color(hex: 0xE6C35C)
+    static let bad = Color(hex: 0xE5837F)
 
     static func grade(letter: String) -> Color {
         if letter.hasPrefix("A") { return good }
-        if letter.hasPrefix("B") { return Color(hex: 0xA3E635) }
+        if letter.hasPrefix("B") { return Color(hex: 0xA9CF7C) }
         if letter.hasPrefix("C") { return warn }
         return bad
     }
@@ -95,14 +95,13 @@ extension View {
         modifier(CardBackground(highlighted: highlighted, padding: padding))
     }
 
-    /// The one accented card per screen: a flat surface with a solid `tint` edge and outline. No gradients.
+    /// The one accented card per screen: a flat surface with an even `tint` outline. No gradients, no edge bar.
     func heroCard(_ tint: Color = Palette.tan, padding: CGFloat = 20) -> some View {
         let shape = RoundedRectangle(cornerRadius: Layout.radius + 4, style: .continuous)
         return self
             .padding(padding)
             .background(shape.fill(Palette.surface))
-            .overlay(alignment: .leading) { Rectangle().fill(tint).frame(width: 3) }
-            .overlay(shape.strokeBorder(tint.opacity(0.35), lineWidth: 1))
+            .overlay(shape.strokeBorder(tint.opacity(0.55), lineWidth: 1.5))
             .clipShape(shape)
     }
 
@@ -182,8 +181,9 @@ struct MoreGlyph: View {
     var body: some View {
         Image(systemName: "ellipsis")
             .font(.caption2.weight(.bold))
+            .rotationEffect(.degrees(90))
             .foregroundStyle(Palette.textFaint)
-            .frame(width: 28, height: 36)
+            .frame(width: 20, height: 36)
             .contentShape(Rectangle())
     }
 }

@@ -36,12 +36,12 @@ struct DashboardView: View {
 
     private var gpaCard: some View {
         HStack(spacing: 0) {
-            gpaColumn("Unweighted GPA", value: model.gpa.unweighted, color: Palette.tan)
+            gpaColumn("Unweighted GPA", value: model.gpa.unweighted, color: Palette.blue)
             Rectangle().fill(Palette.borderStrong).frame(width: 1).padding(.vertical, 4)
             gpaColumn("Weighted GPA", value: model.gpa.weighted, color: Palette.blue)
         }
         .redacted(reason: model.coursesState == .loading && model.courses.isEmpty ? .placeholder : [])
-        .heroCard(Palette.tan)
+        .heroCard(Palette.blue)
     }
 
     private func gpaColumn(_ title: String, value: Double, color: Color) -> some View {

@@ -261,6 +261,7 @@ private struct GroupSection: View {
                 } label: {
                     MoreGlyph()
                 }
+                .menuStyle(.button).buttonStyle(.plain)
                 .accessibilityLabel("\(group.name) options")
             }
 
@@ -280,7 +281,7 @@ private struct GroupSection: View {
                 .padding(.top, 4)
             }
         }
-        .padding(.leading, Layout.card).padding(.trailing, 8).padding(.vertical, 4)
+        .padding(.leading, Layout.card).padding(.trailing, 6).padding(.vertical, 4)
         .card(padding: 0)
     }
 }
@@ -350,6 +351,7 @@ private struct AssignmentRow: View {
             } label: {
                 MoreGlyph()
             }
+            .menuStyle(.button).buttonStyle(.plain)
             .accessibilityLabel("Options for \(assignment.name)")
         }
         .frame(minHeight: 56)
@@ -384,6 +386,7 @@ private struct CustomRow: View {
             } label: {
                 MoreGlyph()
             }
+            .menuStyle(.button).buttonStyle(.plain)
             .accessibilityLabel("Options for \(item.name)")
         }
         .frame(minHeight: 56)
