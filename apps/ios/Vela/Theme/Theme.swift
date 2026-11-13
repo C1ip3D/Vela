@@ -12,27 +12,32 @@ extension Color {
     }
 }
 
-/// Black-and-gray palette. Colour is reserved for meaning: green / yellow / red for grades, seats and status.
+/// Deep navy-charcoal surfaces with two accents: tan (identity: titles, selection, primary actions) and blue
+/// (time and information: the countdown, periods, hints). Green / yellow / red stay reserved for grades, seats and status.
 enum Palette {
-    // Surfaces, darkest first.
-    static let bg = Color(hex: 0x000000)
-    static let bar = Color(hex: 0x0A0A0A)
-    static let surface = Color(hex: 0x111111)
-    static let field = Color(hex: 0x171717)
-    static let elevated = Color(hex: 0x1C1C1C)
-    static let border = Color(hex: 0x262626)
-    static let borderStrong = Color(hex: 0x3A3A3A)
+    // Surfaces, darkest first. Slightly blue so the tan reads warm against them.
+    static let bg = Color(hex: 0x0A0D12)
+    static let bar = Color(hex: 0x0D1118)
+    static let surface = Color(hex: 0x131821)
+    static let field = Color(hex: 0x19202B)
+    static let elevated = Color(hex: 0x1D2531)
+    static let border = Color(hex: 0x252D3A)
+    static let borderStrong = Color(hex: 0x3B4658)
 
-    // Text.
-    static let text = Color(hex: 0xF5F5F5)
-    static let textDim = Color(hex: 0xA3A3A3)
-    static let textFaint = Color(hex: 0x7A7A7A)
+    // Text: warm ivory, not pure white.
+    static let text = Color(hex: 0xF3EEE6)
+    static let textDim = Color(hex: 0xAEA9A0)
+    static let textFaint = Color(hex: 0x858279)
 
-    /// Neutral emphasis (selection, links, spinners). Deliberately not a hue.
-    static let tint = Color(hex: 0xE5E5E5)
+    // Accents.
+    static let tan = Color(hex: 0xD8B98A)
+    static let blue = Color(hex: 0x7FB2E8)
+
+    /// Default emphasis for links, selection and spinners.
+    static let tint = tan
     /// Primary button fill and its label.
-    static let action = Color(hex: 0xF5F5F5)
-    static let actionInk = Color(hex: 0x0A0A0A)
+    static let action = tan
+    static let actionInk = Color(hex: 0x14110B)
 
     // Semantic colours.
     static let good = Color(hex: 0x34D399)
@@ -90,6 +95,22 @@ extension View {
         modifier(CardBackground(highlighted: highlighted, padding: padding))
     }
 
+    /// The one tinted card per screen: a soft static wash of `tint` (and optionally a second colour) over the surface.
+    func heroCard(_ tint: Color = Palette.tan, _ second: Color? = nil, padding: CGFloat = 20) -> some View {
+        let shape = RoundedRectangle(cornerRadius: Layout.radius + 4, style: .continuous)
+        return self
+            .padding(padding)
+            .background(
+                shape.fill(Palette.surface).overlay(
+                    shape.fill(LinearGradient(
+                        colors: [tint.opacity(0.20), (second ?? tint).opacity(second == nil ? 0.03 : 0.14)],
+                        startPoint: .topLeading, endPoint: .bottomTrailing))
+                )
+            )
+            .overlay(shape.strokeBorder(tint.opacity(0.28), lineWidth: 1))
+            .clipShape(shape)
+    }
+
     /// Full-screen app background.
     func velaBackground() -> some View {
         background(Palette.bg.ignoresSafeArea())
@@ -125,7 +146,7 @@ struct SectionLabel: View {
         Text(title.uppercased())
             .font(.caption.weight(.semibold))
             .tracking(0.8)
-            .foregroundStyle(Palette.textFaint)
+            .foregroundStyle(Palette.tan)
             .frame(maxWidth: .infinity, alignment: .leading)
             .accessibilityAddTraits(.isHeader)
     }
@@ -146,12 +167,38 @@ struct Pill: View {
     }
 }
 
+/// Square blue badge for a period number ("2") or short period name ("Access").
+struct PeriodBadge: View {
+    let period: String?
+
+    var body: some View {
+        Text(period.map { $0.count > 3 ? String($0.prefix(1)) : $0 } ?? "–")
+            .font(.subheadline.weight(.bold)).monospacedDigit()
+            .foregroundStyle(Palette.blue)
+            .lineLimit(1).minimumScaleFactor(0.6)
+            .frame(width: 36, height: 36)
+            .background(RoundedRectangle(cornerRadius: 9, style: .continuous).fill(Palette.blue.opacity(0.14)))
+            .accessibilityHidden(true)
+    }
+}
+
+/// The small "more" control on rows. Quiet on purpose: it is a secondary action.
+struct MoreGlyph: View {
+    var body: some View {
+        Image(systemName: "ellipsis")
+            .font(.caption2.weight(.bold))
+            .foregroundStyle(Palette.textFaint)
+            .frame(width: 28, height: 36)
+            .contentShape(Rectangle())
+    }
+}
+
 struct GradeBar: View {
     let percent: Double
     var body: some View {
         GeometryReader { geo in
             ZStack(alignment: .leading) {
-                Capsule().fill(Palette.border)
+                Capsule().fill(Palette.field)
                 Capsule()
                     .fill(Palette.grade(percent: percent))
                     .frame(width: geo.size.width * min(max(percent, 0), 100) / 100)
@@ -165,7 +212,7 @@ struct GradeBar: View {
 struct StatCard: View {
     let value: String
     let label: String
-    var warn = false
+    var color: Color = Palette.text
 
     var body: some View {
         VStack(spacing: 4) {
@@ -174,7 +221,7 @@ struct StatCard: View {
                 .monospacedDigit()
                 .lineLimit(1)
                 .minimumScaleFactor(0.6)
-                .foregroundStyle(warn ? Palette.warn : Palette.text)
+                .foregroundStyle(color)
             Text(label)
                 .font(.caption)
                 .lineLimit(1)

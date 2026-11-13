@@ -17,8 +17,9 @@ struct DashboardView: View {
                     gpaCard
                     HStack(spacing: Layout.gap) {
                         StatCard(value: "\(model.courses.count)", label: "Courses")
-                        StatCard(value: "\(missing)", label: "Missing", warn: missing > 0)
-                        StatCard(value: avgGrade.map { String(format: "%.2f%%", $0) } ?? "—", label: "Average")
+                        StatCard(value: "\(missing)", label: "Missing", color: missing > 0 ? Palette.warn : Palette.text)
+                        StatCard(value: avgGrade.map { String(format: "%.2f%%", $0) } ?? "—", label: "Average",
+                                 color: avgGrade.map(Palette.grade(percent:)) ?? Palette.text)
                     }
                     SectionLabel(title: "Courses").padding(.top, 8)
                     courseList
@@ -35,20 +36,20 @@ struct DashboardView: View {
 
     private var gpaCard: some View {
         HStack(spacing: 0) {
-            gpaColumn("Unweighted GPA", value: model.gpa.unweighted)
-            Rectangle().fill(Palette.border).frame(width: 1).padding(.vertical, 4)
-            gpaColumn("Weighted GPA", value: model.gpa.weighted)
+            gpaColumn("Unweighted GPA", value: model.gpa.unweighted, color: Palette.tan)
+            Rectangle().fill(Palette.borderStrong).frame(width: 1).padding(.vertical, 4)
+            gpaColumn("Weighted GPA", value: model.gpa.weighted, color: Palette.blue)
         }
         .redacted(reason: model.coursesState == .loading && model.courses.isEmpty ? .placeholder : [])
-        .card(padding: 20)
+        .heroCard(Palette.tan, Palette.blue)
     }
 
-    private func gpaColumn(_ title: String, value: Double) -> some View {
+    private func gpaColumn(_ title: String, value: Double, color: Color) -> some View {
         VStack(spacing: 6) {
             Text(String(format: "%.2f", value))
                 .font(.system(size: 40, weight: .bold)).monospacedDigit()
                 .lineLimit(1).minimumScaleFactor(0.6)
-                .foregroundStyle(Palette.text)
+                .foregroundStyle(color)
             Text(title).font(.caption).foregroundStyle(Palette.textDim).lineLimit(1).minimumScaleFactor(0.8)
         }
         .frame(maxWidth: .infinity)
@@ -76,15 +77,13 @@ struct DashboardView: View {
             if case .failed(let message) = model.coursesState {
                 ErrorBanner(message: "Showing saved grades. \(message)")
             }
-            // One grouped list instead of a stack of separate cards: every row is the same height and width.
-            VStack(spacing: 0) {
+            // The landing page uses one card per course (badge, grade, bar); the course page uses grouped lists.
+            VStack(spacing: 10) {
                 ForEach(model.courses) { course in
                     NavigationLink(value: course) { CourseRow(course: course) }
                         .buttonStyle(.plain)
-                    if course.id != model.courses.last?.id { RowDivider().padding(.leading, Layout.card) }
                 }
             }
-            .card(padding: 0)
         }
     }
 }
@@ -92,37 +91,34 @@ struct DashboardView: View {
 struct CourseRow: View {
     let course: ICCourse
 
-    private var subtitle: String {
-        [course.period.map { "Period \($0)" }, course.teacher].compactMap { $0 }.filter { !$0.isEmpty }.joined(separator: " · ")
-    }
-
     var body: some View {
-        HStack(spacing: 12) {
-            VStack(alignment: .leading, spacing: 3) {
-                Text(course.shortName)
-                    .font(.body.weight(.medium)).foregroundStyle(Palette.text)
-                    .lineLimit(1)
-                HStack(spacing: 6) {
-                    if !subtitle.isEmpty {
-                        Text(subtitle).font(.footnote).foregroundStyle(Palette.textDim).lineLimit(1)
+        VStack(spacing: 12) {
+            HStack(spacing: 12) {
+                PeriodBadge(period: course.period)
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(course.shortName)
+                        .font(.body.weight(.semibold)).foregroundStyle(Palette.text)
+                        .lineLimit(1)
+                    HStack(spacing: 6) {
+                        if let teacher = course.teacher, !teacher.isEmpty {
+                            Text(teacher).font(.footnote).foregroundStyle(Palette.textDim).lineLimit(1)
+                        }
+                        if course.missingCount > 0 { Pill(text: "\(course.missingCount) missing", color: Palette.warn) }
                     }
-                    if course.missingCount > 0 { Pill(text: "\(course.missingCount) missing", color: Palette.warn) }
                 }
-            }
-            Spacer(minLength: 8)
-            VStack(alignment: .trailing, spacing: 3) {
-                Text(course.currentGrade.map { String(format: "%.2f%%", $0) } ?? "—")
-                    .font(.body.weight(.semibold)).monospacedDigit()
-                    .foregroundStyle(course.currentGrade.map(Palette.grade(percent:)) ?? Palette.textFaint)
-                if let letter = course.displayLetter {
-                    Text(letter).font(.footnote).foregroundStyle(Palette.textDim)
+                Spacer(minLength: 8)
+                VStack(alignment: .trailing, spacing: 3) {
+                    Text(course.currentGrade.map { String(format: "%.2f%%", $0) } ?? "—")
+                        .font(.body.weight(.bold)).monospacedDigit()
+                        .foregroundStyle(course.currentGrade.map(Palette.grade(percent:)) ?? Palette.textFaint)
+                    Text(course.displayLetter ?? "No grade").font(.footnote).foregroundStyle(Palette.textDim)
                 }
+                .fixedSize()
             }
-            .fixedSize()
-            Image(systemName: "chevron.right").font(.caption.weight(.semibold)).foregroundStyle(Palette.textFaint)
+            // Always drawn (empty when ungraded) so every course card is the same height.
+            GradeBar(percent: course.currentGrade ?? 0)
         }
-        .padding(.horizontal, Layout.card)
-        .frame(minHeight: 64)
+        .card(padding: 14)
         .contentShape(Rectangle())
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(

@@ -94,7 +94,7 @@ private struct DayStrip: View {
                     Button { onSelect(s.id) } label: {
                         VStack(spacing: 2) {
                             Text(date?.formatted(.dateTime.weekday(.abbreviated)) ?? "Day")
-                                .font(.caption).foregroundStyle(on ? Palette.actionInk.opacity(0.7) : Palette.textDim)
+                                .font(.caption.weight(.medium)).foregroundStyle(on ? Palette.actionInk.opacity(0.7) : Palette.blue)
                             Text(date?.formatted(.dateTime.day()) ?? "–")
                                 .font(.headline).monospacedDigit().foregroundStyle(on ? Palette.actionInk : Palette.text)
                         }
@@ -245,6 +245,39 @@ private func offeringMeta(_ o: ICResponsiveOffering) -> String {
     [o.teacher, o.room].compactMap { $0 }.joined(separator: " · ")
 }
 
+/// Every session has the same info dropdown, whether or not Infinite Campus has a description for it.
+private struct InfoToggle: View {
+    @Binding var open: Bool
+
+    var body: some View {
+        Button { open.toggle() } label: {
+            Image(systemName: open ? "chevron.up" : "chevron.down").font(.footnote.weight(.semibold))
+                .foregroundStyle(open ? Palette.blue : Palette.textFaint).frame(width: 32, height: 36)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(open ? "Hide info" : "Show info")
+    }
+}
+
+private struct OfferingInfo: View {
+    let offering: ICResponsiveOffering
+
+    private var text: String? {
+        let d = offering.description?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        return d.isEmpty ? nil : d
+    }
+
+    var body: some View {
+        Text(text ?? "No extra info for this session.")
+            .font(.subheadline)
+            .foregroundStyle(text == nil ? Palette.textFaint : Palette.textDim)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(10)
+            .background(RoundedRectangle(cornerRadius: Layout.fieldRadius, style: .continuous).fill(Palette.field))
+    }
+}
+
 /// The student's current session, pinned above the list.
 private struct CurrentPick: View {
     let offering: ICResponsiveOffering?
@@ -255,34 +288,28 @@ private struct CurrentPick: View {
             VStack(alignment: .leading, spacing: 8) {
                 HStack(alignment: .top) {
                     VStack(alignment: .leading, spacing: 4) {
-                        Label("Your pick", systemImage: "checkmark.circle.fill").font(.caption.weight(.semibold)).foregroundStyle(Palette.good)
+                        Label("Your pick", systemImage: "checkmark.circle.fill").font(.caption.weight(.semibold)).foregroundStyle(Palette.tan)
                         Text(offering.name).font(.headline).foregroundStyle(Palette.text).lineLimit(open ? nil : 2)
                         if !offeringMeta(offering).isEmpty {
                             Text(offeringMeta(offering)).font(.footnote).foregroundStyle(Palette.textDim).lineLimit(1)
                         }
                     }
                     Spacer(minLength: 8)
-                    if offering.description != nil {
-                        Button { open.toggle() } label: {
-                            Image(systemName: open ? "chevron.up" : "chevron.down").font(.footnote.weight(.semibold))
-                                .foregroundStyle(Palette.textDim).frame(width: 36, height: 36)
-                        }
-                        .accessibilityLabel(open ? "Hide description" : "Show description")
-                    }
+                    InfoToggle(open: $open)
                 }
-                if open, let d = offering.description { Text(d).font(.subheadline).foregroundStyle(Palette.textDim) }
+                if open { OfferingInfo(offering: offering) }
                 if offering.teacherAssigned {
                     Label("Placed here by a teacher" + (offering.teacherReason.map { ": \($0)" } ?? ""), systemImage: "lock.fill")
                         .font(.footnote).foregroundStyle(Palette.warn)
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
-            .card(highlighted: true)
+            .heroCard(Palette.tan, padding: Layout.card)
         }
     }
 }
 
-/// Tapping the row signs up / switches; the chevron (when there is a description) expands it.
+/// Tapping the row signs up / switches; the chevron opens the info dropdown.
 private struct OfferingRow: View {
     let offering: ICResponsiveOffering
     let interactive: Bool
@@ -304,19 +331,9 @@ private struct OfferingRow: View {
                 if busy { ProgressView().controlSize(.small) }
                 Text(seatsLabel(offering)).font(.subheadline.weight(.semibold)).monospacedDigit()
                     .foregroundStyle(seatsColor(offering.seatsLeft)).fixedSize()
-                if offering.description != nil {
-                    Button { open.toggle() } label: {
-                        Image(systemName: open ? "chevron.up" : "chevron.down").font(.footnote.weight(.semibold))
-                            .foregroundStyle(Palette.textFaint).frame(width: 32, height: 36)
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel(open ? "Hide description" : "Show description")
-                } else {
-                    // Keeps the seat counts in one column whether or not a row has a description.
-                    Color.clear.frame(width: 32, height: 36)
-                }
+                InfoToggle(open: $open)
             }
-            if open, let d = offering.description { Text(d).font(.subheadline).foregroundStyle(Palette.textDim) }
+            if open { OfferingInfo(offering: offering) }
         }
         .padding(.horizontal, Layout.card).padding(.vertical, 10)
         .frame(minHeight: 64)
