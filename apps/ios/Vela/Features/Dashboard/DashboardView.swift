@@ -41,7 +41,7 @@ struct DashboardView: View {
             gpaColumn("Weighted GPA", value: model.gpa.weighted, color: Palette.blue)
         }
         .redacted(reason: model.coursesState == .loading && model.courses.isEmpty ? .placeholder : [])
-        .heroCard(Palette.tan, Palette.blue)
+        .heroCard(Palette.tan)
     }
 
     private func gpaColumn(_ title: String, value: Double, color: Color) -> some View {

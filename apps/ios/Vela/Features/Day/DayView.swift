@@ -116,17 +116,16 @@ struct DayView: View {
             }
         }
         .frame(maxWidth: .infinity)
-        .heroCard(Palette.blue, Palette.tan, padding: 24)
+        .heroCard(Palette.blue, padding: 24)
         .accessibilityElement(children: .combine)
     }
 
     private func ring<Content: View>(progress: Double, @ViewBuilder center: () -> Content) -> some View {
         ZStack {
-            Circle().stroke(Palette.bg.opacity(0.55), lineWidth: 14)
+            Circle().stroke(Palette.field, lineWidth: 14)
             Circle()
                 .trim(from: 0, to: min(max(progress, 0), 1))
-                .stroke(LinearGradient(colors: [Palette.blue, Palette.tan], startPoint: .top, endPoint: .bottom),
-                        style: StrokeStyle(lineWidth: 14, lineCap: .round))
+                .stroke(Palette.blue, style: StrokeStyle(lineWidth: 14, lineCap: .round))
                 .rotationEffect(.degrees(-90))
                 .animation(.linear(duration: 0.5), value: progress)
             center()

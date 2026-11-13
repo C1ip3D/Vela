@@ -29,6 +29,11 @@ jobs:
         working-directory: apps/ios
         run: |
           brew install xcodegen
+          # GoogleService-Info.plist is gitignored. XcodeGen's `optional` still references it, which fails the build,
+          # so drop the entry when the file is absent (the app then runs without Firebase, which demo mode never uses).
+          if [ ! -f GoogleService-Info.plist ]; then
+            sed -i '' '/path: GoogleService-Info.plist/{N;d;}' project.yml
+          fi
           xcodegen generate
 
       - name: Build for the simulator (demo mode)
