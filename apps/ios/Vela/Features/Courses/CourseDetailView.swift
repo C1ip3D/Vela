@@ -121,7 +121,7 @@ struct CourseDetailView: View {
                     if let d = gradeDelta {
                         Text(Self.delta(d)).font(.subheadline.weight(.semibold)).monospacedDigit().foregroundStyle(Self.deltaColor(d))
                     } else if !hasChanges, let letter = course.displayLetter {
-                        Text(letter).font(.subheadline.weight(.semibold)).foregroundStyle(Palette.textDim)
+                        Pill(text: letter, color: Palette.grade(letter: letter))
                     }
                 }
                 .fixedSize()
@@ -129,7 +129,7 @@ struct CourseDetailView: View {
             if let g = shownGrade { GradeBar(percent: g) }
             if hasChanges {
                 HStack {
-                    Pill(text: "What-if", color: Palette.tint)
+                    Pill(text: "What-if", color: Palette.blue)
                     Text("Not saved anywhere").font(.footnote).foregroundStyle(Palette.textFaint)
                     Spacer()
                     Button("Reset") { mods = [:]; added = [:] }.font(.footnote.weight(.semibold))
@@ -138,7 +138,7 @@ struct CourseDetailView: View {
                 Pill(text: "\(course.missingCount) missing assignment\(course.missingCount == 1 ? "" : "s")", color: Palette.warn)
             }
         }
-        .card()
+        .heroCard(Palette.blue)
     }
 
     static func delta(_ d: Double) -> String { String(format: "%@%.2f%%", d >= 0 ? "+" : "", d) }
@@ -233,12 +233,11 @@ private struct GroupSection: View {
                 Button(action: toggle) {
                     HStack(spacing: 8) {
                         Image(systemName: "chevron.right")
-                            .font(.caption.weight(.bold)).foregroundStyle(Palette.textFaint)
+                            .font(.caption.weight(.bold)).foregroundStyle(Palette.tan)
                             .rotationEffect(.degrees(isExpanded ? 90 : 0))
                         Text(group.name).font(.body.weight(.semibold)).foregroundStyle(Palette.text).lineLimit(1)
                         if group.weight > 0 {
-                            Text("\(group.weight.formatted(.number.precision(.fractionLength(0...1))))%")
-                                .font(.caption).foregroundStyle(Palette.textDim)
+                            Pill(text: "\(group.weight.formatted(.number.precision(.fractionLength(0...1))))%", color: Palette.blue)
                         }
                         Spacer(minLength: 8)
                         if let d = delta {
@@ -260,8 +259,7 @@ private struct GroupSection: View {
                     Button("Add assignment", systemImage: "plus", action: onAddCustom)
                     if hasMods { Button("Reset category", systemImage: "arrow.counterclockwise", role: .destructive, action: onResetGroup) }
                 } label: {
-                    Image(systemName: "ellipsis").font(.body).foregroundStyle(Palette.textDim)
-                        .frame(width: 32, height: Layout.row)
+                    MoreGlyph()
                 }
                 .accessibilityLabel("\(group.name) options")
             }
@@ -317,7 +315,7 @@ private struct AssignmentRow: View {
     }
 
     var body: some View {
-        HStack(alignment: .center, spacing: 10) {
+        HStack(alignment: .center, spacing: 8) {
             VStack(alignment: .leading, spacing: 4) {
                 Text(assignment.name).font(.subheadline).foregroundStyle(Palette.text)
                     .strikethrough(dropped).lineLimit(2)
@@ -350,7 +348,7 @@ private struct AssignmentRow: View {
                 Button(dropped ? "Restore" : "Drop assignment", systemImage: dropped ? "arrow.uturn.backward" : "minus.circle", action: onToggleDrop)
                 if mod != nil { Button("Reset", systemImage: "arrow.counterclockwise", action: onReset) }
             } label: {
-                Image(systemName: "ellipsis").foregroundStyle(Palette.textDim).frame(width: 32, height: Layout.row)
+                MoreGlyph()
             }
             .accessibilityLabel("Options for \(assignment.name)")
         }
@@ -368,7 +366,7 @@ private struct CustomRow: View {
         HStack(spacing: 10) {
             VStack(alignment: .leading, spacing: 4) {
                 Text(item.name).font(.subheadline).foregroundStyle(Palette.text).lineLimit(2)
-                Pill(text: "Hypothetical")
+                Pill(text: "Hypothetical", color: Palette.blue)
             }
             Spacer(minLength: 8)
             VStack(alignment: .trailing, spacing: 2) {
@@ -384,7 +382,7 @@ private struct CustomRow: View {
                 Button("Edit", systemImage: "pencil", action: onEdit)
                 Button("Remove", systemImage: "trash", role: .destructive, action: onRemove)
             } label: {
-                Image(systemName: "ellipsis").foregroundStyle(Palette.textDim).frame(width: 32, height: Layout.row)
+                MoreGlyph()
             }
             .accessibilityLabel("Options for \(item.name)")
         }
