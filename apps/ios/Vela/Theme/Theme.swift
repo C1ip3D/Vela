@@ -12,7 +12,7 @@ extension Color {
     }
 }
 
-/// Deep navy-charcoal surfaces with two accents: tan (identity: titles, selection, primary actions) and blue
+/// Deep navy-charcoal surfaces with two flat accents (no gradients anywhere): tan (identity: titles, selection, primary actions) and blue
 /// (time and information: the countdown, periods, hints). Green / yellow / red stay reserved for grades, seats and status.
 enum Palette {
     // Surfaces, darkest first. Slightly blue so the tan reads warm against them.
@@ -95,19 +95,14 @@ extension View {
         modifier(CardBackground(highlighted: highlighted, padding: padding))
     }
 
-    /// The one tinted card per screen: a soft static wash of `tint` (and optionally a second colour) over the surface.
-    func heroCard(_ tint: Color = Palette.tan, _ second: Color? = nil, padding: CGFloat = 20) -> some View {
+    /// The one accented card per screen: a flat surface with a solid `tint` edge and outline. No gradients.
+    func heroCard(_ tint: Color = Palette.tan, padding: CGFloat = 20) -> some View {
         let shape = RoundedRectangle(cornerRadius: Layout.radius + 4, style: .continuous)
         return self
             .padding(padding)
-            .background(
-                shape.fill(Palette.surface).overlay(
-                    shape.fill(LinearGradient(
-                        colors: [tint.opacity(0.20), (second ?? tint).opacity(second == nil ? 0.03 : 0.14)],
-                        startPoint: .topLeading, endPoint: .bottomTrailing))
-                )
-            )
-            .overlay(shape.strokeBorder(tint.opacity(0.28), lineWidth: 1))
+            .background(shape.fill(Palette.surface))
+            .overlay(alignment: .leading) { Rectangle().fill(tint).frame(width: 3) }
+            .overlay(shape.strokeBorder(tint.opacity(0.35), lineWidth: 1))
             .clipShape(shape)
     }
 
