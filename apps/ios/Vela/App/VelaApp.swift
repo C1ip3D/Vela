@@ -10,7 +10,9 @@ struct VelaApp: App {
                 .environment(model)
                 .preferredColorScheme(.dark)
                 .tint(Palette.tint)
-                .dynamicTypeSize(.xLarge)
+                // Follows the system text size. The floor keeps the design's intended size; the ceiling is the largest
+                // size the fixed-height rows have room for.
+                .dynamicTypeSize(.xLarge ... .xxxLarge)
                 .task { model.bootstrap() }
         }
     }

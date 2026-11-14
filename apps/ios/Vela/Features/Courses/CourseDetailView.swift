@@ -132,7 +132,7 @@ struct CourseDetailView: View {
                     Pill(text: "What-if", color: Palette.blue)
                     Text("Not saved anywhere").font(.footnote).foregroundStyle(Palette.textFaint)
                     Spacer()
-                    Button("Reset") { mods = [:]; added = [:] }.font(.footnote.weight(.semibold))
+                    Button("Reset") { mods = [:]; added = [:] }.font(.footnote.weight(.semibold)).frame(minWidth: 44, minHeight: 44)
                 }
             } else if course.missingCount > 0 {
                 Pill(text: "\(course.missingCount) missing assignment\(course.missingCount == 1 ? "" : "s")", color: Palette.warn)
@@ -261,7 +261,7 @@ private struct GroupSection: View {
                 } label: {
                     MoreGlyph()
                 }
-                .menuStyle(.button).buttonStyle(.plain)
+                .menuStyle(.button).buttonStyle(.plain).compactHitArea()
                 .accessibilityLabel("\(group.name) options")
             }
 
@@ -351,7 +351,7 @@ private struct AssignmentRow: View {
             } label: {
                 MoreGlyph()
             }
-            .menuStyle(.button).buttonStyle(.plain)
+            .menuStyle(.button).buttonStyle(.plain).compactHitArea()
             .accessibilityLabel("Options for \(assignment.name)")
         }
         .frame(minHeight: 56)
@@ -386,7 +386,7 @@ private struct CustomRow: View {
             } label: {
                 MoreGlyph()
             }
-            .menuStyle(.button).buttonStyle(.plain)
+            .menuStyle(.button).buttonStyle(.plain).compactHitArea()
             .accessibilityLabel("Options for \(item.name)")
         }
         .frame(minHeight: 56)

@@ -1,9 +1,11 @@
-#if DEBUG
 import Foundation
 import VelaKit
 
-/// Launch with `-VelaDemo` to skip sign-in and show fixture data (no network). Debug builds only.
+/// Sample data behind "Explore with sample data" on the sign-in screen (`AppModel.startDemo()`), so anyone without
+/// an Infinite Campus account, App Review included, can use every screen. No network.
+/// Debug builds can also start in it with the `-VelaDemo` launch argument.
 enum DemoData {
+    #if DEBUG
     /// A build made with `VELA_DEMO=YES` (the CI preview build) is always in demo mode, for hosts that can't pass arguments.
     static var isEnabled: Bool {
         ProcessInfo.processInfo.arguments.contains("-VelaDemo")
@@ -20,11 +22,12 @@ enum DemoData {
     static let mockUser = "student"
     /// `-VelaMockBadPassword` saves a wrong password, to exercise the "can't re-login silently" path.
     static var mockPassword: String { ProcessInfo.processInfo.arguments.contains("-VelaMockBadPassword") ? "wrong" : "pw123" }
+    #endif
 
     static let session = StoredSession(
         ic: IcSession(cookies: "demo", baseUrl: "https://icampus.dublinusd.org/campus/dublinusd", appName: "dublinusd",
                       personId: "1", displayName: "Alex Student"),
-        districtName: "Dublin Unified", stateCode: "CA")
+        districtName: "Sample District", stateCode: "CA")
 
     static let courses: [ICCourse] = [
         ICCourse(id: "1", name: "AP Calculus BC", courseCode: "MA301", courseType: "AP", currentGrade: 94.5, letterGrade: "A", teacher: "Smith, J", period: "2"),
@@ -78,4 +81,3 @@ enum DemoData {
         ]
     }
 }
-#endif

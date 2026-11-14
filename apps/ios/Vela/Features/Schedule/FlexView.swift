@@ -219,8 +219,11 @@ private struct SessionBody: View {
                 .foregroundStyle(Palette.text)
             if !query.isEmpty {
                 Button { query = "" } label: {
-                    Image(systemName: "xmark.circle.fill").foregroundStyle(Palette.textFaint).frame(width: 32, height: 32)
+                    Image(systemName: "xmark.circle.fill").foregroundStyle(Palette.textFaint).frame(width: 44, height: 44)
+                        .contentShape(Rectangle())
                 }
+                .buttonStyle(.plain)
+                .compactHitArea(8)
                 .accessibilityLabel("Clear search")
             }
         }
@@ -252,10 +255,11 @@ private struct InfoToggle: View {
     var body: some View {
         Button { open.toggle() } label: {
             Image(systemName: open ? "chevron.up" : "chevron.down").font(.footnote.weight(.semibold))
-                .foregroundStyle(open ? Palette.blue : Palette.textFaint).frame(width: 32, height: 36)
+                .foregroundStyle(open ? Palette.blue : Palette.textFaint).frame(width: 44, height: 44)
                 .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        .compactHitArea(6)
         .accessibilityLabel(open ? "Hide info" : "Show info")
     }
 }

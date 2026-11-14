@@ -48,6 +48,8 @@ final class AppModel {
     var loginError: String?
     private(set) var isFinishingLogin = false
     private(set) var hasSavedLogin = false
+    /// Showing sample data (no account, no network). See `startDemo()`.
+    private(set) var isDemo = false
 
     // Courses
     private(set) var courses: [ICCourse] = []
@@ -78,13 +80,7 @@ final class AppModel {
     func bootstrap() {
         #if DEBUG
         if DemoData.isEnabled {
-            session = DemoData.session
-            courses = DemoData.courses
-            scheduleEntries = DemoData.entries
-            DemoData.courses.forEach { assignmentGroups[$0.id] = DemoData.groups }
-            coursesState = .loaded
-            scheduleState = .loaded
-            phase = .signedIn
+            startDemo()
             return
         }
         if let base = DemoData.mockBase {
@@ -119,11 +115,33 @@ final class AppModel {
         if session == nil { courses = []; scheduleEntries = [] }
     }
 
+    // MARK: Demo
+
+    /// Opens the app on sample data, without an account. Offered on the sign-in screen so the app can be tried (and
+    /// reviewed) by someone with no Infinite Campus login. Nothing is saved and nothing is sent anywhere; signing out
+    /// returns to the sign-in screen.
+    func startDemo() {
+        isDemo = true
+        session = DemoData.session
+        courses = DemoData.courses
+        scheduleEntries = DemoData.entries
+        assignmentGroups = [:]
+        DemoData.courses.forEach { assignmentGroups[$0.id] = DemoData.groups }
+        coursesState = .loaded
+        scheduleState = .loaded
+        flexSessions = []
+        flexState = .idle
+        hasSavedLogin = false
+        loginError = nil
+        phase = .signedIn
+    }
+
     // MARK: Login
 
     /// Called once the login web view has produced a live IC cookie jar.
     func completeLogin(_ result: IcLoginResult, district: District) async {
         isFinishingLogin = true
+        isDemo = false
         loginError = nil
         defer { isFinishingLogin = false }
         // A previous student's Vela identity must never carry over to this login, even if minting a new one fails.
@@ -179,7 +197,35 @@ final class AppModel {
         }
     }
 
+    enum AccountError: LocalizedError {
+        case cannotReachVela
+        var errorDescription: String? {
+            "Couldn't reach Vela to delete your account. Check your connection and try again."
+        }
+    }
+
+    /// Permanently deletes the Vela account and all data the server holds for it, then signs out and clears this
+    /// device. Throws (and changes nothing) when the server can't be reached, so "deleted" is never claimed falsely.
+    func deleteAccount() async throws {
+        guard let stored = session else { return }
+        // A build with no Firebase config never creates a server account, and neither does the demo.
+        if !isDemo, FirebaseSession.shared.isAvailable {
+            await velaSignInTask?.value
+            var token = await FirebaseSession.shared.idToken()
+            if token == nil {
+                await signInToVela(stored)
+                token = await FirebaseSession.shared.idToken()
+            }
+            guard let token else { throw AccountError.cannotReachVela }
+            do { try await backend.deleteAccount(idToken: token) } catch { throw AccountError.cannotReachVela }
+        }
+        await signOut()
+    }
+
     func signOut() async {
+        isDemo = false
+        velaSignInTask?.cancel()
+        velaSignInTask = nil
         FirebaseSession.shared.signOut()
         KeychainStore.delete(Key.session)
         KeychainStore.delete(Key.credentials)
@@ -229,6 +275,7 @@ final class AppModel {
     /// or a server error. Concurrent callers share one attempt.
     @discardableResult
     func reauth() async -> StoredSession? {
+        if isDemo { return session }
         if let reauthTask { return await reauthTask.value }
         let task = Task { [weak self] () -> StoredSession? in
             guard let self else { return nil }
@@ -305,7 +352,7 @@ final class AppModel {
 
     /// Called when the app returns to the foreground and periodically while it stays there.
     func keepAlive(force: Bool = false) async {
-        guard session != nil, force || Date().timeIntervalSince(lastSessionCheck) > 60 else { return }
+        guard !isDemo, session != nil, force || Date().timeIntervalSince(lastSessionCheck) > 60 else { return }
         lastSessionCheck = Date()
         await reauth()
     }
@@ -329,6 +376,7 @@ final class AppModel {
 
     func loadCourses(force: Bool = false) async {
         guard session != nil else { return }
+        if isDemo { coursesState = .loaded; return }
         if coursesState == .loading { return }
         if !force, coursesState == .loaded { return }
         coursesState = .loading
@@ -359,6 +407,7 @@ final class AppModel {
     }
 
     func loadAssignments(courseId: String, force: Bool = false) async throws -> [ICAssignmentGroup] {
+        if isDemo { return assignmentGroups[courseId] ?? DemoData.groups }
         if !force, let cached = assignmentGroups[courseId] { return cached }
         let groups = try await withSession { try await $0.fetchAssignments(courseId: courseId) }
         assignmentGroups[courseId] = groups
@@ -371,13 +420,11 @@ final class AppModel {
         guard session != nil else { return }
         if flexState == .loading { return }
         if !force, flexState == .loaded { return }
-        #if DEBUG
-        if DemoData.isEnabled {
+        if isDemo {
             if flexSessions.isEmpty { flexSessions = DemoData.flex }
             flexState = .loaded
             return
         }
-        #endif
         flexState = .loading
         do {
             flexSessions = try await withSession { try await $0.fetchResponsiveSchedule() }
@@ -392,8 +439,7 @@ final class AppModel {
     /// Throws IC's own message when it refuses (full, closed, teacher-placed).
     func selectFlexOffering(in target: ICResponsiveSession, offeringId: String) async throws {
         guard let current = session else { throw ICClient.ICError.sessionExpired("Not connected to Infinite Campus.") }
-        #if DEBUG
-        if DemoData.isEnabled {
+        if isDemo {
             try await Task.sleep(for: .milliseconds(600))
             flexSessions = flexSessions.map { s in
                 guard s.id == target.id else { return s }
@@ -409,7 +455,6 @@ final class AppModel {
             }
             return
         }
-        #endif
         guard let personId = target.personId ?? current.ic.personId, let calendarId = target.calendarId else {
             throw ICClient.ICError.refused("Missing schedule details. Pull to refresh and try again.")
         }
@@ -424,6 +469,7 @@ final class AppModel {
 
     func loadSchedule(force: Bool = false) async {
         guard session != nil else { return }
+        if isDemo { scheduleState = .loaded; return }
         if scheduleState == .loading { return }
         if !force, scheduleState == .loaded { return }
         guard let defaults = districtDefaults else {

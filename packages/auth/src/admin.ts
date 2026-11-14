@@ -131,6 +131,19 @@ export async function mintCustomTokenForIcIdentity(
   }
 }
 
+/**
+ * Deletes the Firebase Auth user behind a Vela account. Idempotent: a uid that is already gone counts as deleted,
+ * so an account-deletion request can be retried safely.
+ */
+export async function deleteFirebaseUser(uid: string): Promise<void> {
+  try {
+    await getAuth(getAdminApp()).deleteUser(uid);
+  } catch (err: unknown) {
+    if (isFirebaseErrorCode(err, "auth/user-not-found")) return;
+    throw err;
+  }
+}
+
 async function findUserByEmail(auth: Auth, email: string): Promise<UserRecord | null> {
   try {
     return await auth.getUserByEmail(email);

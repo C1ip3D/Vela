@@ -25,7 +25,7 @@ The backend URL is set per configuration: `Config/Debug.xcconfig` (localhost) an
 Firebase comes from `GoogleService-Info.plist` (gitignored, in `apps/ios/`); alternatively set the `FIREBASE_*` values in a gitignored `Config/Secrets.xcconfig`.
 Without Firebase config the app still signs in to Infinite Campus and shows grades; it just skips Vela sign-in and the best-effort `/api/ic/courses` snapshot.
 
-Debug builds accept a `-VelaDemo` launch argument: skips sign-in and shows fixture data (no network).
+The sign-in screen has **Explore with sample data** (`AppModel.startDemo()`): fixture data, no account, no network, in every build. Debug builds can also start in it with the `-VelaDemo` launch argument.
 
 ### Preview without a Mac
 
@@ -47,6 +47,8 @@ Use a signed simulator build (the default Xcode build): with `CODE_SIGNING_ALLOW
 
 - `POST /api/ic/mint-token` — `{cookies, baseUrl, appName, districtName, stateCode}` → `{firebaseCustomToken, personId, displayName}`
 - `POST /api/ic/courses` — Bearer Firebase ID token; best-effort grade snapshot
+- `DELETE /api/account` — Bearer Firebase ID token; deletes the Vela account and its data (Settings → Delete Account and Data)
+- `GET /privacy`, `GET /support` — public pages linked from Login and Settings
 - `GET /api/schedule` (custom `bells` only) and `PUT /api/schedule/bell` — bell times shared with web (served by `apps/api`)
 
 Same routes the Expo app uses; keep them stable and both clients keep working.

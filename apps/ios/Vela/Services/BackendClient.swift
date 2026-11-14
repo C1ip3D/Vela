@@ -11,6 +11,14 @@ enum AppConfig {
     }
 
     static var apiBaseURL: URL? { string("VelaAPIBaseURL").flatMap(URL.init(string:)) }
+    /// Public pages served by the backend (apps/api/src/routes/legal.ts).
+    static var privacyURL: URL? { apiBaseURL.flatMap { URL(string: "/privacy", relativeTo: $0)?.absoluteURL } }
+    static var supportURL: URL? { apiBaseURL.flatMap { URL(string: "/support", relativeTo: $0)?.absoluteURL } }
+    static var appVersion: String {
+        let v = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? ""
+        let b = Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? ""
+        return b.isEmpty ? v : "\(v) (\(b))"
+    }
     static var firebaseAPIKey: String? { string("VelaFirebaseAPIKey") }
     static var firebaseAppID: String? { string("VelaFirebaseAppID") }
     static var firebaseProjectID: String? { string("VelaFirebaseProjectID") }
@@ -58,7 +66,7 @@ final class FirebaseSession {
     }
 }
 
-/// The Vela backend (Next.js today, Hono soon — same routes and contract).
+/// The Vela backend (Hono, apps/api).
 struct BackendClient {
     struct MintResponse: Decodable {
         let firebaseCustomToken: String
@@ -95,6 +103,11 @@ struct BackendClient {
             cookies: session.cookies, baseUrl: session.baseUrl, appName: session.appName,
             districtName: districtName, stateCode: stateCode))
         return try JSONDecoder().decode(MintResponse.self, from: data)
+    }
+
+    /// Permanently deletes the Vela account and everything the server stores for it.
+    func deleteAccount(idToken: String) async throws {
+        _ = try await send("DELETE", "/api/account", body: nil as String?, bearer: idToken)
     }
 
     /// Best-effort grade snapshot. Failure never affects what the app shows.

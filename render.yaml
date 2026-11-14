@@ -15,3 +15,6 @@ services:
         sync: false
       - key: FIREBASE_SERVICE_ACCOUNT_KEY_BASE64
         sync: false
+      # Contact address shown on the public /privacy and /support pages.
+      - key: VELA_CONTACT_EMAIL
+        sync: false

@@ -16,17 +16,19 @@ struct IcLoginResult {
 @MainActor
 @Observable
 final class IcLoginState {
-    /// "Stay signed in" is always on: what the user types into IC's own form is kept in this device's Keychain.
-    /// Users can clear it later with "Forget saved login" in Settings.
-    let remember = true
+    /// "Stay signed in": when on, what the user types into IC's own form is kept in this device's Keychain. It is a
+    /// visible switch on the sign-in sheet (on by default) because saving a password needs the user's say-so
+    /// (App Store Review Guideline 5.1.1). It can be cleared later with "Forget saved login" in Settings.
+    var remember = true
     var error: String?
     var showManualFallback = false
     var isResolving = false
     var extractNow: (() -> Void)?
 }
 
-/// Hosts the district's real Infinite Campus login page. Vela never sees the password:
-/// we watch navigation and the DOM for success, then lift the session cookies.
+/// Hosts the district's real Infinite Campus login page. We watch navigation and the DOM for success, then lift the
+/// session cookies. The password is read from the form only for "Stay signed in", is kept only in this device's
+/// Keychain, and never goes to Vela's server.
 struct IcLoginWebView: UIViewRepresentable {
     let baseURL: String
     let appName: String
@@ -257,6 +259,21 @@ struct IcLoginSheet: View {
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .background(Palette.bg.opacity(0.85))
                 }
+            }
+
+            if !state.isResolving {
+                Toggle(isOn: Binding(get: { state.remember }, set: { state.remember = $0 })) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Stay signed in").font(.subheadline.weight(.medium)).foregroundStyle(Palette.text)
+                        Text("Saves your Infinite Campus login on this device only, so Vela can sign you back in. It is never sent to Vela.")
+                            .font(.caption).foregroundStyle(Palette.textDim)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                }
+                .tint(Palette.blue)
+                .padding(.horizontal, Layout.screen).padding(.vertical, 10)
+                .background(Palette.bar)
+                .overlay(alignment: .top) { RowDivider() }
             }
 
             if state.showManualFallback && !state.isResolving {

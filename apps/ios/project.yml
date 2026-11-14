@@ -38,8 +38,7 @@ targets:
       properties:
         CFBundleDisplayName: Vela
         UILaunchScreen:
-          UIColorName: ""
-          UIImageName: ""
+          UIColorName: LaunchBackground
         UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait]
         UIUserInterfaceStyle: Dark
         ITSAppUsesNonExemptEncryption: false

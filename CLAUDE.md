@@ -78,6 +78,8 @@ Hono app (`src/app.ts`), served by `src/index.ts` via `@hono/node-server`. Route
 - `POST /api/ic/courses` (`src/routes/ic.ts`) — syncs courses/grades to the DB, serving from the DB cache when available
 - `POST /api/ic/schedule` (`src/routes/ic.ts`) — pulls the IC class schedule and replaces the user's stored IC-sourced entries
 - `GET /api/schedule`, `PUT /api/schedule/bell` (`src/routes/schedule.ts`) — read schedule + bell schedules; save custom bells (validated by `src/lib/bellValidation.ts`)
+- `DELETE /api/account` (`src/routes/account.ts`) — deletes the signed-in student's Vela account, all rows stored for it, and the Firebase user (App Store guideline 5.1.1(v); the iOS Settings screen calls it)
+- `GET /privacy`, `GET /support` (`src/routes/legal.ts`) — public HTML pages the app and the App Store listing link to. Keep `/privacy` and `apps/ios/Vela/PrivacyInfo.xcprivacy` in step with what is actually collected; `VELA_CONTACT_EMAIL` sets the contact address shown
 - `GET /health` — Render health check
 - `src/lib/syncIC.ts` — core sync logic; also exports `getCachedCourses` (stale-while-revalidate) and `districtHostnameFromBaseUrl` (District scoping)
 

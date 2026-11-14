@@ -27,7 +27,7 @@ enum Palette {
     // Text: warm ivory, not pure white.
     static let text = Color(hex: 0xF3EEE6)
     static let textDim = Color(hex: 0xA7A9AE)
-    static let textFaint = Color(hex: 0x7C8089)
+    static let textFaint = Color(hex: 0x8A8F98)
 
     // Accents.
     static let tan = Color(hex: 0xCFB896)
@@ -117,6 +117,12 @@ extension View {
             .overlay(RoundedRectangle(cornerRadius: Layout.fieldRadius, style: .continuous).strokeBorder(Palette.border))
     }
 
+    /// For a 44pt control with a small glyph: keeps the full tappable area but lets it overlap its neighbours'
+    /// padding, so it only occupies `44 - 2 * inset` points of the row.
+    func compactHitArea(_ inset: CGFloat = 10) -> some View {
+        padding(.horizontal, -inset)
+    }
+
     /// Same detents and chrome for every sheet, so they all open at the same size.
     func velaSheet() -> some View {
         presentationDetents([.medium, .large])
@@ -176,14 +182,15 @@ struct PeriodBadge: View {
     }
 }
 
-/// The small "more" control on rows. Quiet on purpose: it is a secondary action.
+/// The small "more" control on rows. Quiet on purpose: it is a secondary action. The glyph is small but the tappable
+/// area is the full 44pt Apple asks for; call sites pull it in with `.compactHitArea()` so it takes little room.
 struct MoreGlyph: View {
     var body: some View {
         Image(systemName: "ellipsis")
             .font(.caption2.weight(.bold))
             .rotationEffect(.degrees(90))
             .foregroundStyle(Palette.textFaint)
-            .frame(width: 20, height: 36)
+            .frame(width: 44, height: 44)
             .contentShape(Rectangle())
     }
 }

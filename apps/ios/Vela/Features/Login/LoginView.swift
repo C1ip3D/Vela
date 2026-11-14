@@ -51,6 +51,27 @@ struct LoginView: View {
                     }
                     .card()
                     .frame(maxWidth: 480)
+
+                    Button("Explore with sample data") { model.startDemo() }
+                        .font(.subheadline.weight(.semibold))
+                        .frame(minHeight: Layout.row)
+                        .padding(.top, 12)
+                        .disabled(model.isFinishingLogin)
+                        .accessibilityHint("Opens the app with example grades, without signing in")
+
+                    VStack(spacing: 8) {
+                        Text("When you sign in, Vela creates an account for you and keeps a copy of your grades and schedule on its server. You can delete it anytime in Settings.")
+                        Text("Vela is an independent app and is not affiliated with Infinite Campus or your school district.")
+                        HStack(spacing: 16) {
+                            if let url = AppConfig.privacyURL { Link("Privacy Policy", destination: url) }
+                            if let url = AppConfig.supportURL { Link("Support", destination: url) }
+                        }
+                        .font(.footnote.weight(.semibold))
+                        .frame(minHeight: Layout.row)
+                    }
+                    .font(.footnote).foregroundStyle(Palette.textDim).multilineTextAlignment(.center)
+                    .frame(maxWidth: 480)
+                    .padding(.top, 16)
                 }
                 .padding(.horizontal, Layout.screen)
                 .padding(.vertical, 40)
