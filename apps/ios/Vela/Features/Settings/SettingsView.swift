@@ -35,6 +35,25 @@ struct SettingsView: View {
                     }
                     .card(padding: 0)
 
+                    SectionLabel(title: "About").padding(.top, 8)
+                    NavigationLink {
+                        PrivacyPolicyView()
+                    } label: {
+                        HStack {
+                            Text("Privacy Policy").foregroundStyle(Palette.text)
+                            Spacer(minLength: 8)
+                            Image(systemName: "chevron.right")
+                                .font(.footnote.weight(.semibold))
+                                .foregroundStyle(Palette.textDim)
+                        }
+                        .font(.subheadline)
+                        .padding(.horizontal, Layout.card)
+                        .frame(maxWidth: .infinity, minHeight: Layout.row + 4)
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .card(padding: 0)
+
                     Button(role: .destructive) { confirmSignOut = true } label: {
                         Text("Sign Out").font(.subheadline.weight(.medium)).foregroundStyle(Palette.bad)
                             .frame(maxWidth: .infinity, minHeight: Layout.row + 4)
