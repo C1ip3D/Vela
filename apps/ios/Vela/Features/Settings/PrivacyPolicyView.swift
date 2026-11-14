@@ -20,11 +20,10 @@ struct PrivacyPolicyView: View {
         Section(title: "Data we collect", body: [
             "• Account identity: your Infinite Campus person details (such as name and district) used to create a Vela account through Firebase Authentication.",
             "• Academic data: courses, teachers, assignments, scores and grades, and your class schedule.",
-            "• Derived data: grade history snapshots, GPA snapshots and change notes (for example, a grade that went up or down).",
-            "• Schedule settings: bell schedules you save in the app."
+            "• Derived data: grade history snapshots, GPA snapshots and change notes (for example, a grade that went up or down)."
         ]),
         Section(title: "How the data is used", body: [
-            "Grades, assignments and schedules are fetched directly from Infinite Campus on your device and shown in the app. As a best-effort extra, Vela copies this data to its server so it can keep grade history, calculate GPA trends and save your bell schedules.",
+            "Grades, assignments and schedules are fetched directly from Infinite Campus on your device and shown in the app. As a best-effort extra, Vela copies this data to its server so it can keep grade history and calculate GPA trends.",
             "We use your data only to run Vela's features. We do not sell it, rent it, or use it for advertising or tracking."
         ]),
         Section(title: "Where it is stored", body: [

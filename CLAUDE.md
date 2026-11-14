@@ -6,14 +6,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Vela is a student academic monitoring and planning platform built for Stang Hacks 2026. It integrates with **Infinite Campus** to pull course data, assignments, and grades. It is a mobile-first product plus a small backend, sharing a set of workspace packages in an npm-workspaces monorepo:
 
-- **iOS app** (`apps/ios/`) — native SwiftUI app (iOS 18+). Talks to Infinite Campus directly from the device and uses the backend only for login token minting, a best-effort grade snapshot, and saved bell schedules. It replaced the former Expo `apps/mobile`.
+- **iOS app** (`apps/ios/`) — native SwiftUI app (iOS 18+). Talks to Infinite Campus directly from the device and uses the backend only for login token minting and a best-effort grade snapshot. It replaced the former Expo `apps/mobile`.
 - **Backend** (`apps/api/`) — API-only [Hono](https://hono.dev) server (Node, run with `tsx`), deployed on Render via `render.yaml`. Replaces the former Next.js `apps/web`.
 
 ## Monorepo layout
 
 ```
 apps/
-  api/         — Hono backend (routes: ic/mint-token, ic/courses, ic/schedule, schedule, schedule/bell)
+  api/         — Hono backend (routes: ic/mint-token, ic/courses, ic/schedule, schedule, schedule)
   ios/         — native SwiftUI app (see apps/ios/README.md); VelaKit/ is a Swift port of ic-client + domain
 packages/
   types/       — shared TypeScript interfaces
@@ -77,7 +77,7 @@ Hono app (`src/app.ts`), served by `src/index.ts` via `@hono/node-server`. Route
 - `POST /api/ic/mint-token` (`src/routes/ic.ts`) — verifies an app-supplied IC session and mints a Firebase custom token
 - `POST /api/ic/courses` (`src/routes/ic.ts`) — syncs courses/grades to the DB, serving from the DB cache when available
 - `POST /api/ic/schedule` (`src/routes/ic.ts`) — pulls the IC class schedule and replaces the user's stored IC-sourced entries
-- `GET /api/schedule`, `PUT /api/schedule/bell` (`src/routes/schedule.ts`) — read schedule + bell schedules; save custom bells (validated by `src/lib/bellValidation.ts`)
+- `GET /api/schedule` (`src/routes/schedule.ts`) — read schedule + the district bell preset (bell times are not user-editable)
 - `GET /health` — Render health check
 - `src/lib/syncIC.ts` — core sync logic; also exports `getCachedCourses` (stale-while-revalidate) and `districtHostnameFromBaseUrl` (District scoping)
 

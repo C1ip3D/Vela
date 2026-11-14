@@ -47,7 +47,7 @@ Use a signed simulator build (the default Xcode build): with `CODE_SIGNING_ALLOW
 
 - `POST /api/ic/mint-token` — `{cookies, baseUrl, appName, districtName, stateCode}` → `{firebaseCustomToken, personId, displayName}`
 - `POST /api/ic/courses` — Bearer Firebase ID token; best-effort grade snapshot
-- `GET /api/schedule` (custom `bells` only) and `PUT /api/schedule/bell` — bell times shared with web (served by `apps/api`)
+- `GET /api/schedule` — saved class schedule and the district bell preset (served by `apps/api`)
 
 Same routes the Expo app uses; keep them stable and both clients keep working.
 
@@ -58,5 +58,4 @@ Same routes the Expo app uses; keep them stable and both clients keep working.
 
 ## Not yet ported (parity gaps vs apps/mobile)
 
-- "Reset to school schedule" for edited bell times (the backend has no delete route yet)
 - Finals/study coach

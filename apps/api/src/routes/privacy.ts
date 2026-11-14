@@ -21,13 +21,13 @@ const sections: { title: string; body: string[] }[] = [
   {
     title: "Data we collect",
     body: [
-      "<ul><li>Account identity: your Infinite Campus person details (such as name and district) used to create a Vela account through Firebase Authentication.</li><li>Academic data: courses, teachers, assignments, scores and grades, and your class schedule.</li><li>Derived data: grade history snapshots, GPA snapshots and change notes (for example, a grade that went up or down).</li><li>Schedule settings: bell schedules you save in the app.</li></ul>",
+      "<ul><li>Account identity: your Infinite Campus person details (such as name and district) used to create a Vela account through Firebase Authentication.</li><li>Academic data: courses, teachers, assignments, scores and grades, and your class schedule.</li><li>Derived data: grade history snapshots, GPA snapshots and change notes (for example, a grade that went up or down).</li></ul>",
     ],
   },
   {
     title: "How the data is used",
     body: [
-      "Grades, assignments and schedules are fetched directly from Infinite Campus on your device and shown in the app. As a best-effort extra, Vela copies this data to its server so it can keep grade history, calculate GPA trends and save your bell schedules.",
+      "Grades, assignments and schedules are fetched directly from Infinite Campus on your device and shown in the app. As a best-effort extra, Vela copies this data to its server so it can keep grade history and calculate GPA trends.",
       "We use your data only to run Vela's features. We do not sell it, rent it, or use it for advertising or tracking.",
     ],
   },

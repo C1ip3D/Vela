@@ -83,7 +83,6 @@ model User {
   advisorLogs      AdvisorLog[]
   assignmentGrades AssignmentGrade[]
   scheduleEntries  ScheduleEntry[]
-  bellConfig       BellConfig?
 
   @@unique([districtId, icPersonId])
   @@index([districtId])
@@ -213,14 +212,4 @@ model ScheduleEntry {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
-}
-
-// A student's own bell schedules (a JSON array of @vela/types' BellSchedule).
-// Absent row = use the district preset, if one exists. IC provides no clock times.
-model BellConfig {
-  userId    String   @id
-  schedules Json
-  updatedAt DateTime @updatedAt
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
