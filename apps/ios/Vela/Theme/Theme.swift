@@ -45,8 +45,7 @@ enum Palette {
     static let bad = Color(hex: 0xE5837F)
 
     static func grade(letter: String) -> Color {
-        if letter.hasPrefix("A") { return good }
-        if letter.hasPrefix("B") { return Color(hex: 0xA9CF7C) }
+        if letter.hasPrefix("A") || letter.hasPrefix("B") { return good }
         if letter.hasPrefix("C") { return warn }
         return bad
     }

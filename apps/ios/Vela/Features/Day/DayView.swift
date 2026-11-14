@@ -110,9 +110,6 @@ struct DayView: View {
                     Image(systemName: isSchoolDay ? "checkmark" : "moon.zzz")
                         .font(.system(size: 44, weight: .semibold)).foregroundStyle(Palette.blue)
                 }
-                if !isSchoolDay {
-                    Text("Showing \(Self.dayNames[day])").font(.subheadline.weight(.medium)).foregroundStyle(Palette.textDim)
-                }
             }
         }
         .frame(maxWidth: .infinity)

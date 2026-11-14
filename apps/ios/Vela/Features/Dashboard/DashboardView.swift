@@ -94,7 +94,6 @@ struct CourseRow: View {
     var body: some View {
         VStack(spacing: 12) {
             HStack(spacing: 12) {
-                PeriodBadge(period: course.period)
                 VStack(alignment: .leading, spacing: 3) {
                     Text(course.shortName)
                         .font(.body.weight(.semibold)).foregroundStyle(Palette.text)
