@@ -1,4 +1,4 @@
-# Vela for iOS (SwiftUI)
+# Tassel for iOS (SwiftUI)
 
 Native rewrite of `apps/mobile` (Expo). iOS 18+, SwiftUI + Observation, Swift 5 language mode.
 
@@ -23,7 +23,7 @@ Unit tests (macOS, no simulator): `swift test --package-path apps/ios/VelaKit`
 
 The backend URL is set per configuration: `Config/Debug.xcconfig` (localhost) and `Config/Release.xcconfig` (Render). The `Vela` scheme runs Debug; `Vela Release` runs Release.
 Firebase comes from `GoogleService-Info.plist` (gitignored, in `apps/ios/`); alternatively set the `FIREBASE_*` values in a gitignored `Config/Secrets.xcconfig`.
-Without Firebase config the app still signs in to Infinite Campus and shows grades; it just skips Vela sign-in and the best-effort `/api/ic/courses` snapshot.
+Without Firebase config the app still signs in to Infinite Campus and shows grades; it just skips Tassel sign-in and the best-effort `/api/ic/courses` snapshot.
 
 Debug builds accept a `-VelaDemo` launch argument: skips sign-in and shows fixture data (no network).
 

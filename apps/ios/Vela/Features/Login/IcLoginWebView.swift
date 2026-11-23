@@ -25,7 +25,7 @@ final class IcLoginState {
     var extractNow: (() -> Void)?
 }
 
-/// Hosts the district's real Infinite Campus login page. Vela never sees the password:
+/// Hosts the district's real Infinite Campus login page. Tassel never sees the password:
 /// we watch navigation and the DOM for success, then lift the session cookies.
 struct IcLoginWebView: UIViewRepresentable {
     let baseURL: String
@@ -221,7 +221,7 @@ struct IcLoginWebView: UIViewRepresentable {
     }
 }
 
-/// Full-screen sheet wrapping the IC login page with Vela chrome.
+/// Full-screen sheet wrapping the IC login page with Tassel chrome.
 struct IcLoginSheet: View {
     let district: District
     let onSuccess: (IcLoginResult) -> Void

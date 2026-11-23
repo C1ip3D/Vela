@@ -67,7 +67,7 @@ struct SettingsView: View {
             }
             .velaBackground()
             .navigationTitle("Settings")
-            .confirmationDialog("Sign out of Vela?", isPresented: $confirmSignOut, titleVisibility: .visible) {
+            .confirmationDialog("Sign out of Tassel?", isPresented: $confirmSignOut, titleVisibility: .visible) {
                 Button("Sign Out", role: .destructive) { Task { await model.signOut() } }
             } message: {
                 Text("You'll need to sign in to Infinite Campus again.")

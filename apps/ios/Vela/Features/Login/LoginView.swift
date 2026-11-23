@@ -22,8 +22,9 @@ struct LoginView: View {
                 VStack(spacing: 0) {
                     Image("Logo")
                         .resizable().scaledToFit().frame(width: 96, height: 96)
+                        .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
                         .accessibilityHidden(true)
-                    Text("Vela")
+                    Text("Tassel")
                         .font(.largeTitle.weight(.bold))
                         .foregroundStyle(Palette.text).padding(.top, 12)
                     Text("Grades and schedule from Infinite Campus")

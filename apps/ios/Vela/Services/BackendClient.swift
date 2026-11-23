@@ -58,7 +58,7 @@ final class FirebaseSession {
     }
 }
 
-/// The Vela backend (Next.js today, Hono soon — same routes and contract).
+/// The Tassel backend (Next.js today, Hono soon — same routes and contract).
 struct BackendClient {
     struct MintResponse: Decodable {
         let firebaseCustomToken: String
