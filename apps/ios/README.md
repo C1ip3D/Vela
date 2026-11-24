@@ -1,6 +1,7 @@
 # Tassel for iOS (SwiftUI)
 
 Native rewrite of `apps/mobile` (Expo). iOS 18+, SwiftUI + Observation, Swift 5 language mode.
+Paths, the Xcode project and the `VelaKit` package keep the project's earlier name, Vela.
 
 ```
 apps/ios/
@@ -21,17 +22,18 @@ xcodegen generate && open Vela.xcodeproj
 
 Unit tests (macOS, no simulator): `swift test --package-path apps/ios/VelaKit`
 
-The backend URL is set per configuration: `Config/Debug.xcconfig` (localhost) and `Config/Release.xcconfig` (Render). The `Vela` scheme runs Debug; `Vela Release` runs Release.
+The backend URL is set per configuration: `Config/Debug.xcconfig` (localhost) and `Config/Release.xcconfig` (Render). The `Vela Dev` scheme runs Debug; `Vela Release` runs, profiles and archives Release.
 Firebase comes from `GoogleService-Info.plist` (gitignored, in `apps/ios/`); alternatively set the `FIREBASE_*` values in a gitignored `Config/Secrets.xcconfig`.
 Without Firebase config the app still signs in to Infinite Campus and shows grades; it just skips Tassel sign-in and the best-effort `/api/ic/courses` snapshot.
 
-Debug builds accept a `-VelaDemo` launch argument: skips sign-in and shows fixture data (no network).
+Debug builds accept a `-VelaDemo` launch argument: skips sign-in and shows fixture data (no network). A build with `VELA_DEMO=YES` (see `Config/Shared.xcconfig`) always starts in demo mode.
 
 ### Preview without a Mac
 
 The `iOS preview build` GitHub Actions workflow (`.github/workflows/ios-preview.yml`) runs the VelaKit tests, builds a
 demo-mode simulator app (`VELA_DEMO=YES`, fixture data, no sign-in) and uploads it as the `Vela-simulator` artifact.
-Download the zip from the workflow run and upload it at <https://appetize.io/upload> to use the app in a browser.
+Download the zip from the workflow run, unzip it once, and upload the inner `Vela-simulator.zip` at <https://appetize.io/upload> to use the app in a browser.
+The workflow removes the `GoogleService-Info.plist` entry from `project.yml` when the file is absent, since it is gitignored. Put `[skip ci]` in a commit message to skip the build.
 
 To exercise login, "Stay signed in" and silent re-login without a real student account, run the fake IC and point a Debug build at it:
 
@@ -47,9 +49,11 @@ Use a signed simulator build (the default Xcode build): with `CODE_SIGNING_ALLOW
 
 - `POST /api/ic/mint-token` — `{cookies, baseUrl, appName, districtName, stateCode}` → `{firebaseCustomToken, personId, displayName}`
 - `POST /api/ic/courses` — Bearer Firebase ID token; best-effort grade snapshot
-- `GET /api/schedule` — saved class schedule and the district bell preset (served by `apps/api`)
+- `POST /api/ic/schedule` — Bearer Firebase ID token; saves the class schedule
+- `GET /api/schedule` — Bearer Firebase ID token; saved class schedule and the district bell preset
+- `GET /privacy` — public privacy policy page (the app also shows it in Settings)
 
-Same routes the Expo app uses; keep them stable and both clients keep working.
+Keep these routes stable: released app versions depend on them.
 
 ## Porting notes
 
