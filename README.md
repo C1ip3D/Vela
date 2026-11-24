@@ -1,8 +1,8 @@
-# Tassel
+# Tally
 
 A native iPhone app that shows students their grades, assignments and class schedule from **Infinite Campus**, with a small backend. Built for Stang Hacks 2026.
 
-Tassel is a student project. It is not affiliated with or endorsed by Infinite Campus or any school district.
+Tally is a student project. It is not affiliated with or endorsed by Infinite Campus or any school district.
 
 ## What it does
 
@@ -14,9 +14,9 @@ Tassel is a student project. It is not affiliated with or endorsed by Infinite C
 
 ## How it works
 
-1. The student signs in on their district's own Infinite Campus page, shown inside the app. The password never goes to Tassel's server.
+1. The student signs in on their district's own Infinite Campus page, shown inside the app. The password never goes to Tally's server.
 2. The app reads courses, assignments and schedule **directly from Infinite Campus on the device**. It needs no backend to show grades.
-3. The app sends the Infinite Campus session to the backend, which re-checks it against the district's server and mints a Firebase sign-in token. The Firebase user is the student's Tassel account.
+3. The app sends the Infinite Campus session to the backend, which re-checks it against the district's server and mints a Firebase sign-in token. The Firebase user is the student's Tally account.
 4. As a best-effort extra, the app asks the backend to copy grades into Postgres, which keeps grade history and GPA snapshots. If that fails, the app is unaffected.
 
 The full policy is in the app (Settings → Privacy Policy) and served by the backend at `/privacy`.
@@ -76,7 +76,9 @@ The API runs on `http://localhost:3000`.
 | `POST /api/ic/courses` | Saves a grade snapshot to the database |
 | `POST /api/ic/schedule` | Saves the student's class schedule |
 | `GET /api/schedule` | Saved schedule plus the district's bell preset |
+| `DELETE /api/account` | Deletes the signed-in student's account and stored data |
 | `GET /privacy` | Public privacy policy page |
+| `GET /support` | Public support page (shows `SUPPORT_EMAIL` when set) |
 | `GET /health` | Health check |
 
 API routes take `Authorization: Bearer <Firebase ID token>`, except `mint-token`.
@@ -97,9 +99,9 @@ npm run xcode
 open apps/ios/Vela.xcodeproj
 ```
 
-Use the `Vela Dev` scheme for a Debug build against `localhost:3000`, or `Vela Release` for the Render backend. Firebase config is optional: put `GoogleService-Info.plist` in `apps/ios/`. Without it the app still signs in to Infinite Campus and shows grades, and only skips the Tassel account and server snapshot.
+Use the `Vela Dev` scheme for a Debug build against `localhost:3000`, or `Vela Release` for the Render backend. Firebase config is optional: put `GoogleService-Info.plist` in `apps/ios/`. Without it the app still signs in to Infinite Campus and shows grades, and only skips the Tally account and server snapshot.
 
-To try the app without an Infinite Campus account, run it with the `-VelaDemo` launch argument (Debug builds) for sample data. See [apps/ios/README.md](apps/ios/README.md) for a mock Infinite Campus server and more.
+To try the app without an Infinite Campus account, tap **Try a demo** on the sign-in screen (any build), or launch with `-VelaDemo`. See [apps/ios/README.md](apps/ios/README.md) for a mock Infinite Campus server and more.
 
 ### Preview in a browser, without a Mac
 

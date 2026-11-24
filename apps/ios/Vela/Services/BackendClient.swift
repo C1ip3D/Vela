@@ -58,7 +58,7 @@ final class FirebaseSession {
     }
 }
 
-/// The Tassel backend (Next.js today, Hono soon — same routes and contract).
+/// The Tally backend (the Hono server in apps/api).
 struct BackendClient {
     struct MintResponse: Decodable {
         let firebaseCustomToken: String
@@ -95,6 +95,11 @@ struct BackendClient {
             cookies: session.cookies, baseUrl: session.baseUrl, appName: session.appName,
             districtName: districtName, stateCode: stateCode))
         return try JSONDecoder().decode(MintResponse.self, from: data)
+    }
+
+    /// Permanently deletes the signed-in student's Tally account and server-side data.
+    func deleteAccount(idToken: String) async throws {
+        _ = try await send("DELETE", "/api/account", body: Optional<String>.none, bearer: idToken)
     }
 
     /// Best-effort grade snapshot. Failure never affects what the app shows.

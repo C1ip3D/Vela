@@ -24,7 +24,7 @@ struct LoginView: View {
                         .resizable().scaledToFit().frame(width: 96, height: 96)
                         .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
                         .accessibilityHidden(true)
-                    Text("Tassel")
+                    Text("Tally")
                         .font(.largeTitle.weight(.bold))
                         .foregroundStyle(Palette.text).padding(.top, 12)
                     Text("Grades and schedule from Infinite Campus")
@@ -52,6 +52,19 @@ struct LoginView: View {
                     }
                     .card()
                     .frame(maxWidth: 480)
+
+                    Button {
+                        model.startDemo()
+                    } label: {
+                        Text("Try a demo")
+                            .font(.subheadline.weight(.medium))
+                            .foregroundStyle(Palette.tint)
+                            .frame(minHeight: Layout.row)
+                            .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .padding(.top, 16)
+                    .accessibilityHint("Shows Tally with a sample student. No sign-in needed.")
                 }
                 .padding(.horizontal, Layout.screen)
                 .padding(.vertical, 40)
