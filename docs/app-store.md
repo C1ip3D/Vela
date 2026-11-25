@@ -84,8 +84,11 @@ Data collection: **Yes, we collect data.** None of it is used for tracking.
 | Data type | Linked to user | Tracking | Purpose |
 | --- | --- | --- | --- |
 | Contact Info › Name | Yes | No | App Functionality |
-| Identifiers › User ID | Yes | No | App Functionality |
-| Other Data › Other Data Types (grades, courses, schedule) | Yes | No | App Functionality |
+| Contact Info › Email Address (Tassel-generated, from the IC person ID) | Yes | No | App Functionality |
+| Identifiers › User ID (Firebase UID, IC person ID) | Yes | No | App Functionality |
+| User Content › Other User Content (courses, assignments, grades, schedule, GPA and grade history) | Yes | No | App Functionality |
+
+Not collected: location, contacts, photos, browsing history, purchases, diagnostics, usage data, device ID, advertising data.
 
 This matches `apps/ios/Vela/PrivacyInfo.xcprivacy`.
 

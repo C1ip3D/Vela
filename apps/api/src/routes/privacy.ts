@@ -21,7 +21,7 @@ const sections: { title: string; body: string[] }[] = [
   {
     title: "Data we collect",
     body: [
-      "<ul><li>Account identity: your Infinite Campus person details (such as name and district) used to create a Tassel account through Firebase Authentication.</li><li>Academic data: courses, teachers, assignments, scores and grades, and your class schedule.</li><li>Derived data: grade history snapshots, GPA snapshots and change notes (for example, a grade that went up or down).</li></ul>",
+      "<ul><li>Account identity: your Infinite Campus person details (such as name and district), plus a Tassel-generated email address and your IC person ID, used to create a Tassel account through Firebase Authentication.</li><li>Academic data: courses, teachers, assignments, scores and grades, and your class schedule.</li><li>Derived data: grade history snapshots, GPA snapshots and change notes (for example, a grade that went up or down).</li></ul>",
     ],
   },
   {

@@ -18,7 +18,7 @@ struct PrivacyPolicyView: View {
             "After sign-in, your Infinite Campus session is stored in the iOS Keychain on your device. If you turn on \"Stay signed in\", saved login details are also kept in the Keychain so Tassel can sign you in again. You can remove them any time with \"Forget saved login\" in Settings."
         ]),
         Section(title: "Data we collect", body: [
-            "• Account identity: your Infinite Campus person details (such as name and district) used to create a Tassel account through Firebase Authentication.",
+            "• Account identity: your Infinite Campus person details (such as name and district), plus a Tassel-generated email address and your IC person ID, used to create a Tassel account through Firebase Authentication.",
             "• Academic data: courses, teachers, assignments, scores and grades, and your class schedule.",
             "• Derived data: grade history snapshots, GPA snapshots and change notes (for example, a grade that went up or down)."
         ]),
