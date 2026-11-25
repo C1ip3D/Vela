@@ -39,7 +39,7 @@ targets:
     info:
       path: Vela/Info.plist
       properties:
-        CFBundleDisplayName: Tally
+        CFBundleDisplayName: Tassel
         UILaunchScreen:
           UIColorName: ""
           UIImageName: ""

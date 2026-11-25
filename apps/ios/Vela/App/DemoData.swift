@@ -2,7 +2,7 @@ import Foundation
 import VelaKit
 
 /// Sample data for "Try a demo" on the login screen (also used by App Review) and for `-VelaDemo` launches.
-/// No network: nothing here talks to Infinite Campus or the Tally backend.
+/// No network: nothing here talks to Infinite Campus or the Tassel backend.
 enum DemoData {
     /// A build made with `VELA_DEMO=YES` (the CI preview build) is always in demo mode, for hosts that can't pass arguments.
     static var isEnabled: Bool {

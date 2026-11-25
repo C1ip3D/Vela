@@ -89,7 +89,7 @@ struct SettingsView: View {
                             .buttonStyle(.plain)
                             .disabled(isDeleting)
                             .card(padding: 0)
-                            Text("Permanently deletes your Tally account and the grade history stored for it. Your Infinite Campus account isn't affected.")
+                            Text("Permanently deletes your Tassel account and the grade history stored for it. Your Infinite Campus account isn't affected.")
                                 .font(.footnote).foregroundStyle(Palette.textDim)
                         }
                     }
@@ -98,12 +98,12 @@ struct SettingsView: View {
             }
             .velaBackground()
             .navigationTitle("Settings")
-            .confirmationDialog(model.isDemo ? "Exit the demo?" : "Sign out of Tally?", isPresented: $confirmSignOut, titleVisibility: .visible) {
+            .confirmationDialog(model.isDemo ? "Exit the demo?" : "Sign out of Tassel?", isPresented: $confirmSignOut, titleVisibility: .visible) {
                 Button(model.isDemo ? "Exit Demo" : "Sign Out", role: .destructive) { Task { await model.signOut() } }
             } message: {
                 Text(model.isDemo ? "You'll go back to the sign-in screen." : "You'll need to sign in to Infinite Campus again.")
             }
-            .confirmationDialog("Delete your Tally account?", isPresented: $confirmDelete, titleVisibility: .visible) {
+            .confirmationDialog("Delete your Tassel account?", isPresented: $confirmDelete, titleVisibility: .visible) {
                 Button("Delete Account", role: .destructive) {
                     Task {
                         isDeleting = true
@@ -113,7 +113,7 @@ struct SettingsView: View {
                     }
                 }
             } message: {
-                Text("This permanently deletes your account and everything Tally stored on its server. It can't be undone.")
+                Text("This permanently deletes your account and everything Tassel stored on its server. It can't be undone.")
             }
         }
     }

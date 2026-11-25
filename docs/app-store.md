@@ -1,4 +1,4 @@
-# Tally: App Store listing and release checklist
+# Tassel: App Store listing and release checklist
 
 Everything App Store Connect asks for, ready to paste. Nothing here has been submitted.
 
@@ -6,8 +6,8 @@ Everything App Store Connect asks for, ready to paste. Nothing here has been sub
 
 | Field | Value |
 | --- | --- |
-| App name (30 max) | Tally: Grades & Schedule |
-| Home screen name | Tally (`CFBundleDisplayName`) |
+| App name (30 max) | Tassel: Grades & Schedule |
+| Home screen name | Tassel (`CFBundleDisplayName`) |
 | Subtitle (30 max) | Classes and GPA at a glance |
 | Primary category | Education |
 | Secondary category | Productivity |
@@ -33,9 +33,9 @@ See every grade, your GPA and what's next in your day, all in one calm place.
 **Description:**
 
 ```
-Tally keeps count of your school day: your grades, your GPA, the time left in class and the seats left in flex period.
+Tassel keeps your whole school day in one place: your grades, your GPA, the time left in class and the seats left in flex period.
 
-Sign in once with your district's Infinite Campus page, right inside the app, and Tally does the rest.
+Sign in once with your district's Infinite Campus page, right inside the app, and Tassel does the rest.
 
 GRADES
 • Every class with your current percentage and letter grade
@@ -51,14 +51,14 @@ FLEX PERIODS
 • Pick or switch your session in a tap
 
 PRIVATE BY DESIGN
-• Your Infinite Campus password is typed into your district's own page and never sent to Tally
+• Your Infinite Campus password is typed into your district's own page and never sent to Tassel
 • Your session is kept in the iOS Keychain on your device
 • No ads and no tracking
 • Delete your account any time from Settings
 
 Not a student yet, or just curious? Tap "Try a demo" to look around with sample data.
 
-Tally is a student project and is not affiliated with or endorsed by Infinite Campus or any school district.
+Tassel is a student project and is not affiliated with or endorsed by Infinite Campus or any school district.
 ```
 
 ## App Review information
@@ -68,11 +68,11 @@ Tally is a student project and is not affiliated with or endorsed by Infinite Ca
 **Notes for the reviewer:**
 
 ```
-Tally reads a student's grades and schedule from Infinite Campus, the student information system their school district uses. Signing in needs a real student account from a district, so we can't provide one.
+Tassel reads a student's grades and schedule from Infinite Campus, the student information system their school district uses. Signing in needs a real student account from a district, so we can't provide one.
 
 To review the full app without an account, tap "Try a demo" on the sign-in screen. It opens the app with a sample student, sample classes, assignments, a bell schedule and flex periods. No network access is needed. Settings > Exit Demo returns to the sign-in screen.
 
-Account deletion: Settings > Delete Account (shown when signed in with a real account) permanently deletes the Tally account and all data stored on our server.
+Account deletion: Settings > Delete Account (shown when signed in with a real account) permanently deletes the Tassel account and all data stored on our server.
 
 The student's Infinite Campus password is entered on the district's own sign-in page inside a web view and is never sent to our server.
 ```

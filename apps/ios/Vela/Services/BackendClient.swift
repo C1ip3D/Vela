@@ -58,7 +58,7 @@ final class FirebaseSession {
     }
 }
 
-/// The Tally backend (the Hono server in apps/api).
+/// The Tassel backend (the Hono server in apps/api).
 struct BackendClient {
     struct MintResponse: Decodable {
         let firebaseCustomToken: String
@@ -97,7 +97,7 @@ struct BackendClient {
         return try JSONDecoder().decode(MintResponse.self, from: data)
     }
 
-    /// Permanently deletes the signed-in student's Tally account and server-side data.
+    /// Permanently deletes the signed-in student's Tassel account and server-side data.
     func deleteAccount(idToken: String) async throws {
         _ = try await send("DELETE", "/api/account", body: Optional<String>.none, bearer: idToken)
     }

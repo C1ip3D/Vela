@@ -87,7 +87,7 @@ ic.post("/mint-token", async (c) => {
   } catch (err) {
     console.error("[IC Mint Token] Firebase custom token mint failed:", err);
     return c.json(
-      { error: "Verified your Infinite Campus session, but could not complete Tally sign-in. Please try again." },
+      { error: "Verified your Infinite Campus session, but could not complete Tassel sign-in. Please try again." },
       500
     );
   }
@@ -153,7 +153,7 @@ ic.post("/courses", async (c) => {
     select: { icPersonId: true, district: { select: { hostname: true } } },
   });
   if (existing?.icPersonId && (existing.icPersonId !== person.personId || existing.district?.hostname !== districtHostname)) {
-    return c.json({ error: "This Infinite Campus session belongs to a different student than your Tally account." }, 403);
+    return c.json({ error: "This Infinite Campus session belongs to a different student than your Tassel account." }, 403);
   }
   const verifiedPersonId = person.personId;
 

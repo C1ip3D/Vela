@@ -239,14 +239,14 @@ final class AppModel {
         }
     }
 
-    /// Settings > Delete Account: removes the student's Tally account and everything stored for it on the
+    /// Settings > Delete Account: removes the student's Tassel account and everything stored for it on the
     /// server, then signs out on this device. Throws (and leaves the student signed in) if the server can't
     /// confirm the deletion, so nothing is silently left behind.
     func deleteAccount() async throws {
         if isDemo { await signOut(); return }
         if FirebaseSession.shared.isAvailable {
             await velaSignInTask?.value
-            // No Firebase user means this login never created a Tally account, so there's nothing on the server.
+            // No Firebase user means this login never created a Tassel account, so there's nothing on the server.
             if let token = await FirebaseSession.shared.idToken() {
                 do { try await backend.deleteAccount(idToken: token) } catch { throw AccountDeletionError.failed }
             }
