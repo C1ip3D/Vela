@@ -16,7 +16,7 @@ packages:
 settings:
   base:
     SWIFT_VERSION: "5.0"
-    MARKETING_VERSION: "1.0.0"
+    MARKETING_VERSION: "1.0"
     CURRENT_PROJECT_VERSION: "2"
     DEVELOPMENT_TEAM: R2257TJB25
 targets:
@@ -40,6 +40,8 @@ targets:
       path: Vela/Info.plist
       properties:
         CFBundleDisplayName: Tassel
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
         UILaunchScreen:
           UIColorName: ""
           UIImageName: ""
