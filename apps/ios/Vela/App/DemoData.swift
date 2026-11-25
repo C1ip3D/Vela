@@ -1,8 +1,8 @@
-#if DEBUG
 import Foundation
 import VelaKit
 
-/// Launch with `-VelaDemo` to skip sign-in and show fixture data (no network). Debug builds only.
+/// Sample data for "Try a demo" on the login screen (also used by App Review) and for `-VelaDemo` launches.
+/// No network: nothing here talks to Infinite Campus or the Tassel backend.
 enum DemoData {
     /// A build made with `VELA_DEMO=YES` (the CI preview build) is always in demo mode, for hosts that can't pass arguments.
     static var isEnabled: Bool {
@@ -10,6 +10,7 @@ enum DemoData {
             || (Bundle.main.object(forInfoDictionaryKey: "VelaDemo") as? String) == "YES"
     }
 
+    #if DEBUG
     /// `-VelaMockIC http://localhost:8099` points the app at a local fake IC (Scripts/mock_ic.py). Add `-VelaMockStale`
     /// to start signed in with an expired session and saved credentials, which exercises silent re-login.
     static var mockBase: String? {
@@ -20,6 +21,7 @@ enum DemoData {
     static let mockUser = "student"
     /// `-VelaMockBadPassword` saves a wrong password, to exercise the "can't re-login silently" path.
     static var mockPassword: String { ProcessInfo.processInfo.arguments.contains("-VelaMockBadPassword") ? "wrong" : "pw123" }
+    #endif
 
     static let session = StoredSession(
         ic: IcSession(cookies: "demo", baseUrl: "https://icampus.dublinusd.org/campus/dublinusd", appName: "dublinusd",
@@ -78,4 +80,3 @@ enum DemoData {
         ]
     }
 }
-#endif

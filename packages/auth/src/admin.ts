@@ -143,3 +143,16 @@ async function findUserByEmail(auth: Auth, email: string): Promise<UserRecord | 
 function isFirebaseErrorCode(err: unknown, code: string): boolean {
   return typeof err === "object" && err !== null && "code" in err && (err as { code?: unknown }).code === code;
 }
+
+/**
+ * Deletes a student's Firebase Auth user (in-app account deletion). A user
+ * that's already gone counts as deleted.
+ */
+export async function deleteFirebaseUser(uid: string): Promise<void> {
+  try {
+    await getAuth(getAdminApp()).deleteUser(uid);
+  } catch (err: unknown) {
+    if (isFirebaseErrorCode(err, "auth/user-not-found")) return;
+    throw err;
+  }
+}

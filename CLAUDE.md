@@ -78,6 +78,8 @@ Hono app (`src/app.ts`), served by `src/index.ts` via `@hono/node-server`. Route
 - `POST /api/ic/courses` (`src/routes/ic.ts`) — syncs courses/grades to the DB, serving from the DB cache when available
 - `POST /api/ic/schedule` (`src/routes/ic.ts`) — pulls the IC class schedule and replaces the user's stored IC-sourced entries
 - `GET /api/schedule` (`src/routes/schedule.ts`) — read schedule + the district bell preset (bell times are not user-editable)
+- `DELETE /api/account` (`src/routes/account.ts`) — in-app account deletion: removes the user's rows and Firebase user
+- `GET /privacy`, `GET /support` — public pages used as the App Store privacy and support URLs
 - `GET /health` — Render health check
 - `src/lib/syncIC.ts` — core sync logic; also exports `getCachedCourses` (stale-while-revalidate) and `districtHostnameFromBaseUrl` (District scoping)
 

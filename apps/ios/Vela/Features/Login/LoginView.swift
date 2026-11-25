@@ -52,6 +52,19 @@ struct LoginView: View {
                     }
                     .card()
                     .frame(maxWidth: 480)
+
+                    Button {
+                        model.startDemo()
+                    } label: {
+                        Text("Try a demo")
+                            .font(.subheadline.weight(.medium))
+                            .foregroundStyle(Palette.tint)
+                            .frame(minHeight: Layout.row)
+                            .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .padding(.top, 16)
+                    .accessibilityHint("Shows Tassel with a sample student. No sign-in needed.")
                 }
                 .padding(.horizontal, Layout.screen)
                 .padding(.vertical, 40)

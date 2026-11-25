@@ -76,7 +76,9 @@ The API runs on `http://localhost:3000`.
 | `POST /api/ic/courses` | Saves a grade snapshot to the database |
 | `POST /api/ic/schedule` | Saves the student's class schedule |
 | `GET /api/schedule` | Saved schedule plus the district's bell preset |
+| `DELETE /api/account` | Deletes the signed-in student's account and stored data |
 | `GET /privacy` | Public privacy policy page |
+| `GET /support` | Public support page (shows `SUPPORT_EMAIL` when set) |
 | `GET /health` | Health check |
 
 API routes take `Authorization: Bearer <Firebase ID token>`, except `mint-token`.
@@ -99,7 +101,7 @@ open apps/ios/Vela.xcodeproj
 
 Use the `Vela Dev` scheme for a Debug build against `localhost:3000`, or `Vela Release` for the Render backend. Firebase config is optional: put `GoogleService-Info.plist` in `apps/ios/`. Without it the app still signs in to Infinite Campus and shows grades, and only skips the Tassel account and server snapshot.
 
-To try the app without an Infinite Campus account, run it with the `-VelaDemo` launch argument (Debug builds) for sample data. See [apps/ios/README.md](apps/ios/README.md) for a mock Infinite Campus server and more.
+To try the app without an Infinite Campus account, tap **Try a demo** on the sign-in screen (any build), or launch with `-VelaDemo`. See [apps/ios/README.md](apps/ios/README.md) for a mock Infinite Campus server and more.
 
 ### Preview in a browser, without a Mac
 
