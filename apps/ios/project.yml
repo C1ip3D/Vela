@@ -18,7 +18,7 @@ settings:
     SWIFT_VERSION: "5.0"
     MARKETING_VERSION: "1.0"
     CURRENT_PROJECT_VERSION: "2"
-    DEVELOPMENT_TEAM: R2257TJB25
+    DEVELOPMENT_TEAM: UL2BFT96S9
 targets:
   Vela:
     type: application
